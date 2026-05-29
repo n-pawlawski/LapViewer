@@ -1,86 +1,65 @@
 # Agent Contexts
 
-This folder contains role-specific instructions for agents working on LapViewer.
+Role-specific instructions live in **folders** under `docs/agents/`. Each folder has **`BASE.md`** (required checklist + mission) and optional auxiliary `.md` files.
 
-Use these docs when you want an agent to temporarily "act as" a specialized project role. The agent should read the relevant context file first, then read the shared work queue, then perform only the work assigned to that role.
+See [AGENT_LAYOUT.md](AGENT_LAYOUT.md) for structure rules.
 
 ---
 
-## Folder contents
+## Start here
+
+| Step | File |
+|------|------|
+| 1 | [BASE_AGENT.md](BASE_AGENT.md) — every agent |
+| 2 | [WORK_ORDERS.md](WORK_ORDERS.md) — typed work, dispatch prompts |
+| 3 | `<agent>/BASE.md` — specialist checklist |
+
+---
+
+## Agent folders
+
+| Work type | Folder | Entry |
+|-----------|--------|--------|
+| — | (global) | [BASE_AGENT.md](BASE_AGENT.md) |
+| `docs` | [documentation/](documentation/) | [BASE.md](documentation/BASE.md) |
+| `architecture` | [architecture/](architecture/) | [BASE.md](architecture/BASE.md) |
+| `persistence` | [persistence/](persistence/) | [BASE.md](persistence/BASE.md) |
+| `api` | [api/](api/) | [BASE.md](api/BASE.md) |
+| `client` | [client/](client/) | [BASE.md](client/BASE.md) |
+| `unit-test` | [unit-test/](unit-test/) | [BASE.md](unit-test/BASE.md) |
+| `review` | [review/](review/) | [BASE.md](review/BASE.md) |
+| `maintenance` | [maintenance/](maintenance/) | [BASE.md](maintenance/BASE.md) |
+| `full-stack` | [implementation/](implementation/) | [BASE.md](implementation/BASE.md) |
+| (planning) | [test-strategy/](test-strategy/) | [BASE.md](test-strategy/BASE.md) |
+
+**Client auxiliary docs (example):** [client/overview.md](client/overview.md), [client/page-flows.md](client/page-flows.md)
+
+---
+
+## Coordination docs
 
 | Document | Purpose |
 |----------|---------|
-| [Base Agent](BASE_AGENT.md) | Default project orientation for any agent before choosing a specialty |
-| [Work Orders](WORK_ORDERS.md) | **Typed work items**, dispatch-by-work-type, feature work order flow |
-| [Work Queue](WORK_QUEUE.md) | Global/tooling work items |
-| [Feature work orders](../work-orders/README.md) | Per-feature implementation plans (`WO-*.md`) |
-| [Documentation Designer Agent](DOCUMENTATION_DESIGNER_AGENT.md) | Work type `docs` |
-| [Architecture Design Agent](ARCHITECTURE_DESIGN_AGENT.md) | Work type `architecture` |
-| [Persistence Agent](PERSISTENCE_AGENT.md) | Work type `persistence` — database, SQLite, `DATA_DIR` |
-| [API Agent](API_AGENT.md) | Work type `api` — Express, server services |
-| [Client Agent](CLIENT_AGENT.md) | Work type `client` — React, UI, routing |
-| [Test Strategy Agent](TEST_STRATEGY_AGENT.md) | Verification planning |
-| [Unit Test Agent](UNIT_TEST_AGENT.md) | Work type `unit-test` |
-| [Implementation Agent](IMPLEMENTATION_AGENT.md) | Work type `full-stack` — use only when not splitting layers |
-| [Review / Verification Agent](REVIEW_VERIFICATION_AGENT.md) | Work type `review` |
-| [Project Maintenance Agent](PROJECT_MAINTENANCE_AGENT.md) | Work type `maintenance` |
-| [Templates](TEMPLATES.md) | Work order and work item formats |
+| [Work Orders](WORK_ORDERS.md) | Dispatch by work type |
+| [Work Queue](WORK_QUEUE.md) | Global/tooling backlog |
+| [Feature work orders](../work-orders/README.md) | Per-feature typed tasks |
+| [Templates](TEMPLATES.md) | WO + agent folder formats |
 
 ---
 
-## How to use an agent context
-
-Use a prompt shaped like this:
-
-```text
-Act as the Base Agent for LapViewer.
-Read docs/agents/BASE_AGENT.md first.
-Choose the right specialized context for this task.
-```
-
-**Dispatch by work type** (process all Ready items of that type):
+## Dispatch example (client)
 
 ```text
 Act as the LapViewer Client Agent.
-Read docs/agents/BASE_AGENT.md, docs/agents/CLIENT_AGENT.md, docs/agents/WORK_ORDERS.md.
+Read docs/agents/BASE_AGENT.md, docs/agents/client/BASE.md, docs/agents/WORK_ORDERS.md.
 Process every Ready item with Work type `client` in docs/work-orders/ and WORK_QUEUE.md.
 ```
 
-Replace `Client` / `client` with Persistence, API, Unit Test, etc. See [WORK_ORDERS.md](WORK_ORDERS.md).
-
 ---
 
-## Agent operating rules
+## Adding a new agent folder
 
-- Read the role context before touching code.
-- Read the assigned work item before deciding what to do.
-- Keep the implementation scoped to the work item.
-- Update the work item status when done or blocked.
-- Add newly discovered questions to the work item or `docs/OPEN_QUESTIONS.md`.
-- Do not claim a task is complete unless its verification steps were run or explicitly skipped with a reason.
-
----
-
-## Status values
-
-Use these status labels in `WORK_QUEUE.md`:
-
-- `Draft` - still being shaped; do not implement.
-- `Ready` - agent may perform the work.
-- `In Progress` - agent is currently working on it.
-- `Blocked` - needs user input or another prerequisite.
-- `Done` - completed and verified.
-- `Cancelled` - no longer needed.
-
----
-
-## Adding a new agent type
-
-When adding a new role:
-
-1. Create `docs/agents/<ROLE>_AGENT.md`.
-2. Use the context template in [Templates](TEMPLATES.md).
-3. Add the new context doc to this README.
-4. Add one or more work items to [Work Queue](WORK_QUEUE.md).
-
-Prefer small, role-specific contexts over one giant agent manual.
+1. Create `docs/agents/<folder>/BASE.md` with **Agent checklist (required)**.
+2. Add `README.md` listing auxiliary docs.
+3. Register in [WORK_ORDERS.md](WORK_ORDERS.md) work types table.
+4. Use [TEMPLATES.md](TEMPLATES.md) agent folder template.

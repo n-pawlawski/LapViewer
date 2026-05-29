@@ -39,7 +39,8 @@
 **Work type:** `persistence`  
 **Status:** Draft  
 **Priority:** P0  
-**Blocked by:** —
+**Blocked by:** —  
+**Auxiliary context:** —
 
 **Goal:** …
 
@@ -149,7 +150,7 @@
 
 **Verification:**
 
-- Review agent checklist in `docs/agents/REVIEW_VERIFICATION_AGENT.md`
+- Review agent checklist in `docs/agents/review/BASE.md`
 
 ---
 

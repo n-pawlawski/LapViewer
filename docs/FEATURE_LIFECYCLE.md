@@ -107,13 +107,13 @@ Dispatch one agent per work type to process all Ready items of that type (typica
 
 Each typed agent should:
 
-- Read `docs/agents/BASE_AGENT.md` and its `*_AGENT.md` context.
+- Read `docs/agents/BASE_AGENT.md` and the agent folder's `BASE.md` (e.g. `docs/agents/client/BASE.md`).
 - Branch from `dev` on the work order feature branch.
 - Run `npm run check` (and tests when available).
 - Update docs listed on the work item.
 - Commit per [D-012](DECISIONS.md).
 
-Use [Implementation Agent](agents/IMPLEMENTATION_AGENT.md) only for `full-stack` items.
+Use [implementation/BASE.md](agents/implementation/BASE.md) only for `full-stack` items.
 
 Implementation changes should not silently redefine product scope. If implementation reveals a new product or architecture decision, pause and document it.
 

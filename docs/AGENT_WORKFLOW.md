@@ -37,7 +37,7 @@ For feature work, the default pipeline is:
 3. **Layer agents** — one dispatch per work type; each processes all `Ready` items of that type ([WORK_ORDERS.md](agents/WORK_ORDERS.md)).
 4. **Review** (`review`) — acceptance criteria check.
 
-[Implementation Agent](agents/IMPLEMENTATION_AGENT.md) is for `full-stack` / legacy items only.
+[implementation/BASE.md](agents/implementation/BASE.md) is for `full-stack` / legacy items only.
 
 ---
 
@@ -75,7 +75,7 @@ Use this when code exists and you want a gap check:
 
 > Review the current implementation against the documented acceptance criteria for lap markers.
 
-The review agent should read [`agents/REVIEW_VERIFICATION_AGENT.md`](agents/REVIEW_VERIFICATION_AGENT.md) and lead with bugs, missing behavior, mismatches with the docs, and missing verification.
+The review agent should read [`agents/review/BASE.md`](agents/review/BASE.md) and lead with bugs, missing behavior, mismatches with the docs, and missing verification.
 
 ---
 
@@ -97,7 +97,7 @@ Example:
 ```text
 Act as the Unit Test Agent for LapViewer.
 Read docs/agents/BASE_AGENT.md first.
-Then read docs/agents/UNIT_TEST_AGENT.md.
+Then read docs/agents/unit-test/BASE.md.
 Then read docs/agents/WORK_QUEUE.md.
 Complete work item UT-001.
 Keep changes scoped to that work item.
@@ -250,7 +250,7 @@ Create a new focused doc only when a feature becomes too large for the general d
 The implementation agent should:
 
 - Read the relevant docs before coding.
-- Read [`agents/IMPLEMENTATION_AGENT.md`](agents/IMPLEMENTATION_AGENT.md) for the detailed implementation workflow.
+- Read [`agents/implementation/BASE.md`](agents/implementation/BASE.md) for full-stack workflow; prefer layer agents in `docs/agents/<folder>/BASE.md`.
 - Create or update an implementation checklist before medium/large code changes.
 - Confirm assumptions if a documented requirement is unclear or conflicting.
 - Keep changes scoped to the current feature or phase.

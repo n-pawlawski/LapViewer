@@ -13,7 +13,7 @@ Use that file to:
 - Use `docs/DOCUMENTATION_SYSTEM.md` as the documentation source-of-truth map.
 - Choose the right specialized agent context from `docs/agents/`.
 - Check `docs/agents/WORK_ORDERS.md` and `docs/work-orders/` for typed feature work; `WORK_QUEUE.md` for global tasks.
-- Dispatch by **Work type** (`client`, `api`, `persistence`, …) to process all Ready items of that type unless a single ID is named.
+- Dispatch by **Work type** — read `docs/agents/<folder>/BASE.md` and complete its checklist unless a single ID is named.
 - Keep docs, implementation, and verification aligned.
 
 Do not implement `Draft` work queue items. Ask before adding dependencies, deleting data, adding a git remote, deploying, or making broad architecture changes. Agents manage git per `docs/DECISIONS.md` D-012 (branch, commit, merge); never change `git config`, force-push protected branches, or commit secrets.

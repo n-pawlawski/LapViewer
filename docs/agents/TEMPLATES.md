@@ -4,83 +4,57 @@ Reusable formats for adding new agent contexts and work items.
 
 ---
 
-## Agent context template
+## Agent folder template
 
-Create a new file at `docs/agents/<ROLE>_AGENT.md`.
+Create `docs/agents/<folder>/` per [AGENT_LAYOUT.md](AGENT_LAYOUT.md).
+
+**Required:** `BASE.md` with **Agent checklist (required)** as the first operational section after the header.
+
+**Optional:** `README.md` (index), `overview.md`, flow diagrams, schemas, etc.
 
 ```md
-# <Role> Agent
+# <Role> Agent — base context
 
-Role context for agents acting as <role> in LapViewer.
+**Work type:** `<work-type>`
+Read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md` first.
 
-Before using this specialized context, agents should read `docs/agents/BASE_AGENT.md`.
+---
+
+## Agent checklist (required)
+
+- [ ] **1. Orient** — …
+- [ ] **2. Work order** — …
+- [ ] **3. Auxiliary context** — files in this folder linked from the work item
+- [ ] … through **10. Report**
 
 ---
 
 ## Mission
 
-What this agent protects or produces.
+…
 
 ---
 
-## Read first
+## Auxiliary context (this directory)
 
-Before working, read:
-
-1. `docs/agents/BASE_AGENT.md`
-2. `docs/agents/WORK_QUEUE.md`
-3. Relevant project docs
-4. Relevant implementation files
+| File | Purpose |
+|------|---------|
+| [overview.md](overview.md) | … |
 
 ---
 
-## Current project state
+## Pickup workflow
 
-What this role needs to know about the repo today.
-
----
-
-## Responsibilities
-
-- ...
-- ...
+[WORK_ORDERS.md](../WORK_ORDERS.md) — filter `<work-type>`.
 
 ---
 
-## Not this agent's job
+## Responsibilities / Not this agent's job / Verification
 
-- ...
-- ...
-
----
-
-## Expected workflow
-
-1. Read this context.
-2. Read the work queue.
-3. Select or confirm the assigned work item.
-4. Mark the item `In Progress`.
-5. Perform the scoped work.
-6. Run relevant verification.
-7. Update the work item.
-8. Report results.
-
----
-
-## Completion standard
-
-The work is done when:
-
-- ...
-- ...
-
----
-
-## Do not do without approval
-
-- ...
-- ...
+…
 ```
+
+Copy [client/BASE.md](client/BASE.md) as the reference implementation.
 
 ---
 
@@ -103,6 +77,7 @@ Add tasks to a **feature work order** (`docs/work-orders/`) or, for global tooli
 **Status:** Draft | Ready | In Progress | Blocked | Done | Cancelled  
 **Priority:** P0 | P1 | P2 | P3  
 **Blocked by:** <IDs or —>  
+**Auxiliary context:** `docs/agents/<folder>/….md` (optional)  
 **Source docs:** `<doc>`, `<doc>`  
 
 **Goal:** One or two sentences describing the outcome.
@@ -153,7 +128,7 @@ Add tasks to a **feature work order** (`docs/work-orders/`) or, for global tooli
 
 ```text
 Act as the LapViewer <Role> Agent.
-Read docs/agents/BASE_AGENT.md and docs/agents/<ROLE>_AGENT.md.
+Read docs/agents/BASE_AGENT.md and docs/agents/<folder>/BASE.md.
 Complete work item <ID> in docs/work-orders/WO-<name>.md (or WORK_QUEUE.md).
 ```
 
@@ -161,7 +136,7 @@ Complete work item <ID> in docs/work-orders/WO-<name>.md (or WORK_QUEUE.md).
 
 ```text
 Act as the LapViewer <Role> Agent.
-Read docs/agents/BASE_AGENT.md, docs/agents/<ROLE>_AGENT.md, docs/agents/WORK_ORDERS.md.
+Read docs/agents/BASE_AGENT.md, docs/agents/<folder>/BASE.md, docs/agents/WORK_ORDERS.md.
 Process every Ready item with Work type `<work-type>` in docs/work-orders/ and WORK_QUEUE.md.
 Respect Blocked by; P0 before P1; update statuses and docs when finished.
 ```

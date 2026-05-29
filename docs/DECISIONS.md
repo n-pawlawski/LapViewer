@@ -344,7 +344,7 @@ Racers compare laps across different race days or camera files, not only laps wi
 **Status:** Accepted  
 **Date:** 2026-05-28  
 **Owner:** User  
-**Related docs:** `docs/agents/WORK_ORDERS.md`, `docs/work-orders/`, `docs/agents/CLIENT_AGENT.md`, `docs/agents/API_AGENT.md`, `docs/agents/PERSISTENCE_AGENT.md`  
+**Related docs:** `docs/agents/WORK_ORDERS.md`, `docs/work-orders/`, `docs/agents/client/`, `docs/agents/api/`, `docs/agents/persistence/`  
 
 ### Context
 
@@ -444,6 +444,30 @@ Treat **process hygiene** as a core project goal: git on `dev`, work queue gates
 
 - Approve baseline git commit (`GIT-002`).
 - Approve Vitest install when ready for unit tests (`UT-001`).
+
+---
+
+### D-014 - Agent folders with BASE checklist and auxiliary docs
+
+**Status:** Accepted  
+**Date:** 2026-05-28  
+**Owner:** User  
+**Related docs:** `docs/agents/AGENT_LAYOUT.md`, `docs/agents/client/BASE.md`  
+
+### Context
+
+The user wants each agent type in its own directory with a mandatory checklist in `BASE.md` and room for auxiliary docs (e.g. client page flows).
+
+### Decision
+
+- Specialist agents live under `docs/agents/<folder>/` with required **`BASE.md`** (includes **Agent checklist (required)**).
+- Optional auxiliary `.md` files in the same folder; work items link them via **Auxiliary context**.
+- Dispatch reads `docs/agents/<folder>/BASE.md`, not flat `*_AGENT.md` files.
+
+### Consequences
+
+- Client agent checklist includes: work order → client docs → design → implement → frontend tests → verify → done.
+- New agents copy `client/` or `TEMPLATES.md` folder template.
 
 ---
 

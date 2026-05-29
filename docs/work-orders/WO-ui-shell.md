@@ -42,7 +42,8 @@ First UI slice: dark app shell, routing (`/`, `/intake`, `/compare`), and **stat
 **Work type:** `client`  
 **Status:** Draft  
 **Priority:** P0  
-**Blocked by:** —
+**Blocked by:** —  
+**Auxiliary context:** `docs/agents/client/overview.md`, `docs/agents/client/page-flows.md`
 
 **Goal:** Shared layout, dark theme baseline, routes for Data, Intake, Compare.
 

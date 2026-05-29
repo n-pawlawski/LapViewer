@@ -95,7 +95,7 @@ No ready global items yet.
 **Role:** Unit Test Agent  
 **Status:** Draft  
 **Priority:** P1  
-**Source docs:** `docs/agents/UNIT_TEST_AGENT.md`, `docs/FEATURES.md`, `docs/TECHNICAL_APPROACH.md`  
+**Source docs:** `docs/agents/unit-test/BASE.md`, `docs/FEATURES.md`, `docs/TECHNICAL_APPROACH.md`  
 
 **Goal:** Propose the initial unit testing setup for LapViewer and identify the first production logic that should receive tests.
 
@@ -132,7 +132,7 @@ No ready global items yet.
 **Role:** Implementation Agent  
 **Status:** Draft  
 **Priority:** P1  
-**Source docs:** `docs/agents/IMPLEMENTATION_AGENT.md`, `docs/agents/WORK_QUEUE.md`, `docs/FEATURES.md`  
+**Source docs:** `docs/agents/implementation/BASE.md`, `docs/agents/WORK_QUEUE.md`, `docs/FEATURES.md`  
 
 **Goal:** Use the Implementation Agent workflow on the first small feature that is marked ready.
 
@@ -151,7 +151,7 @@ No ready global items yet.
 **Acceptance criteria:**
 
 - The implementation workflow is followed end-to-end.
-- Any missing workflow steps are added back to `IMPLEMENTATION_AGENT.md`.
+- Any missing workflow steps are added back to `implementation/BASE.md` or layer agent BASE files.
 - Test handoff work is created if tests are not implemented directly.
 - Review / Verification Agent work is created before final done status.
 - Post-implementation reflection is captured when implementation differs from plan.
@@ -167,7 +167,7 @@ No ready global items yet.
 **Role:** Test Strategy Agent  
 **Status:** Draft  
 **Priority:** P1  
-**Source docs:** `docs/DOCUMENTATION_SYSTEM.md`, `docs/agents/TEST_STRATEGY_AGENT.md`, `docs/agents/UNIT_TEST_AGENT.md`, `docs/FEATURES.md`  
+**Source docs:** `docs/DOCUMENTATION_SYSTEM.md`, `docs/agents/test-strategy/BASE.md`, `docs/agents/unit-test/BASE.md`, `docs/FEATURES.md`  
 
 **Goal:** Create `docs/TESTING_STRATEGY.md` defining unit, integration, browser, and manual verification layers for LapViewer.
 

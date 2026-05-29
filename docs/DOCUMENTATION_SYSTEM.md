@@ -28,7 +28,7 @@ LapViewer docs should make it possible to:
 | Architecture | How the app is structured and run | `ARCHITECTURE.md`, `TECHNICAL_APPROACH.md` |
 | Data / persistence | What data exists, where it lives, ownership rules | `PERSISTENCE.md`, `VIDEO_LIBRARY.md` |
 | Communication | How frontend, backend, filesystem, ffmpeg, and future agents interact | `ARCHITECTURE.md`, future API docs, this doc |
-| Testing | How behavior is verified at unit, integration, browser, and manual levels | future `TESTING_STRATEGY.md`, `docs/agents/UNIT_TEST_AGENT.md` |
+| Testing | How behavior is verified at unit, integration, browser, and manual levels | future `TESTING_STRATEGY.md`, `docs/agents/unit-test/BASE.md` |
 | Operations | Setup, config, local run, Docker later, backup, troubleshooting | `README.md`, `DEVELOPMENT.md`, `ARCHITECTURE.md`, `PERSISTENCE.md`, `PROCESS_TOOLING_GAPS.md` |
 | Process hygiene | Git workflow, verification, definition of done | `PROCESS_HYGIENE.md`, `FEATURE_LIFECYCLE.md`, `DECISIONS.md` |
 | Agent workflow | How specialized agents pick up context and work items | `AGENT_WORKFLOW.md`, `docs/agents/` |
@@ -143,7 +143,7 @@ Documentation homes:
 Primary responsibilities:
 
 - Base orientation in `docs/agents/BASE_AGENT.md`.
-- Specialized role instructions in `docs/agents/*_AGENT.md`.
+- Specialized role instructions in `docs/agents/<folder>/BASE.md` (+ auxiliary docs). See `docs/agents/AGENT_LAYOUT.md`.
 - Work item routing in `docs/agents/WORK_QUEUE.md`.
 - Optional future watcher/control UI described in `AGENT_WORKFLOW.md`.
 

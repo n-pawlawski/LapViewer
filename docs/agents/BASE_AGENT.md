@@ -27,8 +27,9 @@ At the start of meaningful project work, read:
 7. `docs/WORKING_AGREEMENT.md` - collaboration rules and decision boundaries.
 8. `docs/AGENT_WORKFLOW.md` - how specialized agents coordinate.
 9. `docs/agents/README.md` - available agent contexts.
-10. `docs/agents/WORK_ORDERS.md` - typed work items and dispatch-by-work-type.
-11. `docs/agents/WORK_QUEUE.md` - global work items; feature tasks live in `docs/work-orders/`.
+10. `docs/agents/AGENT_LAYOUT.md` - per-agent folders, `BASE.md`, auxiliary docs.
+11. `docs/agents/WORK_ORDERS.md` - typed work items and dispatch-by-work-type.
+12. `docs/agents/WORK_QUEUE.md` - global work items; feature tasks live in `docs/work-orders/`.
 
 Then read any feature docs relevant to the task:
 
@@ -52,8 +53,8 @@ Switch into a specialized context when the task clearly matches one:
 - **Documentation Designer:** feature specs, acceptance criteria, open questions, design notes.
 - **Architecture Design Agent:** module boundaries, technical trade-offs, communication paths.
 - **Test Strategy Agent:** testing layers, fixture policy, verification planning.
-- **Client / API / Persistence Agents:** implement all Ready items of that work type from feature work orders.
-- **Implementation Agent:** full-stack only when work type is `full-stack` or legacy `IMPL-*` items.
+- **Layer agents** (`client/`, `api/`, `persistence/`, …): read `<folder>/BASE.md` and complete its checklist for each work item.
+- **Implementation** (`implementation/BASE.md`): full-stack only when work type is `full-stack` or legacy `IMPL-*`.
 - **Review / Verification Agent:** compare implementation against docs and find gaps.
 - **Project Maintenance Agent:** git workflow, scripts, CI, linting, formatting, tooling gaps.
 - **Browser QA Agent:** browser walkthroughs and UI behavior verification.
