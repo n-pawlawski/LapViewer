@@ -58,7 +58,7 @@ Current scripts:
 
 The project does not yet have a committed unit test runner. When implementation creates testable logic, document unit-test follow-up work in `docs/agents/WORK_QUEUE.md` unless the current task explicitly includes setting up or writing tests.
 
-Git uses **`dev`** as the base branch ([D-004](../DECISIONS.md)). Branch feature work with `feature/<short-name>` per [Process Hygiene](../PROCESS_HYGIENE.md). Baseline commit may still be pending ([GIT-002](WORK_QUEUE.md)); branch anyway once the repo has history.
+Git uses **`dev`** as the base branch ([D-004](../DECISIONS.md)). Agents manage git ([D-012](../DECISIONS.md)): branch, commit, and merge per [Process Hygiene](../PROCESS_HYGIENE.md). Baseline exists on `dev` ([GIT-002](WORK_QUEUE.md)).
 
 ---
 
@@ -86,25 +86,23 @@ Use this workflow for medium or large implementation tasks.
 - Identify acceptance criteria, non-goals, open questions, and verification expectations.
 - If blocking questions remain, mark the item `Blocked` and ask before coding.
 
-### 2. Future branch setup
+### 2. Branch and git workflow
 
-When git is established:
-
-- Confirm the base branch, expected to be `dev` unless the project chooses another name.
-- Check for uncommitted user changes before branching.
-- Branch from the current development branch with a focused name, for example:
+- Base branch: **`dev`** ([D-004](../DECISIONS.md)).
+- Check for uncommitted changes; coordinate if the user has WIP outside the task.
+- Create a focused branch from `dev`, for example:
+  - `feature/ui-shell`
   - `feature/intake-import`
-  - `feature/marker-editing`
   - `fix/video-range-streaming`
   - `chore/test-foundation`
-- Do not commit, push, or open a PR unless the user explicitly asks or the work item says that is allowed.
+- Implement in small commits with clear messages after verification passes.
+- When the work item is complete and reviewed (or user skips review for small chores), merge to `dev` or leave branch for PR per task notes.
+- **Push** to `origin` when a remote exists and the task is done; **ask first** before `git remote add` or changing remote URL.
+- Never: `git config`, force-push to `dev`/`main`, `--no-verify`, commit secrets.
 
-If git is unavailable or baseline is missing:
+If git is unavailable:
 
-- State the limitation and keep changes focused.
-- Recommend completing GIT-002 before large feature merges.
-- Keep edits tightly scoped.
-- Avoid broad refactors that would be hard to separate later.
+- State the limitation and keep edits tightly scoped.
 
 ### 3. Documentation-to-implementation checklist
 
@@ -286,7 +284,7 @@ The Implementation Agent should avoid:
 - Rewriting docs to fit accidental implementation choices.
 - Expanding MVP scope without approval.
 - Adding dependencies unless approved by the work item or user.
-- Committing, pushing, or opening PRs unless explicitly requested.
+- Changing `git config`, force-pushing protected branches, or pushing without a configured remote (add remote only with user approval).
 
 ---
 

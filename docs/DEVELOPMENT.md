@@ -42,8 +42,8 @@ Open [http://localhost:5173](http://localhost:5173) after `npm run dev`.
 1. Ensure you are on `dev` and up to date: `git checkout dev`
 2. Create a branch: `git checkout -b feature/ui-shell`
 3. Implement; run `npm run check`
-4. Commit when approved (logical units, clear messages)
-5. Merge back to `dev` via PR or local merge after review
+4. Commit logical units with clear messages (agents do this per [D-012](DECISIONS.md))
+5. Merge back to `dev` after review; push when `origin` exists
 
 Do not commit secrets. `.env` and `data/` are gitignored.
 

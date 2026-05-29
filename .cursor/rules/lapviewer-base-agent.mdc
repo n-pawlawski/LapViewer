@@ -15,4 +15,4 @@ Use that file to:
 - Check `docs/agents/WORK_QUEUE.md` when the task is role-based.
 - Keep docs, implementation, and verification aligned.
 
-Do not implement `Draft` work queue items. Ask before adding dependencies, deleting data, committing, pushing, deploying, or making broad architecture changes.
+Do not implement `Draft` work queue items. Ask before adding dependencies, deleting data, adding a git remote, deploying, or making broad architecture changes. Agents manage git per `docs/DECISIONS.md` D-012 (branch, commit, merge); never change `git config`, force-push protected branches, or commit secrets.

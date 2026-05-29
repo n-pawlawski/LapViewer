@@ -15,7 +15,7 @@ This doc is the **operating standard**. Tooling gaps live in [Process & Tooling 
 5. **Verify before “done”** — Run `npm run check` (and tests when they exist) before marking implementation complete.
 6. **Explicit decisions** — Non-obvious trade-offs go to [DECISIONS.md](DECISIONS.md), not chat-only memory.
 7. **Minimal diffs** — Change only what the work item requires; update docs in the same pass when behavior changes.
-8. **Human gates** — Dependencies, data deletion, deploy, and first-time git push require explicit approval ([Working Agreement](WORKING_AGREEMENT.md)).
+8. **Human gates** — Dependencies, data deletion, deploy, and **new git remotes** require explicit approval ([Working Agreement](WORKING_AGREEMENT.md)). Day-to-day git is **agent-managed** ([D-012](DECISIONS.md)).
 
 ---
 
@@ -38,8 +38,10 @@ chore/<short-name>     # tooling, docs-only maintenance
 | Branch from `dev` | Predictable integration point for agents and humans |
 | One medium/large feature per branch | Reviewable PRs, easy rollback |
 | No force-push to `dev` or `main` | Protects shared history |
-| No commit/push without approval | User controls when history is written |
-| Baseline commit after hygiene setup | Establishes a known-good starting point |
+| Agents manage git ([D-012](DECISIONS.md)) | Branch, commit, merge as part of work items; push when remote exists |
+| Ask before new remote / URL change | Avoids pushing to wrong host |
+| Never change `git config` | User owns machine identity settings |
+| No secrets in commits | `.env`, credentials stay ignored |
 
 `main` (or `master`) is optional until release tagging matters; use it later for release-ready snapshots off `dev`.
 
@@ -64,7 +66,8 @@ Agents should report which steps ran and any skips with reason.
 
 ```text
 Intent (you) → Document (Designer) → Ready (you) → Branch (Implementation)
-    → check/build → Review (Verification) → merge → WORK_QUEUE / FEATURES updated
+    → check/build → commit(s) on feature branch → Review (Verification)
+    → merge to `dev` (agent) → push if remote exists → WORK_QUEUE / FEATURES updated
 ```
 
 Roles and prompts: [Agent Workflow](AGENT_WORKFLOW.md), [agents/README.md](agents/README.md).

@@ -339,6 +339,49 @@ Racers compare laps across different race days or camera files, not only laps wi
 
 ---
 
+### D-012 - Agents manage git
+
+**Status:** Accepted  
+**Date:** 2026-05-28  
+**Owner:** User  
+**Related docs:** `docs/PROCESS_HYGIENE.md`, `docs/WORKING_AGREEMENT.md`, `docs/agents/IMPLEMENTATION_AGENT.md`, `docs/agents/PROJECT_MAINTENANCE_AGENT.md`  
+
+### Context
+
+The user wants agents to run git commands and manage branching/commits as part of normal workflow, not wait for per-commit approval.
+
+### Decision
+
+**Agents may manage git** for LapViewer: branch, stage, commit, merge, status, diff, and log as part of completing work items.
+
+**Agents may push** to an existing remote on feature branches and when completing reviewed work; **ask first** before adding a new remote or changing remote URL.
+
+**Still forbidden without explicit user request:**
+
+- `git config` changes (global or local)
+- Force-push to `dev`, `main`, or `master`
+- `--no-verify` / skipping hooks
+- Committing secrets (`.env`, credentials)
+
+**Commit practice:**
+
+- One or more focused commits per work item on a feature branch.
+- Merge to `dev` when the work item is verified (or leave on branch for user PR preference).
+- Use clear commit messages (what + why).
+
+### Consequences
+
+- Implementation and Maintenance agents commit after `npm run check` passes.
+- Base Agent and Cursor rule no longer require approval for each commit.
+- User should set `user.name` / `user.email` locally for meaningful authorship (agents may use env vars only if unset).
+
+### Alternatives considered
+
+- User-only commits.
+- Agent commits only when user says “commit” each time.
+
+---
+
 ### D-011 - Process hygiene as a first-class project standard
 
 **Status:** Accepted  

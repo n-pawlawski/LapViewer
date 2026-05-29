@@ -31,7 +31,7 @@ If the task changes git, dependencies, CI, scripts, linting, formatting, or test
 
 ## Responsibilities
 
-- Initialize and maintain git workflow when approved.
+- Initialize and maintain git workflow ([D-012](../DECISIONS.md) — agents manage git).
 - Define branch strategy and project setup scripts.
 - Add and maintain verification scripts.
 - Add CI once a remote exists.
@@ -45,7 +45,8 @@ If the task changes git, dependencies, CI, scripts, linting, formatting, or test
 
 - Implement product features.
 - Add dependencies without approval.
-- Commit, push, or create remotes unless explicitly asked.
+- Add or change git remotes without user approval.
+- Change `git config`, force-push protected branches, or skip hooks.
 - Rewrite unrelated code while changing tooling.
 - Enforce heavy process before it provides value.
 
@@ -54,7 +55,7 @@ If the task changes git, dependencies, CI, scripts, linting, formatting, or test
 ## Expected workflow
 
 1. Read this context and the assigned work item.
-2. Confirm whether dependency, git, commit, or CI changes are approved.
+2. Confirm whether **dependency** or **new remote** changes are approved; git commits are routine per D-012.
 3. Make the smallest useful tooling change.
 4. Run the relevant verification command.
 5. Update `README.md`, `PROCESS_TOOLING_GAPS.md`, or work queue status.

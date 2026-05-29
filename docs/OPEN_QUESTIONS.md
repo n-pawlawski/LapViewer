@@ -287,17 +287,19 @@ See [Working Agreement](WORKING_AGREEMENT.md) for the full template. Key questio
 
 ### 8.3 What you don't want the agent to do without asking
 
-Examples: add dependencies, change stack, delete data, commit to git, deploy, spend money on cloud.
+Examples: add dependencies, change stack, delete data, deploy, spend money on cloud.
 
-**Your answer:**
+**Your answer:** Agents may manage git (branch, commit, merge). Still ask for new remotes, dependencies, data deletion, deploy.
+
+**Decision:** [D-012](DECISIONS.md)
 
 ### 8.4 Git / commits
 
-- [ ] Agent may commit when a logical unit is done
+- [x] Agent may commit when a logical unit is done (and manage branches)
 - [ ] Only I commit
 - [ ] Agent commits only when I say
 
-**Your answer:**
+**Your answer:** Agents manage git — branch, commit, merge as part of work items. Ask before adding a remote. See **D-012**.
 
 ### 8.5 Multi-agent workflow
 

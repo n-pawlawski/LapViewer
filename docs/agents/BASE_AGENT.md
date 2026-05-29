@@ -68,7 +68,8 @@ If a specialized context exists, read it before doing that role's work.
 - Keep changes scoped to the user's request or selected work item.
 - Update docs when behavior, setup, acceptance criteria, or agent workflow changes.
 - Add unresolved decisions to `docs/OPEN_QUESTIONS.md` or the relevant work item.
-- Do not add dependencies, delete data, commit, push, deploy, or make broad architecture changes without approval.
+- Do not add dependencies, delete data, deploy, or make broad architecture changes without approval.
+- **Git:** Agents manage git per [D-012](../DECISIONS.md) — branch, commit, merge as part of work. Ask before adding a remote. Never change `git config`, force-push protected branches, or commit secrets.
 
 ---
 

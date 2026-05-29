@@ -36,14 +36,15 @@ We are in **documentation + hygiene setup**; implementation uses branches from `
 
 - Read and modify code in this repo
 - Create/update documentation in `docs/` when relevant to the task
-- Propose sensible defaults, defaults when docs say "TBD"
+- Propose sensible defaults when docs say "TBD"
 - Run builds, tests, and local commands to verify work
 - Keep changes focused — minimal diff for the task at hand
+- **Manage git** — branch, commit, and merge per [D-012](DECISIONS.md) and [Process Hygiene](PROCESS_HYGIENE.md) when completing work items
 
 ### I will ask first before
 
 - **TBD:** Adding major dependencies or changing the agreed stack
-- Git commits or pushes (unless you approve per task, e.g. GIT-002 baseline)
+- Adding a git remote or changing remote URL (first-time setup)
 - **TBD:** Deleting user data or changing storage layout in a breaking way
 - **TBD:** Deploying anywhere or configuring cloud resources
 - **TBD:** Scope expansion beyond current phase (e.g. telemetry, auth, multi-user)
