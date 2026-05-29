@@ -48,7 +48,7 @@ Capture it in one of:
 - `docs/FEATURES.md`
 - A focused feature spec
 - `docs/OPEN_QUESTIONS.md`
-- `docs/agents/WORK_QUEUE.md`
+- A future `docs/work-orders/WO-*.md` (after design is Ready)
 
 The goal at this stage is not completeness. It is to avoid losing intent.
 
@@ -95,17 +95,25 @@ If these are not true, keep the feature as `Draft` or `Blocked`.
 
 ## 4. Implementation
 
-Owned by Implementation Agent.
+Owned by **typed agents** per [WORK_ORDERS.md](agents/WORK_ORDERS.md).
 
-The implementation agent should:
+Before coding:
 
-- Read `docs/agents/IMPLEMENTATION_AGENT.md`.
-- Branch from the agreed development branch once git is established.
-- Create or update the implementation checklist.
-- Build the smallest coherent slice first.
-- Run relevant checks.
-- Update docs if implementation differs from design.
-- Create Unit Test Agent, Test Strategy Agent, Browser QA, or Review work items as needed.
+1. Create a feature work order in `docs/work-orders/WO-<name>.md` from the template.
+2. Break work into items with **Work type:** `persistence`, `api`, `client`, `unit-test`, `review`, etc.
+3. Set items `Ready` in dependency order.
+
+Dispatch one agent per work type to process all Ready items of that type (typical order: persistence → api → client → unit-test → review).
+
+Each typed agent should:
+
+- Read `docs/agents/BASE_AGENT.md` and its `*_AGENT.md` context.
+- Branch from `dev` on the work order feature branch.
+- Run `npm run check` (and tests when available).
+- Update docs listed on the work item.
+- Commit per [D-012](DECISIONS.md).
+
+Use [Implementation Agent](agents/IMPLEMENTATION_AGENT.md) only for `full-stack` items.
 
 Implementation changes should not silently redefine product scope. If implementation reveals a new product or architecture decision, pause and document it.
 

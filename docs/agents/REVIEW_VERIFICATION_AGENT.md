@@ -2,7 +2,11 @@
 
 Role context for agents reviewing LapViewer implementation against documented feature intent.
 
-Before using this specialized context, agents should read `docs/agents/BASE_AGENT.md`.
+**Work type tag:** `review`
+
+Before using this specialized context, agents should read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md`.
+
+When dispatched for all Ready `review` items, process each work order review item against that WO's feature acceptance criteria.
 
 ---
 

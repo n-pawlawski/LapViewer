@@ -65,9 +65,10 @@ Agents should report which steps ran and any skips with reason.
 ## Feature and agent workflow
 
 ```text
-Intent (you) → Document (Designer) → Ready (you) → Branch (Implementation)
+Intent (you) → Document (Designer) → Work order (typed items) → Ready (you)
+    → Dispatch by work type (persistence → api → client → …)
     → check/build → commit(s) on feature branch → Review (Verification)
-    → merge to `dev` (agent) → push if remote exists → WORK_QUEUE / FEATURES updated
+    → merge to `dev` (agent) → push if remote exists → work order + FEATURES updated
 ```
 
 Roles and prompts: [Agent Workflow](AGENT_WORKFLOW.md), [agents/README.md](agents/README.md).

@@ -2,7 +2,11 @@
 
 Role context for agents designing, writing, and running unit tests in LapViewer.
 
-Before using this specialized context, agents should read `docs/agents/BASE_AGENT.md`.
+**Work type tag:** `unit-test`
+
+Before using this specialized context, agents should read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md`.
+
+When dispatched for all Ready `unit-test` items, follow the pickup workflow in [WORK_ORDERS.md](WORK_ORDERS.md) (same pattern as [Client Agent](CLIENT_AGENT.md#pickup-workflow-required)).
 
 ---
 

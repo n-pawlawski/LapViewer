@@ -1,15 +1,16 @@
 # Agent Work Queue
 
-Role-specific work items for LapViewer agents.
+Global and tooling work items for LapViewer agents.
 
-Agents should read their role context first, then use this queue to find assigned work. Keep work items small enough that one agent can complete them in a focused pass.
+**Feature implementation** uses typed work orders in [`docs/work-orders/`](../work-orders/README.md). See [`WORK_ORDERS.md`](WORK_ORDERS.md) for how to dispatch agents by work type (`client`, `api`, `persistence`, …).
 
 ---
 
 ## Queue rules
 
 - Do not implement `Draft` items.
-- A `Ready` item may be picked up by the assigned agent role.
+- Every implementable item must include **Work type** (see [WORK_ORDERS.md](WORK_ORDERS.md)).
+- Agents dispatched by work type process **all** matching `Ready` items (respecting **Blocked by**).
 - Mark an item `In Progress` before editing code.
 - Mark an item `Blocked` if user input, dependencies, or missing decisions prevent completion.
 - Mark an item `Done` only after verification is complete or explicitly documented as skipped.
@@ -17,9 +18,19 @@ Agents should read their role context first, then use this queue to find assigne
 
 ---
 
-## Ready work
+## Feature work orders
 
-No ready work items yet.
+| Work order | Status | Summary |
+|------------|--------|---------|
+| [WO-ui-shell](../work-orders/WO-ui-shell.md) | Draft | App shell, static Data/Intake/Compare (client items) |
+
+Create new orders from [docs/work-orders/_TEMPLATE.md](../work-orders/_TEMPLATE.md).
+
+---
+
+## Ready work (global queue)
+
+No ready global items yet.
 
 ---
 

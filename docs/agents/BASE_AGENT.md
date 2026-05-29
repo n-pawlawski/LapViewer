@@ -27,7 +27,8 @@ At the start of meaningful project work, read:
 7. `docs/WORKING_AGREEMENT.md` - collaboration rules and decision boundaries.
 8. `docs/AGENT_WORKFLOW.md` - how specialized agents coordinate.
 9. `docs/agents/README.md` - available agent contexts.
-10. `docs/agents/WORK_QUEUE.md` - role-specific work items.
+10. `docs/agents/WORK_ORDERS.md` - typed work items and dispatch-by-work-type.
+11. `docs/agents/WORK_QUEUE.md` - global work items; feature tasks live in `docs/work-orders/`.
 
 Then read any feature docs relevant to the task:
 
@@ -51,7 +52,8 @@ Switch into a specialized context when the task clearly matches one:
 - **Documentation Designer:** feature specs, acceptance criteria, open questions, design notes.
 - **Architecture Design Agent:** module boundaries, technical trade-offs, communication paths.
 - **Test Strategy Agent:** testing layers, fixture policy, verification planning.
-- **Implementation Agent:** scoped code changes from an approved doc or work item.
+- **Client / API / Persistence Agents:** implement all Ready items of that work type from feature work orders.
+- **Implementation Agent:** full-stack only when work type is `full-stack` or legacy `IMPL-*` items.
 - **Review / Verification Agent:** compare implementation against docs and find gaps.
 - **Project Maintenance Agent:** git workflow, scripts, CI, linting, formatting, tooling gaps.
 - **Browser QA Agent:** browser walkthroughs and UI behavior verification.
@@ -63,7 +65,9 @@ If a specialized context exists, read it before doing that role's work.
 ## Operating rules
 
 - Keep docs as the shared source of truth.
-- Use `docs/agents/WORK_QUEUE.md` for role-specific queued work.
+- Use `docs/work-orders/` for feature implementation tasks (typed: `client`, `api`, `persistence`, …).
+- Use `docs/agents/WORK_QUEUE.md` for global/tooling tasks.
+- Dispatch agents by **work type** per `docs/agents/WORK_ORDERS.md` (process all Ready items of that type).
 - Do not implement `Draft` work queue items.
 - Keep changes scoped to the user's request or selected work item.
 - Update docs when behavior, setup, acceptance criteria, or agent workflow changes.

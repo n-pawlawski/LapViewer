@@ -339,6 +339,38 @@ Racers compare laps across different race days or camera files, not only laps wi
 
 ---
 
+### D-013 - Typed feature work orders and layer agents
+
+**Status:** Accepted  
+**Date:** 2026-05-28  
+**Owner:** User  
+**Related docs:** `docs/agents/WORK_ORDERS.md`, `docs/work-orders/`, `docs/agents/CLIENT_AGENT.md`, `docs/agents/API_AGENT.md`, `docs/agents/PERSISTENCE_AGENT.md`  
+
+### Context
+
+The user wants features broken into work items by discipline (database, server, frontend, tests, etc.) and agents started per type to complete all Ready work of that type, reading a shared base context plus a specialist agent doc.
+
+### Decision
+
+- Feature implementation plans live in **`docs/work-orders/WO-*.md`** with tasks tagged **Work type**.
+- **Layer agents:** `persistence`, `api`, `client` (plus existing `docs`, `unit-test`, `review`, `architecture`, `maintenance`).
+- **Dispatch:** one prompt per work type to process **all** `Ready` items of that type (respecting `Blocked by`).
+- **Global queue** (`WORK_QUEUE.md`) remains for tooling; feature work prefers work orders.
+- **Implementation Agent** is for `full-stack` / legacy only.
+
+### Consequences
+
+- New features should not use generic `IMPL-*` items unless intentionally full-stack.
+- User runs Client Agent, then API Agent, etc., or parallelizes only when dependencies allow.
+- Work orders link to product docs; agents do not re-derive scope from chat.
+
+### Alternatives considered
+
+- Single Implementation Agent for all code.
+- Autonomous background queue worker (deferred; manual dispatch for now).
+
+---
+
 ### D-012 - Agents manage git
 
 **Status:** Accepted  

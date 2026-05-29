@@ -56,7 +56,8 @@ Each concern should have one primary home.
 | Process hygiene standard | `PROCESS_HYGIENE.md` | Owns branching, verification ladder, and done criteria |
 | Local dev commands | `DEVELOPMENT.md` | Owns install, dev, check, and git workflow summary |
 | Agent instructions | `docs/agents/*.md` | Role-specific behavior for specialized agents |
-| Agent work items | `docs/agents/WORK_QUEUE.md` | Should contain scoped tasks, not full product specs |
+| Feature implementation tasks | `docs/work-orders/WO-*.md` | Typed work items per feature; see `docs/agents/WORK_ORDERS.md` |
+| Global agent work items | `docs/agents/WORK_QUEUE.md` | Tooling and hygiene; not primary home for feature code |
 
 If two docs disagree, the source-of-truth doc wins and the other doc should be corrected.
 

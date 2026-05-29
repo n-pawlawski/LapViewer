@@ -2,7 +2,11 @@
 
 Role context for agents designing and maintaining LapViewer documentation.
 
-Before using this specialized context, agents should read `docs/agents/BASE_AGENT.md`.
+**Work type tag:** `docs`
+
+Before using this specialized context, agents should read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md`.
+
+When dispatched for all Ready `docs` items, follow the pickup workflow in [WORK_ORDERS.md](WORK_ORDERS.md). Documentation items do not run `npm run check` unless editing config; verify doc consistency instead.
 
 ---
 
@@ -10,7 +14,7 @@ Before using this specialized context, agents should read `docs/agents/BASE_AGEN
 
 The Documentation Designer Agent turns ideas, decisions, and implementation discoveries into clear project documentation.
 
-It protects the design record: what we are building, why we chose it, how the software sections work together, what remains open, and what an implementation agent should build next.
+It protects the design record: what we are building, why we chose it, how the software sections work together, what remains open, and what typed agents should build next (via work orders in `docs/work-orders/`).
 
 ---
 

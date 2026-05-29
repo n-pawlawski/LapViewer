@@ -1,6 +1,10 @@
 # Implementation Agent
 
-Role context for agents implementing LapViewer features from approved documentation and work queue items.
+Role context for **full-stack** implementation when work is not split by layer.
+
+**Work type tag:** `full-stack` (legacy: `IMPL-*` in `WORK_QUEUE.md`)
+
+For new features, prefer typed agents and [work orders](WORK_ORDERS.md) (`persistence`, `api`, `client`) instead of this agent.
 
 Before using this specialized context, agents should read `docs/agents/BASE_AGENT.md`.
 

@@ -31,7 +31,8 @@ A personal web application for uploading racing footage, marking lap boundaries,
 | [UI Design](docs/UI_DESIGN.md)                         | Visual direction, layouts, interaction behavior, and UI states                        |
 | [Working Agreement](docs/WORKING_AGREEMENT.md)         | How we collaborate — boundaries, scope, and process                                   |
 | [Agent Workflow](docs/AGENT_WORKFLOW.md)               | How documentation, implementation, review, and future automation agents coordinate    |
-| [Agent Contexts](docs/agents/README.md)                | Role-specific instructions and work queue for specialized agents                      |
+| [Work Orders](docs/agents/WORK_ORDERS.md)              | Typed tasks and dispatch-by-work-type (`client`, `api`, `persistence`, …)             |
+| [Agent Contexts](docs/agents/README.md)                | Layer agents, work queue, and templates                                               |
 
 
 ## Status

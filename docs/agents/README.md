@@ -11,15 +11,20 @@ Use these docs when you want an agent to temporarily "act as" a specialized proj
 | Document | Purpose |
 |----------|---------|
 | [Base Agent](BASE_AGENT.md) | Default project orientation for any agent before choosing a specialty |
-| [Documentation Designer Agent](DOCUMENTATION_DESIGNER_AGENT.md) | How to design and maintain source-of-truth project documentation |
-| [Architecture Design Agent](ARCHITECTURE_DESIGN_AGENT.md) | How to document architecture, boundaries, data ownership, and communication paths |
-| [Test Strategy Agent](TEST_STRATEGY_AGENT.md) | How to design the overall verification strategy across test layers |
-| [Implementation Agent](IMPLEMENTATION_AGENT.md) | How to implement documented features, verify work, sync docs, and hand off tests |
-| [Review / Verification Agent](REVIEW_VERIFICATION_AGENT.md) | How to compare implementation against docs and report gaps |
-| [Project Maintenance Agent](PROJECT_MAINTENANCE_AGENT.md) | How to maintain git, scripts, CI, dependency hygiene, and project tooling |
-| [Unit Test Agent](UNIT_TEST_AGENT.md) | How to design, write, and run unit tests for this project |
-| [Work Queue](WORK_QUEUE.md) | Role-specific work items that agents can pick up |
-| [Templates](TEMPLATES.md) | Standard formats for new agent contexts and work items |
+| [Work Orders](WORK_ORDERS.md) | **Typed work items**, dispatch-by-work-type, feature work order flow |
+| [Work Queue](WORK_QUEUE.md) | Global/tooling work items |
+| [Feature work orders](../work-orders/README.md) | Per-feature implementation plans (`WO-*.md`) |
+| [Documentation Designer Agent](DOCUMENTATION_DESIGNER_AGENT.md) | Work type `docs` |
+| [Architecture Design Agent](ARCHITECTURE_DESIGN_AGENT.md) | Work type `architecture` |
+| [Persistence Agent](PERSISTENCE_AGENT.md) | Work type `persistence` — database, SQLite, `DATA_DIR` |
+| [API Agent](API_AGENT.md) | Work type `api` — Express, server services |
+| [Client Agent](CLIENT_AGENT.md) | Work type `client` — React, UI, routing |
+| [Test Strategy Agent](TEST_STRATEGY_AGENT.md) | Verification planning |
+| [Unit Test Agent](UNIT_TEST_AGENT.md) | Work type `unit-test` |
+| [Implementation Agent](IMPLEMENTATION_AGENT.md) | Work type `full-stack` — use only when not splitting layers |
+| [Review / Verification Agent](REVIEW_VERIFICATION_AGENT.md) | Work type `review` |
+| [Project Maintenance Agent](PROJECT_MAINTENANCE_AGENT.md) | Work type `maintenance` |
+| [Templates](TEMPLATES.md) | Work order and work item formats |
 
 ---
 
@@ -33,26 +38,15 @@ Read docs/agents/BASE_AGENT.md first.
 Choose the right specialized context for this task.
 ```
 
-Then, for role-specific work:
+**Dispatch by work type** (process all Ready items of that type):
 
 ```text
-Act as the Documentation Designer Agent for LapViewer.
-Read docs/agents/BASE_AGENT.md first.
-Then read docs/agents/DOCUMENTATION_DESIGNER_AGENT.md.
-Then read docs/agents/WORK_QUEUE.md.
-Find the highest-priority open work item assigned to Documentation Designer.
-Do that work only, update the work item status, run relevant checks, and report results.
+Act as the LapViewer Client Agent.
+Read docs/agents/BASE_AGENT.md, docs/agents/CLIENT_AGENT.md, docs/agents/WORK_ORDERS.md.
+Process every Ready item with Work type `client` in docs/work-orders/ and WORK_QUEUE.md.
 ```
 
-For a specific task:
-
-```text
-Act as the Implementation Agent for LapViewer.
-Read docs/agents/BASE_AGENT.md.
-Then read docs/agents/IMPLEMENTATION_AGENT.md.
-Then complete the assigned Ready work item from docs/agents/WORK_QUEUE.md.
-Keep changes scoped to that task.
-```
+Replace `Client` / `client` with Persistence, API, Unit Test, etc. See [WORK_ORDERS.md](WORK_ORDERS.md).
 
 ---
 

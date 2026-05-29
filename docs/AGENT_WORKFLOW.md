@@ -30,10 +30,14 @@ The main rule: agents can specialize, but the repo docs remain the shared source
 | **Review / verification agent** | Check implementation against acceptance criteria, find regressions, suggest missing tests | Review notes, issue lists, test findings | Large unrelated refactors |
 | **Project maintenance agent** | Later: monitor CI, dependency updates, release notes, recurring checks | Maintenance docs, changelogs, small fixes | Product direction |
 
-For now, the first two roles are enough:
+For feature work, the default pipeline is:
 
-1. A documentation designer clarifies what should exist.
-2. An implementation agent builds against that documented target.
+1. **Documentation designer** (`docs`) — clarifies what should exist.
+2. **Work order** — typed tasks in `docs/work-orders/WO-*.md` (`persistence`, `api`, `client`, …).
+3. **Layer agents** — one dispatch per work type; each processes all `Ready` items of that type ([WORK_ORDERS.md](agents/WORK_ORDERS.md)).
+4. **Review** (`review`) — acceptance criteria check.
+
+[Implementation Agent](agents/IMPLEMENTATION_AGENT.md) is for `full-stack` / legacy items only.
 
 ---
 
