@@ -24,14 +24,16 @@ npm run install:all
 
 ## Daily commands
 
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | Client (5173) + server (3000) with hot reload |
-| `npm run check` | **Default verification** — TypeScript client + server |
-| `npm run build` | Production client build |
-| `npm run start` | Server only (after build if serving static client) |
 
-Open http://localhost:5173 after `npm run dev`.
+| Command         | Purpose                                               |
+| --------------- | ----------------------------------------------------- |
+| `npm run dev`   | Client (5173) + server (3000) with hot reload         |
+| `npm run check` | **Default verification** — TypeScript client + server |
+| `npm run build` | Production client build                               |
+| `npm run start` | Server only (after build if serving static client)    |
+
+
+Open [http://localhost:5173](http://localhost:5173) after `npm run dev`.
 
 ---
 
@@ -60,7 +62,12 @@ git init -b dev
 git status   # review untracked files before first commit
 ```
 
-**Baseline commit** (once you approve): stage project files, commit on `dev`, then create feature branches for new work.
+**Baseline commit:** completed on `dev` (see `git log`). Create feature branches for new work:
+
+```bash
+git checkout dev
+git checkout -b feature/ui-shell
+```
 
 ---
 

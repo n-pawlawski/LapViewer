@@ -10,7 +10,7 @@ This document turns the process/tooling setup into a prioritized backlog. It sho
 
 As of 2026-05-28:
 
-- Git is initialized on branch `dev` ([D-004](DECISIONS.md)); **baseline commit pending** user approval ([GIT-002](agents/WORK_QUEUE.md)).
+- Git is initialized on branch `dev` with baseline commit ([D-004](DECISIONS.md), [GIT-002](agents/WORK_QUEUE.md) done).
 - Process standard documented in [PROCESS_HYGIENE.md](PROCESS_HYGIENE.md) ([D-011](DECISIONS.md)).
 - Root `npm run check` runs client + server TypeScript ([DEVELOPMENT.md](DEVELOPMENT.md)).
 - `.gitignore` excludes `node_modules/`, `dist/`, `data/`, `.env`, logs, `.cursor/`, `coverage/`.

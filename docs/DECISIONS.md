@@ -167,7 +167,7 @@ The Implementation Agent workflow needs a stable base branch for feature work on
 
 ### Decision
 
-Use `dev` as the development branch and branch feature work from it (`feature/`*, `fix/*`, `chore/*`).
+Use `dev` as the development branch and branch feature work from it (`feature/`*, `fix/`*, `chore/*`).
 
 ### Consequences
 
@@ -182,7 +182,7 @@ Use `dev` as the development branch and branch feature work from it (`feature/`*
 
 ### Follow-up work
 
-- Baseline commit on `dev` when user approves (`GIT-002`).
+- None (baseline commit completed 2026-05-28, `GIT-002`).
 
 ---
 

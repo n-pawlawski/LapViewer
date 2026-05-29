@@ -25,36 +25,6 @@ No ready work items yet.
 
 ## Draft work
 
-### GIT-002 - Baseline commit on `dev`
-
-**Role:** Project Maintenance Agent  
-**Status:** Ready  
-**Priority:** P0  
-**Source docs:** `docs/PROCESS_HYGIENE.md`, `docs/DEVELOPMENT.md`, `docs/DECISIONS.md` (D-004, D-011)  
-
-**Goal:** Create the first commit on `dev` so all future work diffs against a known baseline.
-
-**Context:** Git is initialized on `dev` (GIT-001 complete). No commit yet per user approval rules.
-
-**Work to perform when ready:**
-
-- Review `git status` — ensure no secrets, `node_modules`, or `data/` are staged.
-- Stage project source and docs (not local-only paths).
-- Commit with message describing hygiene baseline + current spike state.
-- Do not add remote or push unless explicitly requested.
-
-**Acceptance criteria:**
-
-- `dev` has at least one commit.
-- `git status` is clean for tracked project files.
-
-**Verification:**
-
-- `git log -1 --oneline`
-- `git status --short --branch`
-
----
-
 ### MAINT-002 - Decide lint and formatting setup
 
 **Role:** Project Maintenance Agent  
@@ -242,6 +212,27 @@ No ready work items yet.
 ---
 
 ## Done work
+
+### GIT-002 - Baseline commit on `dev`
+
+**Role:** Project Maintenance Agent  
+**Status:** Done  
+**Priority:** P0  
+**Completed:** 2026-05-28  
+
+**Work performed:**
+
+- Staged source, docs, CI/PR templates, `.cursor/rules` (53 files).
+- Baseline commit on `dev`: `eb68713` — "Establish process hygiene baseline on dev."
+- Excluded via `.gitignore`: `node_modules/`, `data/`, `.env`, `dist/`.
+
+**Verification:** `git log -1 --oneline`; clean `git status` on `dev`.
+
+**Notes:**
+
+- Commit author set via environment for this run (no `git config` change). Set `user.name` / `user.email` locally for future commits if desired.
+
+---
 
 ### GIT-001 - Initialize git and development branch
 
