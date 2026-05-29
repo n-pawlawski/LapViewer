@@ -30,6 +30,7 @@
 | WO-<name>-02 | api | Draft | … |
 | WO-<name>-03 | client | Draft | … |
 | WO-<name>-04 | unit-test | Draft | … |
+| WO-<name>-TS | test-strategy | Draft | Post-WO test review |
 | WO-<name>-05 | review | Draft | … |
 
 ---
@@ -139,12 +140,28 @@
 
 ---
 
+## WO-<name>-TS — Test strategy review
+
+**Work type:** `test-strategy`  
+**Status:** Draft  
+**Priority:** P1  
+**Blocked by:** WO-<name>-02, WO-<name>-03 (all implementation items on this WO)
+
+**Goal:** Review git diff for this WO; confirm full test run green; queue new `unit-test` items for gaps.
+
+**Verification:**
+
+- Report: change → coverage matrix; new work item IDs
+- See `docs/agents/test-strategy/work-order-test-review.md`
+
+---
+
 ## WO-<name>-05 — <Title>
 
 **Work type:** `review`  
 **Status:** Draft  
 **Priority:** P1  
-**Blocked by:** WO-<name>-03, WO-<name>-04
+**Blocked by:** WO-<name>-TS, WO-<name>-03, WO-<name>-04
 
 **Goal:** Compare implementation to feature acceptance criteria.
 

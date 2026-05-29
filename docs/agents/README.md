@@ -30,7 +30,7 @@ See [AGENT_LAYOUT.md](AGENT_LAYOUT.md) for structure rules.
 | `review` | [review/](review/) | [BASE.md](review/BASE.md) |
 | `maintenance` | [maintenance/](maintenance/) | [BASE.md](maintenance/BASE.md) |
 | `full-stack` | [implementation/](implementation/) | [BASE.md](implementation/BASE.md) |
-| (planning) | [test-strategy/](test-strategy/) | [BASE.md](test-strategy/BASE.md) |
+| `test-strategy` | [test-strategy/](test-strategy/) | [BASE.md](test-strategy/BASE.md) — plan + post–work-order test review |
 
 **Client auxiliary docs (example):** [client/overview.md](client/overview.md), [client/page-flows.md](client/page-flows.md)
 

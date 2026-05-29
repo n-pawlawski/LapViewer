@@ -49,7 +49,8 @@ Every implementable task must have exactly one **Work type**:
 | `persistence`  | [persistence/BASE.md](persistence/BASE.md)         | SQLite schema, migrations, `DATA_DIR`, DB access layer                 |
 | `api`          | [api/BASE.md](api/BASE.md)                         | Express routes, server services, validation                            |
 | `client`       | [client/BASE.md](client/BASE.md)                   | React UI, routing, client state, styling                               |
-| `unit-test`    | [unit-test/BASE.md](unit-test/BASE.md)             | Vitest tests for logic covered by the feature                          |
+| `test-strategy` | [test-strategy/BASE.md](test-strategy/BASE.md)   | Verification plan; post-WO diff review; queue new tests               |
+| `unit-test`    | [unit-test/BASE.md](unit-test/BASE.md)             | Implement tests queued by test-strategy or implementers              |
 | `browser-qa`   | Browser QA (future `browser-qa/BASE.md`)           | Manual/browser verification notes                                      |
 | `review`       | [review/BASE.md](review/BASE.md)                   | Compare build vs acceptance criteria                                   |
 | `maintenance`  | [maintenance/BASE.md](maintenance/BASE.md)         | Git, CI, scripts, tooling                                              |

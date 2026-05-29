@@ -447,6 +447,32 @@ Treat **process hygiene** as a core project goal: git on `dev`, work queue gates
 
 ---
 
+### D-015 - Test failures: implementer fixes own regressions; test-strategy queues new coverage
+
+**Status:** Accepted  
+**Date:** 2026-05-28  
+**Owner:** User  
+**Related docs:** `docs/agents/test-strategy/BASE.md`, `docs/agents/client/BASE.md`, `docs/agents/api/BASE.md`, `docs/agents/persistence/BASE.md`  
+
+### Context
+
+Layer agents should run the full test suite before marking work `Done`. When tests fail, we need a clear owner.
+
+### Decision
+
+1. **Implementers** (`persistence`, `api`, `client`, `full-stack`) run **`npm test` (full suite)** when a runner exists and must not mark `Done` with failures they introduced.
+2. **Implementer fixes** tests on the same branch when the failure is a direct result of their change and the fix is straightforward (updated assertions, renamed symbols, intentional behavior change).
+3. **Implementer blocks** and adds a `unit-test` item when test design is unclear or out of scope.
+4. **Test Strategy** runs a **post–work-order review** (diff, gap analysis) and queues `unit-test` items for new coverage; does not replace implementer fixing obvious regressions.
+5. **Review** items may be blocked on `test-strategy` review completing on the work order.
+
+### Consequences
+
+- Test Strategy is a dedicated SME with work type `test-strategy`.
+- Work order template includes `WO-<name>-TS` before `review`.
+
+---
+
 ### D-014 - Agent folders with BASE checklist and auxiliary docs
 
 **Status:** Accepted  

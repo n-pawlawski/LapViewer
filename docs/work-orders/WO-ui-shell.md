@@ -33,6 +33,7 @@ First UI slice: dark app shell, routing (`/`, `/intake`, `/compare`), and **stat
 | WO-ui-shell-03 | client | Draft | Intake form static layout |
 | WO-ui-shell-04 | client | Draft | Comparison form static 2-up layout |
 | WO-ui-shell-05 | client | Draft | Cross-session selection strip (mock) on Data |
+| WO-ui-shell-TS | test-strategy | Draft | Post-WO test review (minimal until Vitest) |
 | WO-ui-shell-06 | review | Draft | Review static UI vs UI_DESIGN |
 
 ---
@@ -118,12 +119,25 @@ First UI slice: dark app shell, routing (`/`, `/intake`, `/compare`), and **stat
 
 ---
 
+## WO-ui-shell-TS — Test strategy review
+
+**Work type:** `test-strategy`  
+**Status:** Draft  
+**Priority:** P1  
+**Blocked by:** WO-ui-shell-01, WO-ui-shell-02, WO-ui-shell-03, WO-ui-shell-04, WO-ui-shell-05
+
+**Goal:** After client items complete, review branch diff; queue tests when Vitest exists; confirm implementers ran `npm run check` / full suite if available.
+
+**Notes:** Until UT-001 (Vitest), review may only document planned coverage and manual checks.
+
+---
+
 ## WO-ui-shell-06 — Review UI shell
 
 **Work type:** `review`  
 **Status:** Draft  
 **Priority:** P1  
-**Blocked by:** WO-ui-shell-02, WO-ui-shell-03, WO-ui-shell-04, WO-ui-shell-05
+**Blocked by:** WO-ui-shell-TS, WO-ui-shell-02, WO-ui-shell-03, WO-ui-shell-04, WO-ui-shell-05
 
 **Goal:** Review pass against this work order and UI_DESIGN P0 slice.
 

@@ -17,8 +17,8 @@ Complete **every step** for each work item. Do not mark `Done` until all apply o
 - [ ] **4. Client documentation** — Update docs for what the client is gaining (UI behavior, routes, state). Prefer `docs/UI_FORMS.md`, `docs/UI_DESIGN.md`, or a short note in the work order; add auxiliary docs in this folder when useful.
 - [ ] **5. Design** — Confirm component/route structure matches specs; note non-obvious choices in the work item or client docs.
 - [ ] **6. Implement** — Code under `client/` only; keep mock data labeled until `api` / `persistence` items land.
-- [ ] **7. Frontend tests** — Add or update tests for new UI logic. If Vitest is not installed, add a `unit-test` work item and document what to test; still run `npm run check`.
-- [ ] **8. Verify** — `npm run check`; `npm run build` if build config changed; `npm test` when available; manual UI steps when required.
+- [ ] **7. Tests (local)** — Add or update tests for straightforward UI logic you changed. If design is unclear, queue `unit-test` and mark `Blocked` — do not guess.
+- [ ] **8. Run full verification** — `npm run check`; `npm run build` if build config changed; **`npm test` (entire suite) when a runner exists — all tests must pass** before `Done`. Fix failures [you caused](../test-strategy/BASE.md#who-fixes-failing-tests) on this branch, or block and hand off. Manual UI steps when required.
 - [ ] **9. Close out** — Work item → `Done` (or `Blocked` with reason); update linked docs; git commit on the WO branch per D-012.
 - [ ] **10. Report** — Summarize items completed, verification run, commits, and follow-ups.
 

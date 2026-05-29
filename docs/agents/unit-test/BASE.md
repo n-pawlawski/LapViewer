@@ -21,7 +21,9 @@ Read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md` first.
 
 ## Mission
 
-Deterministic unit tests for logic named in work orders. Not browser/ffmpeg e2e.
+Implement deterministic tests **queued** by work orders or [test-strategy/BASE.md](../test-strategy/BASE.md) post–work-order review. Not browser/ffmpeg e2e.
+
+When an implementer marks `Blocked` and assigns you a failing or missing test, treat that work item as the source of truth.
 
 ---
 

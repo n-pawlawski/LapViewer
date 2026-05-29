@@ -73,7 +73,7 @@ Add tasks to a **feature work order** (`docs/work-orders/`) or, for global tooli
 ```md
 ### <ID> - <Short title>
 
-**Work type:** `persistence` | `api` | `client` | `unit-test` | `docs` | `architecture` | `review` | `maintenance` | `full-stack`  
+**Work type:** `persistence` | `api` | `client` | `test-strategy` | `unit-test` | `docs` | `architecture` | `review` | `maintenance` | `full-stack`  
 **Status:** Draft | Ready | In Progress | Blocked | Done | Cancelled  
 **Priority:** P0 | P1 | P2 | P3  
 **Blocked by:** <IDs or —>  

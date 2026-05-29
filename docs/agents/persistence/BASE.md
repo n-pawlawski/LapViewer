@@ -13,8 +13,8 @@ Read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md` first.
 - [ ] **4. Persistence documentation** — Update `docs/PERSISTENCE.md` (schema, paths, ownership).
 - [ ] **5. Design** — Schema/migrations align with `VIDEO_LIBRARY.md` and feature spec.
 - [ ] **6. Implement** — SQLite, migrations, data access used by API (not HTTP handlers).
-- [ ] **7. Tests** — Data-layer tests or `unit-test` follow-up; `npm run check`.
-- [ ] **8. Verify** — `npm run check`; confirm DB under `DATA_DIR` per item (never commit `data/`).
+- [ ] **7. Tests (local)** — Data-layer tests when straightforward; else queue `unit-test`.
+- [ ] **8. Run full verification** — `npm run check`; confirm DB under `DATA_DIR` per item (never commit `data/`); **`npm test` (entire suite) when a runner exists — all tests must pass** before `Done`. Fix failures [you caused](../test-strategy/BASE.md#who-fixes-failing-tests) or block and hand off.
 - [ ] **9. Close out** — Item status, docs, git commit per D-012.
 - [ ] **10. Report** — Summary, schema changes for downstream `api` items.
 

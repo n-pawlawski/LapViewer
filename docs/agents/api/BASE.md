@@ -13,8 +13,8 @@ Read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md` first.
 - [ ] **4. API documentation** — Update architecture/API notes for new routes and contracts.
 - [ ] **5. Design** — Request/response shapes match feature spec; persistence layer exists if required.
 - [ ] **6. Implement** — `server/src/` only (routes, services, validation).
-- [ ] **7. Tests** — Server tests or hand off `unit-test` work item; run `npm run check`.
-- [ ] **8. Verify** — `npm run check`; exercise endpoints per work item.
+- [ ] **7. Tests (local)** — Add or update server tests when straightforward; else queue `unit-test`.
+- [ ] **8. Run full verification** — `npm run check`; exercise endpoints per work item; **`npm test` (entire suite) when a runner exists — all tests must pass** before `Done`. Fix failures [you caused](../test-strategy/BASE.md#who-fixes-failing-tests) or block and hand off.
 - [ ] **9. Close out** — Item status, docs, git commit per D-012.
 - [ ] **10. Report** — Summary of items, verification, follow-ups.
 

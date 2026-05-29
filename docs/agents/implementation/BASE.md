@@ -15,7 +15,7 @@ Read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md` first.
 - [ ] **3. Branch** — From `dev` per work order; D-012 git rules.
 - [ ] **4. Implementation checklist** — Data model, backend, frontend, communication, config, verification, doc sync (template below).
 - [ ] **5. Implement** — Smallest coherent slices; all layers in scope.
-- [ ] **6. Verify** — `npm run check`, `npm run build` if needed, tests if runner exists.
+- [ ] **6. Run full verification** — `npm run check`, `npm run build` if needed; **`npm test` (entire suite) when a runner exists — all tests must pass** before `Done`. Fix failures [you caused](../test-strategy/BASE.md#who-fixes-failing-tests) or block and hand off.
 - [ ] **7. Handoffs** — `unit-test`, `review` work items if not done in pass.
 - [ ] **8. Documentation sync** — Update specs when behavior differs.
 - [ ] **9. Close out** — Commits, work item status, reflection notes.
