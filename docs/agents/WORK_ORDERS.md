@@ -45,7 +45,7 @@ Every implementable task must have exactly one **Work type**:
 | Work type      | Agent context                                             | Owns                                                                                |
 | -------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `docs`         | [documentation/BASE.md](documentation/BASE.md)     | Specs, AC, open questions — no product code                            |
-| `architecture` | [architecture/BASE.md](architecture/BASE.md)       | Module/API/data docs — no product code                                 |
+| `architecture` | [architecture/BASE.md](architecture/BASE.md)       | Structure, frameworks, integrations, contracts, CI/Docker design — not feature UI |
 | `persistence`  | [persistence/BASE.md](persistence/BASE.md)         | SQLite schema, migrations, `DATA_DIR`, DB access layer                 |
 | `api`          | [api/BASE.md](api/BASE.md)                         | Express routes, server services, validation                            |
 | `client`       | [client/BASE.md](client/BASE.md)                   | React UI, routing, client state, styling                               |

@@ -22,7 +22,7 @@ See [AGENT_LAYOUT.md](AGENT_LAYOUT.md) for structure rules.
 |-----------|--------|--------|
 | — | (global) | [BASE_AGENT.md](BASE_AGENT.md) |
 | `docs` | [documentation/](documentation/) | [BASE.md](documentation/BASE.md) |
-| `architecture` | [architecture/](architecture/) | [BASE.md](architecture/BASE.md) |
+| `architecture` | [architecture/](architecture/) | [BASE.md](architecture/BASE.md) — structure, frameworks, integrations, pipeline/container design |
 | `persistence` | [persistence/](persistence/) | [BASE.md](persistence/BASE.md) |
 | `api` | [api/](api/) | [BASE.md](api/BASE.md) |
 | `client` | [client/](client/) | [BASE.md](client/BASE.md) |
