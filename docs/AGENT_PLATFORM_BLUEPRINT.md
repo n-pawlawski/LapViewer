@@ -226,7 +226,7 @@ v0: you do this manually with Cursor by opening the project repo and using promp
 
 | Step | Action |
 |------|--------|
-| 1 | Create empty **agent-platform** GitHub repo. |
+| 1 | ~~Create empty **agent-platform** GitHub repo.~~ **Done locally:** `../agent-platform` sibling to LapViewer. |
 | 2 | Copy generic files from LapViewer → platform `core/` + `packs/default-web-app/` (strip LapViewer references). |
 | 3 | Add LapViewer `.agent-project.yaml` at repo root. |
 | 4 | Trim LapViewer `docs/agents/BASE_AGENT.md` to “project entry” that references pack version + `docs/` map. |

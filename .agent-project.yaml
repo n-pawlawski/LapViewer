@@ -4,7 +4,8 @@
 
 platform_pack: default-web-app
 platform_pack_version: "0.1.0"
-# platform_repo: <URL when agent-platform repo exists>
+platform_repo_local: ../agent-platform
+# platform_repo: <GitHub URL when published>
 
 project_name: LapViewer
 
