@@ -1,8 +1,10 @@
 # Base Agent
 
-Default context for any agent working on LapViewer.
+Default context for any agent working on **this project** (LapViewer).
 
-This is the starting orientation before an agent adopts a more specialized role such as Unit Test Agent, Documentation Designer, Implementation Agent, or Browser QA Agent.
+This is the **project entry** point. Generic agent-framework docs will live in a separate **agent-platform** repository; this repo holds the **instance** (see `.agent-project.yaml` and `docs/AGENT_PLATFORM_BLUEPRINT.md`).
+
+This is the starting orientation before an agent adopts a more specialized role (client, api, persistence, documentation, test-strategy, review, etc.).
 
 ---
 

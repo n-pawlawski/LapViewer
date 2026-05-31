@@ -1,0 +1,28 @@
+# LapViewer — project manifest for the agent platform (first consumer).
+# Generic framework docs will live in a separate agent-platform repository.
+# See docs/AGENT_PLATFORM_BLUEPRINT.md
+
+platform_pack: default-web-app
+platform_pack_version: "0.1.0"
+# platform_repo: <URL when agent-platform repo exists>
+
+project_name: LapViewer
+
+paths:
+  agents: docs/agents
+  work_orders: docs/work-orders
+  documentation_system: docs/DOCUMENTATION_SYSTEM.md
+  decisions: docs/DECISIONS.md
+  features: docs/FEATURES.md
+  open_questions: docs/OPEN_QUESTIONS.md
+
+git:
+  default_branch: dev
+
+verify:
+  check: npm run check
+  test: npm test
+  build: npm run build
+
+cursor:
+  rules_file: .cursor/rules/lapviewer-base-agent.mdc

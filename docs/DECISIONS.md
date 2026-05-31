@@ -447,6 +447,37 @@ Treat **process hygiene** as a core project goal: git on `dev`, work queue gates
 
 ---
 
+### D-016 - Separate agent-platform repo; per-project agent workspace
+
+**Status:** Accepted  
+**Date:** 2026-05-28  
+**Owner:** User  
+**Related docs:** `docs/AGENT_PLATFORM_BLUEPRINT.md`, `.agent-project.yaml`  
+
+### Context
+
+The agent workflow should be reusable across projects. LapViewer should be the first product built with it, not the container for the generic framework.
+
+### Decision
+
+1. Create a **separate repository** for the agent platform (generic `core/` + versioned **packs** such as `default-web-app` with base `agents/*/BASE.md`).
+2. Each **project repo** keeps all project-specific docs and code, plus an **agent workspace** (LapViewer: `docs/agents/`, `docs/work-orders/`).
+3. Each project has a root **`.agent-project.yaml`** manifest (paths, pack id/version, verify commands).
+4. Platform-specific details always live **inside the project repo**; the platform repo holds only generic templates and framework docs.
+5. LapViewer is the **first consumer**; extraction of generic files into the platform repo is incremental (see blueprint migration plan).
+
+### Consequences
+
+- Iterating the agent system does not require editing LapViewer product code.
+- New projects copy a pack into their workspace and add their own product docs.
+- Future tooling in the platform repo may scaffold work orders against other repo paths.
+
+### Follow-up work
+
+- Create `agent-platform` GitHub repo and perform extraction per `AGENT_PLATFORM_BLUEPRINT.md`.
+
+---
+
 ### D-015 - Test failures: implementer fixes own regressions; test-strategy queues new coverage
 
 **Status:** Accepted  
