@@ -6,6 +6,7 @@ import {
   type ComparisonChartData,
 } from "../utils/compareChart";
 import { loadLapColors, saveLapColors } from "../utils/lapColors";
+import { notifyLapColorsChanged } from "../hooks/useLapColors";
 import type { SelectedLap } from "../context/CompareContext";
 import type { ComparePaneWindow } from "../utils/compare";
 import { formatComparisonTime, formatLapTime } from "../utils/time";
@@ -90,6 +91,7 @@ export function ComparisonChart({
       const next = [...prev] as [string, string, string, string];
       next[index] = value;
       saveLapColors(next);
+      notifyLapColorsChanged();
       return next;
     });
   }

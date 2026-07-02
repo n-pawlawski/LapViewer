@@ -1,8 +1,41 @@
-import type { RefObject } from "react";
+import { useEffect, useRef, type CSSProperties, RefObject } from "react";
 import { sessionIsPlayable, sessionVideoUrl } from "../api/sessions";
 import type { SelectedLap } from "../context/CompareContext";
+import type { Lap } from "../types";
 import type { AdjustableMarker, ComparePaneWindow } from "../utils/compare";
 import { formatComparisonTime, formatLapTime } from "../utils/time";
+
+function formatCompareLapOptionLabel(
+  lap: Lap,
+  otherPaneLapId: string,
+  otherPaneLapTimeMs: number | null,
+): { label: string; tone: "slower" | "faster" | "neutral" | "other" } {
+  const base = `Lap ${lap.lapNumber} · ${formatLapTime(lap.lapTimeMs)}`;
+  if (lap.id === otherPaneLapId) {
+    return { label: `${base} (other pane)`, tone: "other" };
+  }
+  if (otherPaneLapTimeMs == null) {
+    return { label: base, tone: "neutral" };
+  }
+  const deltaSec = (lap.lapTimeMs - otherPaneLapTimeMs) / 1000;
+  if (Math.abs(deltaSec) < 0.005) {
+    return { label: base, tone: "neutral" };
+  }
+  const deltaText = `(${deltaSec > 0 ? "+" : ""}${deltaSec.toFixed(2)})`;
+  return {
+    label: `${base} ${deltaText}`,
+    tone: deltaSec > 0 ? "slower" : "faster",
+  };
+}
+
+export function CompareVisualsLoading() {
+  return (
+    <div className="compare-visuals-loading" aria-live="polite" aria-busy="true">
+      <div className="compare-visuals-loading-spinner" aria-hidden />
+      <span>Loading…</span>
+    </div>
+  );
+}
 
 export function ComparisonTransport({
   comparisonTime,
@@ -53,6 +86,13 @@ export function ComparePane({
   onAdjustFrame,
   frameAdjustDisabled,
   adjusting,
+  lapColor,
+  lapSlotLabel,
+  sessionLaps,
+  otherPaneLapId,
+  otherPaneLapTimeMs,
+  onLapSelect,
+  lapSelectDisabled,
 }: {
   pane: SelectedLap;
   window: ComparePaneWindow | null;
@@ -63,16 +103,79 @@ export function ComparePane({
   onAdjustFrame: (direction: -1 | 1) => void;
   frameAdjustDisabled: boolean;
   adjusting: boolean;
+  lapColor: string;
+  lapSlotLabel: string;
+  sessionLaps: Lap[];
+  otherPaneLapId: string;
+  otherPaneLapTimeMs: number | null;
+  onLapSelect: (lapId: string) => void;
+  lapSelectDisabled?: boolean;
 }) {
   const { session, lap } = pane;
   const playable = sessionIsPlayable(session.status) && window != null;
   const videoUrl = playable ? sessionVideoUrl(session.id) : "";
   const canAdjust = playable && adjustableMarker != null && !frameAdjustDisabled;
 
+  const onMetadataLoadedRef = useRef(onMetadataLoaded);
+  onMetadataLoadedRef.current = onMetadataLoaded;
+
+  const mediaSyncKey = `${pane.lap.id}|${window?.startSeconds ?? ""}|${window?.durationSeconds ?? ""}|${videoUrl}`;
+  const appliedMediaSyncKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !playable || !window) return;
+    if (video.readyState < HTMLMediaElement.HAVE_METADATA) return;
+
+    if (appliedMediaSyncKeyRef.current !== mediaSyncKey) {
+      video.currentTime = window.startSeconds;
+      appliedMediaSyncKeyRef.current = mediaSyncKey;
+    }
+    onMetadataLoadedRef.current();
+  }, [mediaSyncKey, playable, window, videoRef]);
+
   return (
-    <div className={`compare-pane ${frozen ? "compare-pane--frozen" : ""}`}>
+    <div
+      className={`compare-pane ${frozen ? "compare-pane--frozen" : ""}`}
+      style={{ "--lap-color": lapColor } as CSSProperties}
+    >
       <div className="compare-pane-header">
-        {session.title} · Lap {lap.lapNumber} · {formatLapTime(lap.lapTimeMs)}
+        <span className="compare-pane-header-swatch" aria-hidden />
+        <span className="compare-pane-header-slot">{lapSlotLabel}</span>
+        <label className="compare-pane-lap-select-wrap">
+          <span className="sr-only">Select lap for {session.title}</span>
+          <select
+            className="compare-pane-lap-select"
+            value={lap.id}
+            disabled={lapSelectDisabled || sessionLaps.length <= 1}
+            onChange={(e) => onLapSelect(e.target.value)}
+          >
+            {sessionLaps.map((option) => {
+              const { label, tone } = formatCompareLapOptionLabel(
+                option,
+                otherPaneLapId,
+                otherPaneLapTimeMs,
+              );
+              return (
+                <option
+                  key={option.id}
+                  value={option.id}
+                  disabled={option.id === otherPaneLapId}
+                  className={
+                    tone === "slower"
+                      ? "compare-pane-lap-option--slower"
+                      : tone === "faster"
+                        ? "compare-pane-lap-option--faster"
+                        : undefined
+                  }
+                >
+                  {label}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+        <span className="compare-pane-header-session">{session.title}</span>
         {frozen && playable && <span className="compare-pane-frozen-badge">Frozen</span>}
         {!playable && (
           <span className="compare-pane-frozen-badge">

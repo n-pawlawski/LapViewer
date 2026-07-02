@@ -32,20 +32,6 @@ export function computeLaps(
     });
   }
 
-  const lastMarker = sorted[sorted.length - 1];
-  if (durationSeconds != null && durationSeconds > lastMarker.timeSeconds) {
-    const lapNumber = sorted.length;
-    laps.push({
-      id: `${sessionId}-lap-${lapNumber}`,
-      sessionId,
-      lapNumber,
-      startSeconds: lastMarker.timeSeconds,
-      endSeconds: durationSeconds,
-      lapTimeMs: Math.round((durationSeconds - lastMarker.timeSeconds) * 1000),
-      ignored: Boolean(lastMarker.ignored),
-    });
-  }
-
   return laps;
 }
 

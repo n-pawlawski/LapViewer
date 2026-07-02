@@ -1,10 +1,10 @@
 /**
- * Lap time from this marker's start to the next marker, or to video end for the last marker.
+ * Lap time from this marker's start to the next marker only.
  */
 export function lapTimeMsAtMarker(
   markers: { timeSeconds: number; ignored?: boolean }[],
   index: number,
-  durationSeconds: number | null,
+  _durationSeconds: number | null,
 ): number | null {
   if (markers[index]?.ignored) return null;
   const current = markers[index];
@@ -12,10 +12,6 @@ export function lapTimeMsAtMarker(
 
   if (next) {
     return Math.round((next.timeSeconds - current.timeSeconds) * 1000);
-  }
-
-  if (durationSeconds != null && durationSeconds > current.timeSeconds) {
-    return Math.round((durationSeconds - current.timeSeconds) * 1000);
   }
 
   return null;

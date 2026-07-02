@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { fetchSession } from "../api/sessions";
+import { fetchSession, sessionIsPlayable, type SessionDetail } from "../api/sessions";
 import { updateMarker } from "../api/markers";
 import { AppShell } from "../components/AppShell";
 import { useCompare, type SelectedLap } from "../context/CompareContext";
 import {
   ComparePane,
+  CompareVisualsLoading,
   ComparisonTransport,
 } from "../components/ComparisonView";
 import { ComparisonChart } from "../components/ComparisonChart";
 import { useComparisonPlayback } from "../hooks/useComparisonPlayback";
+import { useLapColors } from "../hooks/useLapColors";
 import { useRouter, useSearchParams } from "../lib/router";
 import { parseLapId } from "../utils/lapIds";
 import {
@@ -51,17 +53,80 @@ function CompareView({
   syncPoint,
   syncOptions,
   onSyncPointChange,
+  onPanesChange,
 }: {
   initialPanes: [SelectedLap, SelectedLap];
   syncPoint: CompareSyncPoint;
   syncOptions: CompareSyncPoint[];
   onSyncPointChange: (point: CompareSyncPoint) => void;
+  onPanesChange: (panes: [SelectedLap, SelectedLap]) => void;
 }) {
   const { navigate } = useRouter();
   const [panes, setPanes] = useState(initialPanes);
   const [adjusting, setAdjusting] = useState(false);
   const [frameError, setFrameError] = useState<string | null>(null);
+  const [sessionDetails, setSessionDetails] = useState<Record<string, SessionDetail>>({});
+  const [lapSelectBusy, setLapSelectBusy] = useState(false);
+  const [contentLoading, setContentLoading] = useState(true);
   const frameStep = frameStepSeconds(DEFAULT_VIDEO_FPS);
+
+  const visualsLoadKey = `${panes[0].lap.id}|${panes[1].lap.id}|${syncPointToParam(syncPoint)}`;
+
+  const sessionIds = useMemo(
+    () => [...new Set(panes.map((pane) => pane.session.id))],
+    [panes],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    for (const sessionId of sessionIds) {
+      void fetchSession(sessionId).then((detail) => {
+        if (cancelled) return;
+        setSessionDetails((prev) => {
+          if (prev[sessionId]) return prev;
+          return { ...prev, [sessionId]: detail };
+        });
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionIds]);
+
+  function sessionLapsForPane(paneIndex: 0 | 1) {
+    const sessionId = panes[paneIndex].session.id;
+    const detail = sessionDetails[sessionId];
+    const laps = detail?.laps ?? [panes[paneIndex].lap];
+    return laps.filter((lap) => !lap.ignored);
+  }
+
+  const handleLapSelect = useCallback(
+    async (paneIndex: 0 | 1, lapId: string) => {
+      if (panes[paneIndex].lap.id === lapId) return;
+      const otherLapId = panes[paneIndex === 0 ? 1 : 0].lap.id;
+      if (lapId === otherLapId) return;
+
+      setLapSelectBusy(true);
+      try {
+        const sessionId = panes[paneIndex].session.id;
+        let detail = sessionDetails[sessionId];
+        if (!detail) {
+          detail = await fetchSession(sessionId);
+          setSessionDetails((prev) => ({ ...prev, [sessionId]: detail }));
+        }
+        const nextPane = selectedLapFromDetail(detail, lapId);
+        if (!nextPane) return;
+
+        const nextPanes: [SelectedLap, SelectedLap] = [...panes] as [SelectedLap, SelectedLap];
+        nextPanes[paneIndex] = nextPane;
+        setPanes(nextPanes);
+        onPanesChange(nextPanes);
+      } finally {
+        setLapSelectBusy(false);
+      }
+    },
+    [panes, sessionDetails, onPanesChange],
+  );
 
   useEffect(() => {
     setPanes(initialPanes);
@@ -74,6 +139,21 @@ function CompareView({
   const playback = useComparisonPlayback(panes, windows);
   const playbackRef = useRef(playback);
   playbackRef.current = playback;
+  const lapColors = useLapColors();
+
+  useEffect(() => {
+    setContentLoading(true);
+  }, [visualsLoadKey]);
+
+  useEffect(() => {
+    const panesReady = windows.map((window, index) => {
+      if (!window || !sessionIsPlayable(panes[index].session.status)) return true;
+      return playback.videosReady[index];
+    });
+    if (!panesReady.every(Boolean)) return;
+    setContentLoading(false);
+    playbackRef.current.seek(0, true);
+  }, [playback.videosReady, visualsLoadKey, windows, panes]);
 
   const getAdjustable = useCallback(
     (paneIndex: 0 | 1) => {
@@ -117,7 +197,9 @@ function CompareView({
         const comparisonTime =
           win != null ? Math.max(0, Math.min(win.durationSeconds, newAbsTime - win.startSeconds)) : 0;
 
+        setSessionDetails((prev) => ({ ...prev, [session.id]: session }));
         flushSync(() => setPanes(nextPanes));
+        onPanesChange(nextPanes);
         playbackRef.current.seek(comparisonTime, true);
       } catch (err) {
         setFrameError(err instanceof Error ? err.message : "Could not adjust marker");
@@ -125,7 +207,7 @@ function CompareView({
         setAdjusting(false);
       }
     },
-    [getAdjustable, frameStep, panes, syncPoint],
+    [getAdjustable, frameStep, panes, syncPoint, onPanesChange],
   );
 
   const adjustable0 = getAdjustable(0);
@@ -164,36 +246,53 @@ function CompareView({
             </label>
           )}
         </div>
-        <ComparisonChart
-          panes={panes}
-          windows={windows}
-          comparisonTime={playback.comparisonTime}
-          maxDuration={playback.maxDuration}
-          onSeek={playback.seek}
-        />
-        <div className="compare-grid">
-          <ComparePane
-            pane={panes[0]}
-            window={windows[0]}
-            videoRef={playback.videoRefs[0]}
-            frozen={playback.frozen[0]}
-            onMetadataLoaded={() => playback.onVideoMetadataLoaded(0)}
-            adjustableMarker={adjustable0}
-            onAdjustFrame={(direction) => void adjustFrame(0, direction)}
-            frameAdjustDisabled={playback.playing}
-            adjusting={adjusting}
+        <div className={`compare-visuals${contentLoading ? " compare-visuals--loading" : ""}`}>
+          <ComparisonChart
+            panes={panes}
+            windows={windows}
+            comparisonTime={playback.comparisonTime}
+            maxDuration={playback.maxDuration}
+            onSeek={playback.seek}
           />
-          <ComparePane
-            pane={panes[1]}
-            window={windows[1]}
-            videoRef={playback.videoRefs[1]}
-            frozen={playback.frozen[1]}
-            onMetadataLoaded={() => playback.onVideoMetadataLoaded(1)}
-            adjustableMarker={adjustable1}
-            onAdjustFrame={(direction) => void adjustFrame(1, direction)}
-            frameAdjustDisabled={playback.playing}
-            adjusting={adjusting}
-          />
+          <div className="compare-grid">
+            <ComparePane
+              pane={panes[0]}
+              window={windows[0]}
+              videoRef={playback.videoRefs[0]}
+              frozen={playback.frozen[0]}
+              onMetadataLoaded={() => playback.onVideoMetadataLoaded(0)}
+              adjustableMarker={adjustable0}
+              onAdjustFrame={(direction) => void adjustFrame(0, direction)}
+              frameAdjustDisabled={playback.playing}
+              adjusting={adjusting}
+              lapColor={lapColors[0]}
+              lapSlotLabel="L1"
+              sessionLaps={sessionLapsForPane(0)}
+              otherPaneLapId={panes[1].lap.id}
+            otherPaneLapTimeMs={panes[1].lap.lapTimeMs}
+              onLapSelect={(lapId) => void handleLapSelect(0, lapId)}
+              lapSelectDisabled={lapSelectBusy || playback.playing}
+            />
+            <ComparePane
+              pane={panes[1]}
+              window={windows[1]}
+              videoRef={playback.videoRefs[1]}
+              frozen={playback.frozen[1]}
+              onMetadataLoaded={() => playback.onVideoMetadataLoaded(1)}
+              adjustableMarker={adjustable1}
+              onAdjustFrame={(direction) => void adjustFrame(1, direction)}
+              frameAdjustDisabled={playback.playing}
+              adjusting={adjusting}
+              lapColor={lapColors[1]}
+              lapSlotLabel="L2"
+              sessionLaps={sessionLapsForPane(1)}
+              otherPaneLapId={panes[0].lap.id}
+            otherPaneLapTimeMs={panes[0].lap.lapTimeMs}
+              onLapSelect={(lapId) => void handleLapSelect(1, lapId)}
+              lapSelectDisabled={lapSelectBusy || playback.playing}
+            />
+          </div>
+          {contentLoading && <CompareVisualsLoading />}
         </div>
         <ComparisonTransport
           comparisonTime={playback.comparisonTime}
@@ -211,7 +310,7 @@ function CompareView({
 export function ComparePage() {
   const { navigate, pathname, search } = useRouter();
   const searchParams = useSearchParams();
-  const { selectedLaps, selectedLapIds } = useCompare();
+  const { selectedLaps, selectedLapIds, setComparePair } = useCompare();
   const [resolved, setResolved] = useState<[SelectedLap, SelectedLap] | null>(null);
   const [loading, setLoading] = useState(false);
   const [syncPoint, setSyncPoint] = useState<CompareSyncPoint>({
@@ -230,6 +329,14 @@ export function ComparePage() {
   useEffect(() => {
     if (targetIds.length !== 2) {
       setResolved(null);
+      return;
+    }
+
+    if (
+      resolved &&
+      resolved[0].lap.id === targetIds[0] &&
+      resolved[1].lap.id === targetIds[1]
+    ) {
       return;
     }
 
@@ -264,7 +371,7 @@ export function ComparePage() {
     return () => {
       cancelled = true;
     };
-  }, [targetIds, selectedLaps]);
+  }, [targetIds, selectedLaps, resolved]);
 
   const syncOptions = useMemo(
     () => (resolved ? availableSyncPoints(resolved) : []),
@@ -288,6 +395,13 @@ export function ComparePage() {
       navigate(desired);
     }
   }, [resolved, syncPoint, navigate, pathname, search]);
+
+  function handlePanesChange(nextPanes: [SelectedLap, SelectedLap]) {
+    setResolved(nextPanes);
+    setComparePair(nextPanes);
+    const syncParam = syncPointToParam(syncPoint);
+    navigate(`/compare?laps=${nextPanes[0].lap.id},${nextPanes[1].lap.id}&sync=${syncParam}`);
+  }
 
   function handleSyncPointChange(point: CompareSyncPoint) {
     setSyncPoint(point);
@@ -319,11 +433,11 @@ export function ComparePage() {
 
   return (
     <CompareView
-      key={`${resolved[0].lap.id}-${resolved[1].lap.id}-${syncPointToParam(syncPoint)}`}
       initialPanes={resolved}
       syncPoint={syncPoint}
       syncOptions={syncOptions}
       onSyncPointChange={handleSyncPointChange}
+      onPanesChange={handlePanesChange}
     />
   );
 }

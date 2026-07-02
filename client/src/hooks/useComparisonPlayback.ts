@@ -8,6 +8,7 @@ export interface UseComparisonPlaybackResult {
   maxDuration: number;
   playing: boolean;
   frozen: [boolean, boolean];
+  videosReady: [boolean, boolean];
   togglePlay: () => void;
   seek: (time: number, forceSeek?: boolean) => void;
   onVideoMetadataLoaded: (index: 0 | 1) => void;
@@ -255,6 +256,7 @@ export function useComparisonPlayback(
   }, []);
 
   useEffect(() => {
+    setVideosReady([false, false]);
     comparisonTimeRef.current = 0;
     setComparisonTime(0);
     setPlaying(false);
@@ -275,6 +277,7 @@ export function useComparisonPlayback(
     maxDuration,
     playing,
     frozen,
+    videosReady,
     togglePlay,
     seek,
     onVideoMetadataLoaded,

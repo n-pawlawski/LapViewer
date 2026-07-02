@@ -28,6 +28,7 @@ interface CompareContextValue {
   selectedLapIds: string[];
   selectedLaps: SelectedLap[];
   toggleLap: (lap: Lap, session: Session, detail?: SessionDetail) => void;
+  setComparePair: (panes: [SelectedLap, SelectedLap]) => void;
   removeLap: (lapId: string) => void;
   clearAll: () => void;
   isSelected: (lapId: string) => boolean;
@@ -161,6 +162,14 @@ export function CompareProvider({ children }: { children: ReactNode }) {
     setSelectedLapIds((prev) => prev.filter((id) => id !== lapId));
   }, []);
 
+  const setComparePair = useCallback((panes: [SelectedLap, SelectedLap]) => {
+    setSelectionHint(null);
+    for (const pane of panes) {
+      registerLap(pane);
+    }
+    setSelectedLapIds([panes[0].lap.id, panes[1].lap.id]);
+  }, [registerLap]);
+
   const clearAll = useCallback(() => {
     setSelectionHint(null);
     setSelectedLapIds([]);
@@ -178,6 +187,7 @@ export function CompareProvider({ children }: { children: ReactNode }) {
       selectedLapIds,
       selectedLaps,
       toggleLap,
+      setComparePair,
       removeLap,
       clearAll,
       isSelected,
@@ -189,6 +199,7 @@ export function CompareProvider({ children }: { children: ReactNode }) {
       selectedLapIds,
       selectedLaps,
       toggleLap,
+      setComparePair,
       removeLap,
       clearAll,
       isSelected,
