@@ -93,17 +93,24 @@ The Data form owns the main **Videos / Sessions** section. It reads from the [Vi
 
 **In scope:** You can select laps from **different registered sessions** and open Comparison.
 
-**v1 UX:**
+**v1 UX:** See [View & Compare v1](features/VIEW_COMPARE_V1.md) for tray, selection limits, and flows.
 
 - Left: session list. Right: lap list for the **currently selected** session only.
 - Lap checkboxes stay checked when you select another session and pick more laps.
-- A **comparison selection** strip (or footer) lists all checked laps with session name + lap label; `Compare selected` opens Comparison when 2–4 laps are checked.
+- **Compare tray** lists all checked laps with session name + lap label + time.
+- **First build:** exactly **2** laps to open Compare; later 2–4 (F5.3).
 
-**Deferred for v1:** A single unified “all laps” table across every session (filterable mega-list). Use session switching + persistent selection instead.
+**Deferred for v1:** Unified “all laps” table; in-compare lap swap; search/filters on Data.
+
+### Resolved (view/compare v1 — 2026-03-28)
+
+- **Lap row click:** Toggles lap checkbox (same as ☐).
+- **Compare selection change on Compare screen:** Use **Back to Data** (in-place swap → v1.1).
+- **Time format:** `m:ss.mmm`.
+- **First implementation:** Mock sessions/laps + demo video stream — [VIEW_COMPARE_V1.md](features/VIEW_COMPARE_V1.md).
 
 ### Open design questions
 
-- **Selection model:** Checkboxes on laps; max selection = comparison pane limit (2–4).
 - **Organize:** Tags, folders, favorites — v1 or later?
 
 ---
@@ -163,10 +170,11 @@ The intake flow doc describes **Phase A** (register) in detail. **Phase B** (mar
 - **While marking:** **Auto-save** on add, remove, or edit of metadata or markers; visible save state (`Saving` / `Saved` / `Error`). No **Done** or **Save** button for v1.
 - **Leaving Intake:** Use global nav to **Data**; select the session you were editing when practical.
 - **Partial intake:** Zero markers after register is OK (session still on Data).
+- **Single page vs wizard:** **One scrollable page** (metadata + player); not a stepped wizard (**UI_DESIGN**).
 
 ### Open design questions
 
-- **Single page vs wizard:** One scrollable form (metadata + player) or stepped wizard (register → then mark)?
+- None blocking view/compare v1 (Intake implementation is VC-5+).
 
 ---
 
@@ -193,7 +201,7 @@ The intake flow doc describes **Phase A** (register) in detail. **Phase B** (mar
 │ └───────────────────────────┘ │ └───────────────────────────┘    │
 ├───────────────────────────────┴──────────────────────────────────┤
 │        ▶  ━━━━━●━━━━━━━━━━━━━━━  0:32 / 1:40  (synced)          │
-│ Layout: [Side-by-side ▼]   Audio: [Pane 1 ▼]                   │
+│        Audio: muted (v1)                                         │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -201,13 +209,18 @@ Grid mode (when 3–4 laps selected): 2×2 layout per [Features F5.3](FEATURES.m
 
 ### Entry requirements
 
-- At least **2 laps** selected on Data form.
+- Exactly **2 laps** selected on Data form for **first compare build** (2–4 in F5.3).
 - Laps may be from the **same session** or **different sessions** (v1 — **D-009**).
+
+### Resolved (view/compare v1 — 2026-03-28)
+
+- **Shorter lap ends:** Freeze finished pane on last frame (**D-008**).
+- **Change selection in place:** **Deferred** — use **Back to Data**.
+- **Sync, transport, mute:** [VIEW_COMPARE_V1.md](features/VIEW_COMPARE_V1.md).
 
 ### Open design questions
 
-- **Shorter lap ends:** Freeze finished pane on last frame (**D-008**).
-- **Change selection in place** without returning to Data form?
+- None blocking VC-1–VC-4 implementation.
 
 ---
 
@@ -227,33 +240,38 @@ Grid mode (when 3–4 laps selected): 2×2 layout per [Features F5.3](FEATURES.m
 
 ## Implementation phasing (forms)
 
+**Active:** [VIEW_COMPARE_V1.md](features/VIEW_COMPARE_V1.md)
+
 | Phase | Form | Deliverable |
 |-------|------|-------------|
-| 2 | Data (minimal) | Session list only; click → Intake |
-| 2–3 | Intake | Register + player + markers + lap list |
-| 3 | Data (full) | Lap list per session, multi-select |
-| 4–5 | Comparison | 2-up, then grid |
+| VC-1 | Shell | Routes, nav, dark theme |
+| VC-2 | Data | Mock sessions, lap table, compare tray |
+| VC-3 | Compare | 2-up sync + freeze |
+| VC-4 | Data | Tray persistence |
+| VC-5+ | Intake + Data | Real API, markers, full F1/F3/F6 |
+| Later | Compare | 4-up grid (F5.3) |
 
 ---
 
 ## Form-specific acceptance criteria (summary)
 
 ### Data form
-- [ ] Lists all registered sessions.
-- [ ] Shows laps for selected session with times.
-- [ ] Multi-select laps and launch Comparison with ≥2 selected.
-- [ ] Add session navigates to Intake form.
+- [ ] Lists all registered sessions (mock OK for VC-2).
+- [ ] Shows laps for selected session with times (`m:ss.mmm`).
+- [ ] Compare tray persists cross-session selection; launch Compare with **2** laps.
+- [ ] Add session navigates to Intake form (stub OK in VC-1).
 
 ### Intake form
-- [ ] Register new video by path (no copy).
-- [ ] Edit session metadata.
-- [ ] Player with scrub; add/edit/delete lap markers.
-- [ ] Lap times update live from markers.
+- [ ] Register new video by path (no copy) — VC-5+.
+- [ ] Edit session metadata — VC-5+.
+- [ ] Player with scrub; add/edit/delete lap markers — VC-5+.
+- [ ] Lap times update live from markers — VC-5+.
 
 ### Comparison form
-- [ ] Plays selected laps synchronized from lap start.
-- [ ] Side-by-side (2); grid (up to 4) when scoped.
-- [ ] Returns to Data form to change selection.
+- [ ] Plays selected laps synchronized from lap start (VC-3).
+- [ ] Side-by-side (2); grid (up to 4) when F5.3 scoped.
+- [ ] Shorter lap freezes; audio muted.
+- [ ] Returns to Data form; tray selection preserved.
 
 ---
 

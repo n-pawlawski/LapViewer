@@ -1,8 +1,8 @@
 # Work Orders and Typed Agents
 
-How LapViewer breaks a feature into **layered work items** and runs **one agent per work type** until all Ready items of that type are complete.
+How a project breaks a feature into **layered work items** and runs **one agent per work type** until all Ready items of that type are complete.
 
-Read with [Base Agent](BASE_AGENT.md), [Work Queue](WORK_QUEUE.md), and [Feature Lifecycle](../FEATURE_LIFECYCLE.md).
+Read with [Base Agent](BASE_AGENT.md), [Pickup](PICKUP.md), [Work Queue](WORK_QUEUE.md), and [Feature Lifecycle](../FEATURE_LIFECYCLE.md).
 
 ---
 
@@ -51,7 +51,7 @@ Every implementable task must have exactly one **Work type**:
 | `client`       | [client/BASE.md](client/BASE.md)                   | React UI, routing, client state, styling                               |
 | `test-strategy` | [test-strategy/BASE.md](test-strategy/BASE.md)   | Verification plan; post-WO diff review; queue new tests               |
 | `unit-test`    | [unit-test/BASE.md](unit-test/BASE.md)             | Implement tests queued by test-strategy or implementers              |
-| `browser-qa`   | Browser QA (future `browser-qa/BASE.md`)           | Manual/browser verification notes                                      |
+| `browser-qa`   | [browser-qa/BASE.md](browser-qa/BASE.md)           | Browser and interactive UI verification                              |
 | `review`       | [review/BASE.md](review/BASE.md)                   | Compare build vs acceptance criteria                                   |
 | `maintenance`  | [maintenance/BASE.md](maintenance/BASE.md)         | Git, CI, scripts, tooling                                              |
 | `full-stack`   | [implementation/BASE.md](implementation/BASE.md)   | **Exception only** — all layers when items are too small to split      |
@@ -108,17 +108,12 @@ Rules:
 Use this prompt pattern to run **all** Ready work of one type:
 
 ```text
-Act as the LapViewer <WorkType> Agent.
+Act as the <ProjectName> <WorkType> Agent.
 Read docs/agents/BASE_AGENT.md first.
 Read docs/agents/<folder>/BASE.md (see [AGENT_LAYOUT.md](AGENT_LAYOUT.md)).
-Read docs/agents/WORK_ORDERS.md.
-Process every work item with Work type `<work-type>` and Status `Ready` in:
-  - docs/work-orders/*.md
-  - docs/agents/WORK_QUEUE.md
-Order: P0 first, then P1; respect Blocked by; skip blocked items.
-For each item: mark In Progress → implement → run verification → update docs → mark Done.
-Use git per D-012 (feature branch per work order or per item as noted in the item).
-Report a summary table of items processed and any new follow-up items created.
+Read docs/agents/WORK_ORDERS.md and docs/agents/PICKUP.md.
+Process every work item with Work type `<work-type>` and Status `Ready` per PICKUP.md.
+Report a session summary per PICKUP.md §4.
 ```
 
 ### Examples
@@ -126,24 +121,24 @@ Report a summary table of items processed and any new follow-up items created.
 **Client / frontend:**
 
 ```text
-Act as the LapViewer Client Agent.
-Read docs/agents/BASE_AGENT.md, docs/agents/client/BASE.md, docs/agents/WORK_ORDERS.md.
-Process every Ready item with Work type `client`. Branch: feature/ui-shell if working on WO-ui-shell.
+Act as the <ProjectName> Client Agent.
+Read docs/agents/BASE_AGENT.md, docs/agents/client/BASE.md, docs/agents/WORK_ORDERS.md, docs/agents/PICKUP.md.
+Process every Ready item with Work type `client`.
 ```
 
 **API / server:**
 
 ```text
-Act as the LapViewer API Agent.
-Read docs/agents/BASE_AGENT.md, docs/agents/api/BASE.md, docs/agents/WORK_ORDERS.md.
+Act as the <ProjectName> API Agent.
+Read docs/agents/BASE_AGENT.md, docs/agents/api/BASE.md, docs/agents/WORK_ORDERS.md, docs/agents/PICKUP.md.
 Process every Ready item with Work type `api`.
 ```
 
 **Persistence / database:**
 
 ```text
-Act as the LapViewer Persistence Agent.
-Read docs/agents/BASE_AGENT.md, docs/agents/persistence/BASE.md, docs/agents/WORK_ORDERS.md.
+Act as the <ProjectName> Persistence Agent.
+Read docs/agents/BASE_AGENT.md, docs/agents/persistence/BASE.md, docs/agents/WORK_ORDERS.md, docs/agents/PICKUP.md.
 Process every Ready item with Work type `persistence`.
 ```
 

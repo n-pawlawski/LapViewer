@@ -1,8 +1,8 @@
 # Agent Contexts
 
-Role-specific instructions live in **folders** under `docs/agents/`. Each folder has **`BASE.md`** (required checklist + mission) and optional auxiliary `.md` files.
+Role-specific instructions live in **folders** under `docs/agents/`. Each folder has **`BASE.md`** (pickup workflow + per-item checklist) and optional auxiliary `.md` files.
 
-See [AGENT_LAYOUT.md](AGENT_LAYOUT.md) for structure rules.
+See [AGENT_LAYOUT.md](AGENT_LAYOUT.md) and [PICKUP.md](PICKUP.md).
 
 ---
 
@@ -10,29 +10,30 @@ See [AGENT_LAYOUT.md](AGENT_LAYOUT.md) for structure rules.
 
 | Step | File |
 |------|------|
-| 1 | [BASE_AGENT.md](BASE_AGENT.md) — every agent |
-| 2 | [WORK_ORDERS.md](WORK_ORDERS.md) — typed work, dispatch prompts |
-| 3 | `<agent>/BASE.md` — specialist checklist |
+| 1 | [BASE_AGENT.md](BASE_AGENT.md) — project doc map + rules |
+| 2 | [PICKUP.md](PICKUP.md) — discover, filter, branch, close-out |
+| 3 | [WORK_ORDERS.md](WORK_ORDERS.md) — work types, dispatch |
+| 4 | `<agent>/BASE.md` — specialist checklist |
+| 5 | [PROJECT_STATE.md](PROJECT_STATE.md) — test runner, quick refs |
 
 ---
 
 ## Agent folders
 
-| Work type | Folder | Entry |
-|-----------|--------|--------|
-| — | (global) | [BASE_AGENT.md](BASE_AGENT.md) |
-| `docs` | [documentation/](documentation/) | [BASE.md](documentation/BASE.md) |
-| `architecture` | [architecture/](architecture/) | [BASE.md](architecture/BASE.md) — structure, frameworks, integrations, pipeline/container design |
-| `persistence` | [persistence/](persistence/) | [BASE.md](persistence/BASE.md) |
-| `api` | [api/](api/) | [BASE.md](api/BASE.md) |
-| `client` | [client/](client/) | [BASE.md](client/BASE.md) |
-| `unit-test` | [unit-test/](unit-test/) | [BASE.md](unit-test/BASE.md) |
-| `review` | [review/](review/) | [BASE.md](review/BASE.md) |
-| `maintenance` | [maintenance/](maintenance/) | [BASE.md](maintenance/BASE.md) |
-| `full-stack` | [implementation/](implementation/) | [BASE.md](implementation/BASE.md) |
-| `test-strategy` | [test-strategy/](test-strategy/) | [BASE.md](test-strategy/BASE.md) — plan + post–work-order test review |
-
-**Client auxiliary docs (example):** [client/overview.md](client/overview.md), [client/page-flows.md](client/page-flows.md)
+| Work type | Folder | Workflow ready |
+|-----------|--------|----------------|
+| — | [BASE_AGENT.md](BASE_AGENT.md) | Coordinator |
+| `docs` | [documentation/](documentation/) | ✅ |
+| `architecture` | [architecture/](architecture/) | ✅ |
+| `persistence` | [persistence/](persistence/) | ✅ |
+| `api` | [api/](api/) | ✅ |
+| `client` | [client/](client/) | ✅ |
+| `test-strategy` | [test-strategy/](test-strategy/) | ✅ |
+| `unit-test` | [unit-test/](unit-test/) | ⚠️ needs `npm test` |
+| `browser-qa` | [browser-qa/](browser-qa/) | ✅ |
+| `review` | [review/](review/) | ✅ |
+| `maintenance` | [maintenance/](maintenance/) | ✅ |
+| `full-stack` | [implementation/](implementation/) | ✅ (exception) |
 
 ---
 
@@ -45,21 +46,25 @@ See [AGENT_LAYOUT.md](AGENT_LAYOUT.md) for structure rules.
 | [Feature work orders](../work-orders/README.md) | Per-feature typed tasks |
 | [Templates](TEMPLATES.md) | WO + agent folder formats |
 
+**Client auxiliary:** [client/overview.md](client/overview.md), [client/page-flows.md](client/page-flows.md)
+
 ---
 
 ## Dispatch example (client)
 
 ```text
 Act as the LapViewer Client Agent.
-Read docs/agents/BASE_AGENT.md, docs/agents/client/BASE.md, docs/agents/WORK_ORDERS.md.
-Process every Ready item with Work type `client` in docs/work-orders/ and WORK_QUEUE.md.
+Read docs/agents/BASE_AGENT.md, docs/agents/client/BASE.md,
+     docs/agents/PICKUP.md, docs/agents/WORK_ORDERS.md.
+Process every Ready item with Work type `client` per PICKUP.md.
 ```
 
 ---
 
-## Adding a new agent folder
+## Keeping the doc map current
 
-1. Create `docs/agents/<folder>/BASE.md` with **Agent checklist (required)**.
-2. Add `README.md` listing auxiliary docs.
-3. Register in [WORK_ORDERS.md](WORK_ORDERS.md) work types table.
-4. Use [TEMPLATES.md](TEMPLATES.md) agent folder template.
+When adding or renaming project docs, update:
+
+1. `.agent-project.yaml` `paths`
+2. [BASE_AGENT.md](BASE_AGENT.md) documentation map table
+3. [DOCUMENTATION_SYSTEM.md](../DOCUMENTATION_SYSTEM.md) source-of-truth table

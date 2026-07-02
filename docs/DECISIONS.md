@@ -339,6 +339,42 @@ Racers compare laps across different race days or camera files, not only laps wi
 
 ---
 
+### D-017 - Mock-first view & compare slice (VC-1–VC-4)
+
+**Status:** Accepted  
+**Date:** 2026-03-28  
+**Owner:** Shared  
+**Related docs:** `docs/features/VIEW_COMPARE_V1.md`, `docs/FEATURES.md`, `docs/UI_FORMS.md`, `docs/CONTINUATION.md`  
+
+### Context
+
+The product goal is to validate Data browsing and 2-up Compare UX before investing in SQLite, intake, and marker APIs. The codebase is still a single-page demo player.
+
+### Decision
+
+Implement **view & compare laps** in phases **VC-1–VC-4** using **mock sessions/laps** and the existing **demo video stream**. Real persistence (VC-5 / F6.1) follows in a separate work order.
+
+**First compare build:** exactly **2** laps (F5.3 four-up later).
+
+### Consequences
+
+- Client ships mock data module before sessions API exists.
+- Compare can use fake `startSeconds`/`endSeconds` on the demo clip.
+- Intake and F1.x are not blockers for the compare loop.
+- Acceptance criteria live in `docs/features/VIEW_COMPARE_V1.md`.
+
+### Alternatives considered
+
+- Build SQLite + intake first, then compare.
+- Static shell only (WO-ui-shell) without playback sync.
+
+### Follow-up work
+
+- Implement VC-1–VC-4 on branch `feature/view-compare-v1`.
+- WO for VC-5 persistence when compare UX is approved.
+
+---
+
 ### D-013 - Typed feature work orders and layer agents
 
 **Status:** Accepted  

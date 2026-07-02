@@ -1,10 +1,10 @@
-# Base Agent
+# Base Agent — LapViewer
 
-Default context for any agent working on **this project** (LapViewer).
+Default context for any agent working on **this project**.
 
-This is the **project entry** point. Generic agent-framework docs will live in a separate **agent-platform** repository; this repo holds the **instance** (see `.agent-project.yaml` and `docs/AGENT_PLATFORM_BLUEPRINT.md`).
+Read this file first, then `docs/agents/<folder>/BASE.md` for your work type.
 
-This is the starting orientation before an agent adopts a more specialized role (client, api, persistence, documentation, test-strategy, review, etc.).
+**Platform:** `default-web-app` @ `0.2.0` — see `.agent-project.yaml`.
 
 ---
 
@@ -16,87 +16,128 @@ LapViewer is a local-first racing video app for registering GoPro footage by fil
 
 ---
 
-## Read first
+## Project documentation map
 
-At the start of meaningful project work, read:
+**Keep in sync:** `.agent-project.yaml` `paths` ↔ this table ↔ `docs/DOCUMENTATION_SYSTEM.md` source-of-truth table.
 
-1. `README.md` - current status and run commands.
-2. `docs/PROJECT_OVERVIEW.md` - product vision and success criteria.
-3. `docs/DOCUMENTATION_SYSTEM.md` - source-of-truth map for project documentation.
-4. `docs/FEATURE_LIFECYCLE.md` - readiness, done, traceability, and review gates.
-5. `docs/DECISIONS.md` - accepted and proposed project decisions.
-6. `docs/PROCESS_HYGIENE.md` - git workflow, verification ladder, definition of done.
-7. `docs/WORKING_AGREEMENT.md` - collaboration rules and decision boundaries.
-8. `docs/AGENT_WORKFLOW.md` - how specialized agents coordinate.
-9. `docs/agents/README.md` - available agent contexts.
-10. `docs/agents/AGENT_LAYOUT.md` - per-agent folders, `BASE.md`, auxiliary docs.
-11. `docs/agents/WORK_ORDERS.md` - typed work items and dispatch-by-work-type.
-12. `docs/agents/WORK_QUEUE.md` - global work items; feature tasks live in `docs/work-orders/`.
+When you add, rename, or split a doc, update all three in the same change.
 
-Then read any feature docs relevant to the task:
+| Concern | Path | Primary agents |
+|---------|------|----------------|
+| Run commands & status | `README.md` | All |
+| Product vision | `docs/PROJECT_OVERVIEW.md` | documentation, review |
+| Doc system & SOT rules | `docs/DOCUMENTATION_SYSTEM.md` | documentation, architecture, review |
+| Feature list & AC | `docs/FEATURES.md` | documentation, client, api, review |
+| Feature lifecycle & done gates | `docs/FEATURE_LIFECYCLE.md` | documentation, review |
+| UX / three forms | `docs/UI_FORMS.md` | documentation, client, browser-qa |
+| Visual design | `docs/UI_DESIGN.md` | client, browser-qa |
+| Intake / registration flow | `docs/INTAKE_FLOW.md` | documentation, client, api |
+| Runtime architecture | `docs/ARCHITECTURE.md` | architecture, api, persistence, client |
+| Technical trade-offs | `docs/TECHNICAL_APPROACH.md` | architecture |
+| SQLite, `DATA_DIR`, cache | `docs/PERSISTENCE.md` | persistence, api |
+| Video library model | `docs/VIDEO_LIBRARY.md` | persistence, api, client |
+| Decisions | `docs/DECISIONS.md` | All (D-004 dev branch, D-005 Vitest, D-006 theme, D-012 git, D-013 typed WO) |
+| Open questions | `docs/OPEN_QUESTIONS.md` | documentation, architecture |
+| Process hygiene | `docs/PROCESS_HYGIENE.md` | All implementers, maintenance |
+| Local dev | `docs/DEVELOPMENT.md` | All implementers, maintenance |
+| Tooling gaps | `docs/PROCESS_TOOLING_GAPS.md` | maintenance, test-strategy |
+| Collaboration rules | `docs/WORKING_AGREEMENT.md` | Base agent, documentation |
+| Agent coordination | `docs/AGENT_WORKFLOW.md` | Base agent |
+| Platform adoption notes | `docs/AGENT_PLATFORM_BLUEPRINT.md` | maintenance, coordinators |
+| Testing strategy | `docs/TESTING_STRATEGY.md` | test-strategy, unit-test *(create when planned)* |
+| Feature implementation | `docs/work-orders/WO-*.md` | persistence, api, client, test-strategy, review |
+| Global agent queue | `docs/agents/WORK_QUEUE.md` | maintenance, unit-test, tooling |
 
-- `docs/FEATURES.md`
-- `docs/UI_FORMS.md`
-- `docs/INTAKE_FLOW.md`
-- `docs/VIDEO_LIBRARY.md`
-- `docs/ARCHITECTURE.md`
-- `docs/PERSISTENCE.md`
-- `docs/OPEN_QUESTIONS.md`
+### Code roots
+
+| Area | Path | Work type |
+|------|------|-----------|
+| Frontend | `client/` | `client` |
+| Backend | `server/` | `api`, `persistence` |
+
+### Agent auxiliary docs (deep context)
+
+| Path | Work types |
+|------|------------|
+| `docs/agents/client/overview.md` | `client` |
+| `docs/agents/client/page-flows.md` | `client`, `browser-qa` |
+| `docs/agents/api/routes.md` | `api` *(create from template when API grows)* |
+| `docs/agents/persistence/schema-notes.md` | `persistence` *(optional)* |
+| `docs/agents/test-strategy/work-order-test-review.md` | `test-strategy` |
 
 ---
 
-## How to choose a role
+## Agent framework (docs/agents/)
 
-Use the base role for general coordination, small edits, and deciding which specialized context applies.
+| Doc | Purpose |
+|-----|---------|
+| [PICKUP.md](PICKUP.md) | Discover, filter, branch, close-out — **required for all agents** |
+| [WORK_ORDERS.md](WORK_ORDERS.md) | Work types, dispatch |
+| [WORK_QUEUE.md](WORK_QUEUE.md) | Global backlog |
+| [PROJECT_STATE.md](PROJECT_STATE.md) | Test runner status, decision quick refs |
+| [AGENT_LAYOUT.md](AGENT_LAYOUT.md) | Folder layout |
+| [README.md](README.md) | Agent index |
 
-Switch into a specialized context when the task clearly matches one:
+---
 
-- **Unit Test Agent:** unit test design, test setup, deterministic test coverage.
-- **Documentation Designer:** feature specs, acceptance criteria, open questions, design notes.
-- **Architecture Design Agent:** module boundaries, technical trade-offs, communication paths.
-- **Test Strategy Agent:** testing layers, fixture policy, verification planning.
-- **Layer agents** (`client/`, `api/`, `persistence/`, …): read `<folder>/BASE.md` and complete its checklist for each work item.
-- **Implementation** (`implementation/BASE.md`): full-stack only when work type is `full-stack` or legacy `IMPL-*`.
-- **Review / Verification Agent:** compare implementation against docs and find gaps.
-- **Project Maintenance Agent:** git workflow, scripts, CI, linting, formatting, tooling gaps.
-- **Browser QA Agent:** browser walkthroughs and UI behavior verification.
+## Read first (session start)
 
-If a specialized context exists, read it before doing that role's work.
+1. This file (doc map).
+2. `README.md`
+3. `docs/DOCUMENTATION_SYSTEM.md`
+4. `docs/FEATURE_LIFECYCLE.md`
+5. `docs/DECISIONS.md` — at least D-004, D-005, D-012, D-013, D-015
+6. `docs/agents/PICKUP.md` + `docs/agents/WORK_ORDERS.md` when executing work items
+7. `docs/agents/PROJECT_STATE.md` when running tests or verification
+
+Then read rows from the **documentation map** for your work type.
+
+---
+
+## Agent → workflow entry
+
+| Work type | BASE | End-to-end workflow |
+|-----------|------|---------------------|
+| `docs` | [documentation/BASE.md](documentation/BASE.md) | ✅ Spec, gate, create WO |
+| `architecture` | [architecture/BASE.md](architecture/BASE.md) | ✅ Design + handoff items |
+| `persistence` | [persistence/BASE.md](persistence/BASE.md) | ✅ PICKUP + DB layer |
+| `api` | [api/BASE.md](api/BASE.md) | ✅ PICKUP + routes (after persistence) |
+| `client` | [client/BASE.md](client/BASE.md) | ✅ PICKUP + UI (after api) |
+| `test-strategy` | [test-strategy/BASE.md](test-strategy/BASE.md) | ✅ §A plan / §B post-WO review |
+| `unit-test` | [unit-test/BASE.md](unit-test/BASE.md) | ⚠️ BASE complete; **`npm test` not installed yet** |
+| `browser-qa` | [browser-qa/BASE.md](browser-qa/BASE.md) | ✅ Manual/browser evidence |
+| `review` | [review/BASE.md](review/BASE.md) | ✅ AC vs build |
+| `maintenance` | [maintenance/BASE.md](maintenance/BASE.md) | ✅ Tooling / CI / runner setup |
+| `full-stack` | [implementation/BASE.md](implementation/BASE.md) | ✅ Exception path only |
+
+Pack reference: `../agent-platform/packs/default-web-app/AGENT_READINESS.md` (local sibling repo).
 
 ---
 
 ## Operating rules
 
-- Keep docs as the shared source of truth.
-- Use `docs/work-orders/` for feature implementation tasks (typed: `client`, `api`, `persistence`, …).
-- Use `docs/agents/WORK_QUEUE.md` for global/tooling tasks.
-- Dispatch agents by **work type** per `docs/agents/WORK_ORDERS.md` (process all Ready items of that type).
-- Do not implement `Draft` work queue items.
-- Keep changes scoped to the user's request or selected work item.
-- Update docs when behavior, setup, acceptance criteria, or agent workflow changes.
-- Add unresolved decisions to `docs/OPEN_QUESTIONS.md` or the relevant work item.
-- Do not add dependencies, delete data, deploy, or make broad architecture changes without approval.
-- **Git:** Agents manage git per [D-012](../DECISIONS.md) — branch, commit, merge as part of work. Ask before adding a remote. Never change `git config`, force-push protected branches, or commit secrets.
+- Do not implement `Draft` work items without approval.
+- Dispatch by **work type**; follow [PICKUP.md](PICKUP.md) for every item.
+- Feature work: `docs/work-orders/`. Tooling: `docs/agents/WORK_QUEUE.md`.
+- Git per [D-012](../DECISIONS.md). Never change `git config` or force-push protected branches.
+- Verification: `.agent-project.yaml` `verify` (`check` always; `test` when runner exists).
+- No new dependencies, data deletion, or deploy without approval.
 
 ---
 
-## Standard prompt pattern
+## Standard prompt
 
 ```text
-Act as the Base Agent for LapViewer.
-Read docs/agents/BASE_AGENT.md.
-Choose the right specialized agent context for this task.
-Read that context and docs/agents/WORK_QUEUE.md if relevant.
-Perform only the scoped work and report verification.
+Act as the LapViewer <Role> Agent.
+Read docs/agents/BASE_AGENT.md, docs/agents/<folder>/BASE.md, docs/agents/PICKUP.md.
+Process Ready work for your work type per PICKUP.md.
 ```
 
 ---
 
 ## Completion standard
 
-Before reporting done:
-
-- Verify the work matches the current docs or update the docs.
-- Run relevant checks when code changed.
-- Update the work queue if the task came from `docs/agents/WORK_QUEUE.md`.
-- Report what changed, what was verified, and what remains open.
+- Work matches docs or docs updated.
+- `verify.check` (and `verify.test` when available) for code changes.
+- Work-order / queue status updated.
+- Report per [PICKUP.md](PICKUP.md) §4.

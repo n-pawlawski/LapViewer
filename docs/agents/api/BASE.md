@@ -1,45 +1,95 @@
 # API Agent — base context
 
 **Work type:** `api`  
-Read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md` first.
+**Entry point:** always read this file first for server/API work.
 
----
+Read before any work:
 
-## Agent checklist (required)
-
-- [ ] **1. Orient** — Global `BASE_AGENT.md`, this file, `WORK_ORDERS.md`.
-- [ ] **2. Work order** — Assigned item(s), acceptance criteria, branch, blockers, docs to update.
-- [ ] **3. Auxiliary context** — Files in `docs/agents/api/` linked from the work item.
-- [ ] **4. API documentation** — Update architecture/API notes for new routes and contracts.
-- [ ] **5. Design** — Request/response shapes match feature spec; persistence layer exists if required.
-- [ ] **6. Implement** — `server/src/` only (routes, services, validation).
-- [ ] **7. Tests (local)** — Add or update server tests when straightforward; else queue `unit-test`.
-- [ ] **8. Run full verification** — `npm run check`; exercise endpoints per work item; **`npm test` (entire suite) when a runner exists — all tests must pass** before `Done`. Fix failures [you caused](../test-strategy/BASE.md#who-fixes-failing-tests) or block and hand off.
-- [ ] **9. Close out** — Item status, docs, git commit per D-012.
-- [ ] **10. Report** — Summary of items, verification, follow-ups.
-
----
-
-## Mission
-
-All **Ready** items with **Work type:** `api`. Own Express routes and server services (not SQLite schema).
+- Project `docs/agents/BASE_AGENT.md`
+- [WORK_ORDERS.md](../WORK_ORDERS.md)
+- [PICKUP.md](../PICKUP.md)
+- [PROJECT_STATE.md](../PROJECT_STATE.md) if present
 
 ---
 
 ## Pickup workflow
 
-[WORK_ORDERS.md](../WORK_ORDERS.md) — filter `api`, respect **Blocked by** (often `persistence` first).
+When dispatched to process **all** Ready `api` work:
+
+1. Follow [PICKUP.md](../PICKUP.md) §1–2.
+2. For **each** eligible item, run the checklist below.
+3. Follow [PICKUP.md](../PICKUP.md) §4 (session report).
+
+Usually runs **after** `persistence` items on the same WO are `Done`.
 
 ---
 
-## Read first
+## Agent checklist (required)
 
-- `docs/ARCHITECTURE.md`, `docs/PERSISTENCE.md`, `docs/VIDEO_LIBRARY.md`
-- Assigned `docs/work-orders/`
-- `server/src/`
+- [ ] **1. Orient** — Project `BASE_AGENT.md`, this file, `WORK_ORDERS.md`, `PICKUP.md`.
+- [ ] **2. Work item** — Goal, acceptance criteria, **Blocked by**, **Docs to update**, WO git branch.
+- [ ] **3. Start item** — `Status: In Progress`; checkout/create WO branch ([PICKUP.md](../PICKUP.md) §3a).
+- [ ] **4. Auxiliary context** — Files on the item or in [Auxiliary context](#auxiliary-context-this-directory) below.
+- [ ] **5. API documentation** — Update architecture/API notes for new routes and contracts ([routes.template.md](routes.template.md) → `routes.md` when useful).
+- [ ] **6. Design** — Request/response shapes match feature spec and architecture contracts; persistence layer exists or is stubbed per WO plan.
+- [ ] **7. Implement** — Server routes, services, validation only (not DB schema — see `persistence/`).
+- [ ] **8. Tests (local)** — Add/update server tests when straightforward; else queue `unit-test`.
+- [ ] **9. Verify** — `verify.check`; exercise endpoints per work item; `verify.test` when available ([PICKUP.md](../PICKUP.md) §3b). Fix failures [you caused](../test-strategy/BASE.md#who-fixes-failing-tests) or block and hand off.
+- [ ] **10. Close out** — Item status, docs, git commit on WO branch.
+- [ ] **11. Report** — Session summary row; note contract changes for downstream `client` items.
+
+---
+
+## Mission
+
+All **Ready** items with **Work type:** `api`. Own HTTP routes and server services (not SQLite schema).
+
+---
+
+## Project docs (typical)
+
+From project `BASE_AGENT.md` / `.agent-project.yaml`:
+
+- Architecture and persistence docs
+- Domain data rules (if API exposes domain entities)
+- Feature specs and WO acceptance criteria
+- Server source tree (path in project `BASE_AGENT.md`)
+
+---
+
+## Auxiliary context (this directory)
+
+| File | Purpose |
+|------|---------|
+| [routes.md](routes.md) | Route table, methods, auth (copy from [routes.template.md](routes.template.md)) |
+| [validation.md](validation.md) | Shared validation rules (copy from [validation.template.md](validation.template.md)) |
+
+---
+
+## Responsibilities
+
+- Express (or project server framework) routes and handlers
+- Request validation, error responses, service layer
+- Document API contracts before or with implementation
 
 ---
 
 ## Not this agent's job
 
-`persistence`, `client`, `docs` — see sibling folders under `docs/agents/`.
+| Work type | Agent folder |
+|-----------|----------------|
+| `persistence` | `docs/agents/persistence/` |
+| `client` | `docs/agents/client/` |
+| `docs` | `docs/agents/documentation/` |
+| `unit-test` | `docs/agents/unit-test/` |
+
+---
+
+## Default verification
+
+```bash
+# from .agent-project.yaml verify.check
+npm run check
+```
+
+Exercise endpoints manually or via tests per work item **Verification** section.

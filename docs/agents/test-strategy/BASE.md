@@ -1,114 +1,104 @@
 # Test Strategy Agent — base context
 
 **Work type:** `test-strategy`  
-Read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md` first.
+**Entry point:** always read this file first for verification planning and post-WO test review.
+
+Read before any work:
+
+- Project `docs/agents/BASE_AGENT.md`
+- [WORK_ORDERS.md](../WORK_ORDERS.md)
+- [PICKUP.md](../PICKUP.md)
+- [PROJECT_STATE.md](../PROJECT_STATE.md) if present (test runner status)
 
 ---
 
-## Agent checklist (required)
+## Pickup workflow
 
-### A. Upfront planning (before or during implementation)
+When dispatched to process **all** Ready `test-strategy` work:
 
-- [ ] **1. Orient** — Global `BASE_AGENT.md`, this file, feature spec / work order, `FEATURES.md`.
-- [ ] **2. Acceptance criteria** — List behaviors that need automated vs manual verification.
-- [ ] **3. Map layers** — Unit, integration, browser, manual per behavior ([layer model](#verification-layer-model)).
-- [ ] **4. Document** — Update or create `docs/TESTING_STRATEGY.md` when it exists; fixture rules in this folder.
-- [ ] **5. Queue upfront test work** — Add `unit-test` / `browser-qa` items on the work order when coverage is known early.
-
-### B. Post–work-order review (after implementation items land)
-
-- [ ] **6. Scope the WO** — Read the work order and **git diff** on its feature branch (`dev...feature/<branch>`).
-- [ ] **7. Regression check** — Confirm full test run was green after implementers’ changes (see [Who fixes failing tests?](#who-fixes-failing-tests)).
-- [ ] **8. Gap analysis** — What new behaviors need tests so future changes won’t break silently?
-- [ ] **9. Queue follow-up tests** — Add or update `unit-test` (and later integration/browser) items with concrete cases.
-- [ ] **10. Report** — Matrix: change area → existing tests → new tests needed → manual-only; link new work item IDs.
+1. Follow [PICKUP.md](../PICKUP.md) §1–2.
+2. Determine mode per item: **§A upfront planning** or **§B post–work-order review** (see [When to use A vs B](#when-to-use-a-vs-b)).
+3. Run the matching checklist; follow [PICKUP.md](../PICKUP.md) §4 (session report).
 
 ---
 
-## Mission (test strategy SME)
+## When to use A vs B
 
-Act as the **test architect** for LapViewer:
+| Signal | Checklist |
+|--------|-----------|
+| Item goal mentions planning, feature spec, or "before implementation" | **§A** Upfront planning |
+| Item ID like `WO-*-TS`, goal mentions diff review, or all implementation items on WO are `Done` | **§B** Post–work-order review |
+| Unclear | Read item goal; default to **§B** if implementation items exist and are `Done` |
 
-1. **Before** — Plan how we verify a feature (layers, fixtures, tooling).
-2. **After** — Review what a **work order** changed in code, ensure we didn’t miss coverage, and ensure **existing tests still protect** the system.
+---
+
+## Agent checklist — §A Upfront planning
+
+- [ ] **1. Orient** — Project `BASE_AGENT.md`, this file, feature spec / work order, project features doc.
+- [ ] **2. Work item** — Scope and expected planning outputs.
+- [ ] **3. Start item** — `Status: In Progress` ([PICKUP.md](../PICKUP.md) §3a).
+- [ ] **4. Acceptance criteria** — Behaviors needing automated vs manual verification.
+- [ ] **5. Map layers** — Unit, integration, browser, manual per behavior ([layer model](#verification-layer-model)).
+- [ ] **6. Document** — Update project testing strategy doc when it exists; add fixture rules in this folder.
+- [ ] **7. Queue upfront test work** — Add `unit-test` / `browser-qa` items on the WO when coverage is known early.
+- [ ] **8. Close out** — Item `Done`; commit doc changes.
+- [ ] **9. Report** — Layer map, queued item IDs.
+
+---
+
+## Agent checklist — §B Post–work-order review
+
+- [ ] **1. Orient** — Project `BASE_AGENT.md`, this file, target WO, [work-order-test-review.md](work-order-test-review.md).
+- [ ] **2. Work item** — WO ID, feature branch from WO header.
+- [ ] **3. Start item** — `Status: In Progress`; checkout WO branch ([PICKUP.md](../PICKUP.md) §3a).
+- [ ] **4. Scope the WO** — List `persistence` / `api` / `client` / `full-stack` items marked `Done`; read `git diff` vs default branch.
+- [ ] **5. Regression check** — Run `verify.test` when available; note pass/fail ([Who fixes failing tests?](#who-fixes-failing-tests)).
+- [ ] **6. Gap analysis** — New/changed behaviors without adequate coverage.
+- [ ] **7. Queue follow-up tests** — Add/update `unit-test` and `browser-qa` items with concrete "Behavior to protect".
+- [ ] **8. Update WO** — "Test strategy review" notes; mark this item `Done`.
+- [ ] **9. Report** — Coverage matrix, new item IDs, whether `review` item may unblock.
+
+Do **not** mark the WO `review` item `Ready` until test-strategy review is `Done` or explicitly skipped in the WO.
+
+See [work-order-test-review.md](work-order-test-review.md) for step-by-step procedure.
+
+---
+
+## Mission
+
+Act as **test architect** for the project:
+
+1. **Before** — Plan how to verify a feature (layers, fixtures, tooling).
+2. **After** — Review what a work order changed; ensure coverage gaps are queued and regressions are addressed.
 
 You **design and queue** test work. [unit-test/BASE.md](../unit-test/BASE.md) **implements** queued tests unless a work item assigns implementation to you.
 
 ---
 
-## Work-order test review (core post-pass)
-
-When dispatched on a completed or “implementation complete” work order:
-
-1. Open `docs/work-orders/WO-<name>.md` and list all `persistence` / `api` / `client` items marked `Done`.
-2. Review commits or diff on the WO branch.
-3. For each changed module, ask:
-   - What behavior is new or changed?
-   - Is it covered by an existing test? Should that test be updated?
-   - What **new** test would fail if someone regressed this later?
-   - What must stay **manual** (real GoPro file, ffmpeg, browser feel)?
-4. Add work-order items:
-
-```md
-### WO-<name>-TS-01 — Unit tests for <area>
-**Work type:** `unit-test`
-**Status:** Ready
-**Blocked by:** —
-**Goal:** Cover … (from test-strategy review WO-<name>)
-```
-
-5. Do **not** mark the work order’s `review` item `Ready` until test-strategy review is `Done` or explicitly skipped in the WO.
-
-See [work-order-test-review.md](work-order-test-review.md) for a short procedure.
-
----
-
 ## Who fixes failing tests?
-
-Use this when an **implementer** (`persistence`, `api`, `client`, `full-stack`) runs the full suite and something fails.
 
 | Situation | Owner | Action |
 |-----------|--------|--------|
-| Failure caused by **this change** (renamed API, intentional behavior change, snapshot/update) | **Implementer** | Fix test + code on the **same branch** and work item before marking `Done`. |
-| Implementer **does not know** the right assertion or test design | **Implementer** | Mark item `Blocked`, add `unit-test` item with context; do not mark `Done`. |
-| Need **new** coverage design after WO is done | **Test Strategy** | Post-WO review queues `unit-test` items. |
-| **Test runner / CI / config** broken | **Maintenance** or **unit-test** | Per `WORK_QUEUE.md`; not the feature implementer unless the item owns tooling. |
-| Failure **unrelated** to current change (flaky or pre-existing on `dev`) | **Test Strategy** or **unit-test** | New item to fix baseline; implementer notes in report and does not scope-creep. |
+| Failure caused by **this change** | **Implementer** | Fix on same branch before `Done` |
+| Implementer **does not know** correct assertion | **Implementer** | `Blocked` + `unit-test` item |
+| **New** coverage design after WO done | **Test Strategy** | Post-WO review queues items |
+| **Test runner / CI / config** broken | **Maintenance** or **unit-test** | `WORK_QUEUE.md` item |
+| **Unrelated** pre-existing failure | **Test Strategy** or **unit-test** | New fix item; implementer notes in report |
 
-**Rule:** Implementers **run all tests** when a runner exists and **must not** mark `Done` with failing tests they introduced. They **may** fix those tests themselves when the fix is straightforward. They **hand off** when the failure needs test-design expertise or is out of scope.
+**Rule:** Implementers run full suite when available and must not mark `Done` with failures they introduced.
 
 ---
 
 ## Verification layer model
 
-| Layer | Best for | Owner for implementation |
-|-------|----------|---------------------------|
-| Unit | Lap math, validation, formatters, pure helpers | `unit-test` |
-| Integration | Routes, SQLite, API contracts | `unit-test` / future integration agent |
-| Browser QA | Forms, markers, comparison UX | `browser-qa` (future) |
-| Manual | GoPro feel, ffmpeg, Windows paths | Human + `review` checklist |
+| Layer | Best for | Owner |
+|-------|----------|--------|
+| Unit | Pure logic, validation, formatters | `unit-test` |
+| Integration | Routes, DB, API contracts | `unit-test` / future integration agent |
+| Browser QA | Forms, navigation, UX workflows | `browser-qa` |
+| Manual | Hardware, media, subjective UX | Human + `review` checklist |
 
-Do not claim ffmpeg/playback is unit-testable.
-
----
-
-## Relationship to other agents
-
-| Agent | Tests |
-|-------|--------|
-| `persistence`, `api`, `client`, `full-stack` | Run **full suite** before `Done`; fix regressions they caused or block |
-| `unit-test` | Implement tests queued by test-strategy or implementers |
-| `review` | AC + evidence that tests/manual checks ran |
-| `maintenance` | Installs Vitest, `npm test` script, CI |
-
----
-
-## Current project state
-
-No committed test runner yet (Vitest proposed, D-005). Until `npm test` exists:
-
-- Implementers run `npm run check` and document “full test run N/A”.
-- Test-strategy still does post-WO review and queues `unit-test` + runner setup items.
+Do not claim manual-only behavior is unit-testable.
 
 ---
 
@@ -116,14 +106,24 @@ No committed test runner yet (Vitest proposed, D-005). Until `npm test` exists:
 
 | File | Purpose |
 |------|---------|
-| [work-order-test-review.md](work-order-test-review.md) | Step-by-step post-WO review |
+| [work-order-test-review.md](work-order-test-review.md) | Post-WO review procedure |
+| [fixtures-policy.md](fixtures-policy.md) | Test data rules (from [fixtures-policy.template.md](fixtures-policy.template.md)) |
+| [manual-checklists.md](manual-checklists.md) | Human verification lists (from [manual-checklists.template.md](manual-checklists.template.md)) |
 
-Add `fixtures-policy.md`, `manual-checklists.md` as needed.
+---
+
+## Relationship to other agents
+
+| Agent | Role |
+|-------|------|
+| `persistence`, `api`, `client`, `full-stack` | Run full suite before `Done`; fix or block |
+| `unit-test` | Implement queued tests |
+| `browser-qa` | Browser/manual workflow verification |
+| `review` | AC + evidence tests/manual ran |
+| `maintenance` | Installs test runner, `npm test`, CI |
 
 ---
 
 ## Not this agent's job
 
-- Implement every production feature.
-- Mark a WO `Done` without implementers having run checks/tests per their BASE.
-- Force unit tests on manual-only behavior.
+Implement every production feature, mark WO `Done` without implementer verification, force unit tests on manual-only behavior.

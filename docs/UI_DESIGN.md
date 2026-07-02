@@ -138,6 +138,17 @@ Status should be obvious but not visually noisy:
 - `Missing file`
 - `Error`
 
+### Compare tray (v1 detail)
+
+Pinned at bottom of Data right pane or full-width footer:
+
+- Chips: `Session title · Lap N · m:ss.mmm` with remove (×).
+- `Compare selected` — enabled when **2** laps checked (first build).
+- `Clear all` — empties tray.
+- Selection survives session switches (**D-009**).
+
+Full behavior: [features/VIEW_COMPARE_V1.md](features/VIEW_COMPARE_V1.md).
+
 ### Lap table
 
 The lap table should prioritize lap number and time.
@@ -153,9 +164,9 @@ Columns:
 Behavior:
 
 - Best lap gets a subtle highlight.
-- Clicking a lap row can seek/open that lap in context.
-- Selecting 2 to 4 laps enables `Compare selected`.
-- If fewer than 2 laps are selected, compare is disabled with a short hint.
+- Row click or checkbox toggles lap selection for compare tray.
+- Selecting **2** laps enables `Compare selected` (first build; 2–4 later).
+- If count ≠ 2, compare is disabled with hint: “Select 2 laps to compare”.
 
 ### Empty states
 
@@ -314,13 +325,15 @@ Controls are shared across all panes:
 
 ### Comparison behavior
 
-Recommended v1 defaults:
+v1 spec: [features/VIEW_COMPARE_V1.md](features/VIEW_COMPARE_V1.md).
 
-- Sync starts at lap marker.
+Recommended defaults:
+
+- Sync starts at lap marker (`comparisonTime` = 0).
 - Audio muted by default; selectable audio pane is **deferred** (see **D-007**).
-- Two laps side-by-side first.
-- Four-lap grid later.
+- **Two laps side-by-side** for first build; four-lap grid in F5.3.
 - When a shorter lap ends, **freeze that pane on its last frame**; longer laps continue until they end (see **D-008**).
+- Scrubber length = **longer** lap duration; time readout `elapsed / max duration`.
 
 ---
 
@@ -368,19 +381,18 @@ Recommended v1 defaults:
 
 ## Interaction priorities
 
-### P0 UI behavior
+### P0 UI behavior (view/compare v1 — VC-1–VC-4)
 
-- Data form lists sessions.
-- Add session starts Intake.
-- Intake registers one file and opens marker tools.
-- Markers are visible and editable.
-- Data form shows computed lap list.
-- User can select 2 laps and open Comparison.
-- Comparison plays 2 laps side-by-side with shared controls.
+- Data form lists sessions (mock first).
+- Lap table with times and compare tray.
+- Cross-session lap selection persists.
+- User selects 2 laps and opens Comparison.
+- Comparison plays 2 laps side-by-side with shared controls, freeze shorter lap, muted audio.
 
 ### P1 UI behavior
 
-- 2 to 4 lap selection.
+- Add session → Intake (real register + markers).
+- 2 to 4 lap selection and 2×2 grid (F5.3).
 - Better filters/search.
 - Missing/relink state.
 - Proxy status and progress.
@@ -389,9 +401,9 @@ Recommended v1 defaults:
 
 ### P2 UI behavior
 
-- Unified all-laps table (cross-session selection uses persistent checkboxes in v1 — **D-009**).
+- Unified all-laps table (cross-session uses compare tray in v1 — **D-009**).
 - Thumbnails.
-- Inline comparison selection changes.
+- Inline comparison selection changes (in-compare lap swap).
 - Layout preferences.
 - Marker import/export.
 
@@ -407,18 +419,19 @@ Recommended v1 defaults:
 | 3   | Leaving Intake     | **No Done** — use nav to Data; select current session when landing on Data    | **D-010** |
 | 4   | Comparison audio   | Muted by default; **swap audio source** between panes → later                 | **D-007** |
 | 5   | Shorter laps       | **Freeze** finished pane on last frame; others keep playing                   | **D-008** |
-| 6   | Cross-session      | Session list + **persistent lap checkboxes** (not unified all-laps table)     | **D-009** |
+| 6   | Cross-session      | Session list + **persistent compare tray** (not unified all-laps table)     | **D-009** |
+| 7   | First build order  | **Mock data** + demo stream before SQLite (**VC-1–VC-4**)                   | **D-017** |
 
 
 ---
 
 ## Recommended first UI implementation slice
 
-Build a static shell before deep data work:
+**Active plan:** [View & Compare v1](features/VIEW_COMPARE_V1.md) — mock Data + 2-up Compare (VC-1–VC-4).
 
-1. App shell with top nav.
-2. Data form with sample session list and selected session details.
-3. Intake form layout with metadata strip, video area, marker timeline placeholder, lap list.
-4. Comparison form layout with two panes and shared transport placeholder.
+Superseded for now: generic static shell WO only. Intake/DB follow in separate work after compare UX is validated.
 
-This gives us something visual to react to before locking down API and persistence details.
+1. App shell + routes `/`, `/compare` (Intake stub).
+2. Data with mock sessions, lap table, compare tray.
+3. Compare 2-up with demo video + mock lap windows, sync + freeze behavior.
+4. Tray persistence (`sessionStorage` or URL).

@@ -36,6 +36,18 @@ LapViewer docs should make it possible to:
 
 ---
 
+## Keeping the map current
+
+When documentation is added, renamed, or split:
+
+1. Update the source-of-truth table below.
+2. Update `docs/agents/BASE_AGENT.md` **Project documentation map**.
+3. Update `.agent-project.yaml` `paths` to match.
+
+Agents resolve doc locations from `BASE_AGENT.md` first, then this file.
+
+---
+
 ## Source-of-truth rules
 
 Each concern should have one primary home.
@@ -43,6 +55,7 @@ Each concern should have one primary home.
 | Concern | Source of truth | Notes |
 |---------|-----------------|-------|
 | Feature list and acceptance criteria | `FEATURES.md` | Split into focused feature specs when a section grows too large |
+| View & compare v1 (active build) | `docs/features/VIEW_COMPARE_V1.md` | VC-1–VC-5 phases; mock-first per **D-017** |
 | Feature lifecycle and done gates | `FEATURE_LIFECYCLE.md` | Owns readiness, status, traceability, review, and done criteria |
 | User screen behavior | `UI_FORMS.md` | Keep route/form behavior here, not scattered across architecture docs |
 | Intake process | `INTAKE_FLOW.md` | Owns import user flow and edge cases |
@@ -56,6 +69,7 @@ Each concern should have one primary home.
 | Process hygiene standard | `PROCESS_HYGIENE.md` | Owns branching, verification ladder, and done criteria |
 | Local dev commands | `DEVELOPMENT.md` | Owns install, dev, check, and git workflow summary |
 | Agent instructions | `docs/agents/*.md` | Role-specific behavior for specialized agents |
+| Agent doc map (paths for agents) | `docs/agents/BASE_AGENT.md` + `.agent-project.yaml` | Must stay in sync with this file's SOT table |
 | Feature implementation tasks | `docs/work-orders/WO-*.md` | Typed work items per feature; see `docs/agents/WORK_ORDERS.md` |
 | Global agent work items | `docs/agents/WORK_QUEUE.md` | Tooling and hygiene; not primary home for feature code |
 

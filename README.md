@@ -39,7 +39,9 @@ A personal web application for uploading racing footage, marking lap boundaries,
 
 ## Status
 
-**Phase:** Video playback spike — minimal React + Node app.
+**Phase:** Design complete for core UX; **code is still a video playback spike** (no lap browser or compare UI yet).
+
+**Re-entering the project?** Read [Where we are & how to continue](docs/CONTINUATION.md).
 
 ### Quick start
 

@@ -1,44 +1,93 @@
 # Persistence Agent — base context
 
 **Work type:** `persistence`  
-Read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md` first.
+**Entry point:** always read this file first for database and data-layer work.
 
----
+Read before any work:
 
-## Agent checklist (required)
-
-- [ ] **1. Orient** — Global `BASE_AGENT.md`, this file, `WORK_ORDERS.md`.
-- [ ] **2. Work order** — Assigned item(s), acceptance criteria, branch, blockers.
-- [ ] **3. Auxiliary context** — Files in `docs/agents/persistence/` if linked.
-- [ ] **4. Persistence documentation** — Update `docs/PERSISTENCE.md` (schema, paths, ownership).
-- [ ] **5. Design** — Schema/migrations align with `VIDEO_LIBRARY.md` and feature spec.
-- [ ] **6. Implement** — SQLite, migrations, data access used by API (not HTTP handlers).
-- [ ] **7. Tests (local)** — Data-layer tests when straightforward; else queue `unit-test`.
-- [ ] **8. Run full verification** — `npm run check`; confirm DB under `DATA_DIR` per item (never commit `data/`); **`npm test` (entire suite) when a runner exists — all tests must pass** before `Done`. Fix failures [you caused](../test-strategy/BASE.md#who-fixes-failing-tests) or block and hand off.
-- [ ] **9. Close out** — Item status, docs, git commit per D-012.
-- [ ] **10. Report** — Summary, schema changes for downstream `api` items.
-
----
-
-## Mission
-
-All **Ready** items with **Work type:** `persistence`. Own `docs/PERSISTENCE.md` and DB layer.
+- Project `docs/agents/BASE_AGENT.md`
+- [WORK_ORDERS.md](../WORK_ORDERS.md)
+- [PICKUP.md](../PICKUP.md)
+- [PROJECT_STATE.md](../PROJECT_STATE.md) if present
 
 ---
 
 ## Pickup workflow
 
-[WORK_ORDERS.md](../WORK_ORDERS.md) — filter `persistence`; usually runs before `api` / `client`.
+When dispatched to process **all** Ready `persistence` work:
+
+1. Follow [PICKUP.md](../PICKUP.md) §1–2.
+2. For **each** eligible item, run the checklist below.
+3. Follow [PICKUP.md](../PICKUP.md) §4 (session report).
+
+Usually runs **first** among implementers on a feature WO (`persistence` → `api` → `client`).
 
 ---
 
-## Read first
+## Agent checklist (required)
 
-- `docs/PERSISTENCE.md`, `docs/VIDEO_LIBRARY.md`, `docs/DECISIONS.md`
-- `server/src/` persistence code
+- [ ] **1. Orient** — Project `BASE_AGENT.md`, this file, `WORK_ORDERS.md`, `PICKUP.md`.
+- [ ] **2. Work item** — Goal, acceptance criteria, **Blocked by**, **Docs to update**, WO git branch.
+- [ ] **3. Start item** — `Status: In Progress`; checkout/create WO branch ([PICKUP.md](../PICKUP.md) §3a).
+- [ ] **4. Auxiliary context** — Files on the item or in [Auxiliary context](#auxiliary-context-this-directory) below.
+- [ ] **5. Persistence documentation** — Update project persistence doc (schema, paths, ownership); update [schema-notes.md](schema-notes.md) when schema changes.
+- [ ] **6. Design** — Schema/migrations align with feature spec and domain data rules.
+- [ ] **7. Implement** — Database, migrations, data access layer (not HTTP handlers). Never commit runtime data directories.
+- [ ] **8. Tests (local)** — Data-layer tests when straightforward; else queue `unit-test`.
+- [ ] **9. Verify** — `verify.check`; confirm DB under configured data dir per work item; `verify.test` when available ([PICKUP.md](../PICKUP.md) §3b). Fix failures [you caused](../test-strategy/BASE.md#who-fixes-failing-tests) or block and hand off.
+- [ ] **10. Close out** — Item status, docs, git commit on WO branch.
+- [ ] **11. Report** — Session summary; schema changes and which `api` items may unblock.
+
+---
+
+## Mission
+
+All **Ready** items with **Work type:** `persistence`. Own persistence documentation and the DB access layer.
+
+---
+
+## Project docs (typical)
+
+From project `BASE_AGENT.md` / `.agent-project.yaml`:
+
+- Persistence / data model docs
+- Domain data rules (paths, ownership, external files)
+- `DECISIONS.md` for storage choices
+- Server persistence code paths
+
+---
+
+## Auxiliary context (this directory)
+
+| File | Purpose |
+|------|---------|
+| [schema-notes.md](schema-notes.md) | Tables, keys, invariants (copy from [schema-notes.template.md](schema-notes.template.md)) |
+| [migrations.md](migrations.md) | Migration history and rules (copy from [migrations.template.md](migrations.template.md)) |
+
+---
+
+## Responsibilities
+
+- Schema design and migrations
+- Data access used by the API layer
+- `DATA_DIR` and path conventions per project config
 
 ---
 
 ## Not this agent's job
 
-HTTP routes (`api/`), UI (`client/`), copying user video files.
+| Work type | Agent folder |
+|-----------|----------------|
+| HTTP routes | `docs/agents/api/` |
+| UI | `docs/agents/client/` |
+| Copying user-owned files outside app scope | Human / domain-specific WO |
+
+---
+
+## Default verification
+
+```bash
+npm run check
+```
+
+Confirm migrations apply cleanly; never commit `data/` or local DB files.

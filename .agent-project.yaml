@@ -1,21 +1,44 @@
-# LapViewer — project manifest for the agent platform (first consumer).
-# Generic framework docs will live in a separate agent-platform repository.
-# See docs/AGENT_PLATFORM_BLUEPRINT.md
+# LapViewer — project manifest for the agent platform.
+# Keep paths in sync with docs/agents/BASE_AGENT.md (documentation map).
+# Platform repo (local): ../agent-platform
 
 platform_pack: default-web-app
-platform_pack_version: "0.1.0"
+platform_pack_version: "0.2.0"
 platform_repo_local: ../agent-platform
-# platform_repo: <GitHub URL when published>
 
 project_name: LapViewer
 
 paths:
   agents: docs/agents
   work_orders: docs/work-orders
+
+  readme: README.md
+  project_overview: docs/PROJECT_OVERVIEW.md
   documentation_system: docs/DOCUMENTATION_SYSTEM.md
   decisions: docs/DECISIONS.md
   features: docs/FEATURES.md
   open_questions: docs/OPEN_QUESTIONS.md
+  feature_lifecycle: docs/FEATURE_LIFECYCLE.md
+  working_agreement: docs/WORKING_AGREEMENT.md
+  agent_workflow: docs/AGENT_WORKFLOW.md
+  agent_platform_blueprint: docs/AGENT_PLATFORM_BLUEPRINT.md
+
+  architecture: docs/ARCHITECTURE.md
+  technical_approach: docs/TECHNICAL_APPROACH.md
+  persistence: docs/PERSISTENCE.md
+  video_library: docs/VIDEO_LIBRARY.md
+  intake_flow: docs/INTAKE_FLOW.md
+
+  ui_forms: docs/UI_FORMS.md
+  ui_design: docs/UI_DESIGN.md
+
+  development: docs/DEVELOPMENT.md
+  process_hygiene: docs/PROCESS_HYGIENE.md
+  process_tooling_gaps: docs/PROCESS_TOOLING_GAPS.md
+  testing_strategy: docs/TESTING_STRATEGY.md
+
+  client_root: client
+  server_root: server
 
 git:
   default_branch: dev

@@ -82,11 +82,11 @@ When there is no marker after the final lap:
 
 ### 2.4 Time display format
 
-- [ ] `m:ss.mmm` (e.g. 1:42.356)
+- [x] `m:ss.mmm` (e.g. 1:42.356)
 - [ ] Seconds only with decimals (102.356)
 - [ ] Other: ___
 
-**Your answer:**
+**Your answer:** **`m:ss.mmm`** for lap times and compare readouts. See `docs/features/VIEW_COMPARE_V1.md`.
 
 ### 2.5 Invalid / partial laps
 
@@ -110,11 +110,11 @@ If you delete a marker or leave gaps:
 
 ### 3.2 Maximum panes
 
-- [ ] 2 (side-by-side only)
-- [ ] 4 (2×2 grid)
+- [x] 2 (side-by-side only) — **first build**
+- [ ] 4 (2×2 grid) — F5.3 after VC-3
 - [ ] More: ___
 
-**Your answer:**
+**Your answer:** **2-up first** (VIEW_COMPARE_V1 / D-017). Four-lap grid deferred to F5.3.
 
 ### 3.3 When laps are different lengths
 
@@ -137,10 +137,10 @@ Shorter lap finishes before longer ones:
 
 ### 3.5 Sync reference point
 
-- [ ] Sync at lap start (t = 0 at each lap marker)
+- [x] Sync at lap start (t = 0 at each lap marker)
 - [ ] Sync at a specific corner / manual offset (advanced — defer?)
 
-**Your answer:**
+**Your answer:** **`comparisonTime` = 0** at each lap’s start marker. See VIEW_COMPARE_V1.
 
 ---
 

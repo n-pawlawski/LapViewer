@@ -132,26 +132,34 @@ Implemented on the [Intake form](UI_FORMS.md#2-intake-form).
 
 ## F4 — Lap times UI (Data form)
 
+**v1 build spec:** [features/VIEW_COMPARE_V1.md](features/VIEW_COMPARE_V1.md) (mock data first, VC-2).
+
 Primary home for lap browsing and selection. See [UI Forms — Data form](UI_FORMS.md#1-data-form).
 
 ### F4.1 Lap list for a session
 
 **Intent:** See all laps and times for one race.
 
+**Status:** Ready — VC-2
+
 **Acceptance criteria:**
-- Table or list: lap number, lap time, maybe delta to best lap.
+- Table or list: lap number, lap time (`m:ss.mmm`), delta to best lap.
 - Highlight best lap.
-- Click a lap to seek the player to that lap's start.
+- Row click or checkbox toggles lap selection for compare tray.
+- No inline player on Data in v1.
 
 ### F4.2 Cross-session lap selection (v1)
 
 **Intent:** Select laps from different registered sessions for comparison.
 
+**Status:** Ready — VC-2
+
 **Acceptance criteria:**
 - Data form shows all registered sessions; lap list reflects the selected session.
-- Lap selection **persists** when switching to another session (checkboxes / comparison basket).
-- User can select 2–4 laps from one or more sessions and open Comparison.
-- Comparison selection UI shows session title + lap label for each selected lap.
+- **Compare tray** persists selections when switching sessions (checkboxes / basket).
+- User selects **2** laps (first build; 2–4 in F5.3) from one or more sessions and opens Comparison.
+- Compare tray shows session title + lap label + time for each selected lap.
+- `Compare selected` disabled unless exactly 2 laps selected (first build).
 
 **Deferred:** Unified “all laps” table with global filters (track/date across all sessions in one grid).
 
@@ -159,30 +167,41 @@ Primary home for lap browsing and selection. See [UI Forms — Data form](UI_FOR
 
 ## F5 — Lap comparison view (Comparison form)
 
+**v1 build spec:** [features/VIEW_COMPARE_V1.md](features/VIEW_COMPARE_V1.md) (2-up first, VC-3).
+
 See [UI Forms — Comparison form](UI_FORMS.md#3-comparison-form).
 
 ### F5.1 Select laps for comparison
 
 **Intent:** Choose which laps to watch together.
 
+**Status:** Ready — VC-2
+
 **Acceptance criteria:**
-- From lap list, multi-select 2–4 laps (max layout TBD).
-- Clear indication of which laps are selected.
+- From Data lap table, multi-select **2** laps (first build; 2–4 in F5.3).
+- Compare tray shows clear indication of selected laps.
 - Laps can come from the same session or different sessions (v1 — **D-009**).
 
 ### F5.2 Side-by-side layout (2-up)
 
 **Intent:** Watch two laps in parallel.
 
+**Status:** Ready — VC-3
+
 **Acceptance criteria:**
 - Two video panes, each playing the selected lap segment.
-- Playback synchronized from lap start (time 0 = each lap's start marker).
+- Playback synchronized from lap start (`comparisonTime` = 0 at each start marker).
 - Shared transport controls (play/pause/seek relative to lap start).
-- Seeking in one pane seeks all panes.
+- Scrubbing updates all active panes to the same comparison time.
+- Shorter lap: pane **freezes** on last frame when its segment ends (**D-008**).
+- Audio **muted** (**D-007**).
+- Back to Data preserves tray selection.
 
 ### F5.3 Grid layout (2×2)
 
 **Intent:** Compare up to four laps at once.
+
+**Status:** Deferred — after VC-3 validated
 
 **Acceptance criteria:**
 - Four panes in a 2×2 grid when four laps selected; fewer laps use 1×2 or 2×1 as appropriate.
@@ -227,7 +246,8 @@ See [UI Forms — Comparison form](UI_FORMS.md#3-comparison-form).
 
 | Priority | Features |
 |----------|----------|
-| **P0 — MVP** | F1.1, F1.2, F2.1, F3.1, F3.3, F4.1, F6.1 |
-| **P1 — Core value** | F5.1, F5.2, F3.2, F1.3 |
-| **P2 — Enhanced** | F5.3, F4.2, F2.2, F6.2 |
+| **P0 — Next slice** | F4.1, F4.2, F5.1, F5.2 — [VIEW_COMPARE_V1](features/VIEW_COMPARE_V1.md) VC-1–VC-4 (mock data) |
+| **P0 — MVP (full product)** | F1.1, F1.2, F2.1, F3.1, F3.3, F6.1 |
+| **P1 — Core value** | F3.2, F1.3, F5.3 (4-up grid) |
+| **P2 — Enhanced** | F2.2, F6.2 |
 | **P3 — Later** | F3.4, F5.4, auto-detection, telemetry |

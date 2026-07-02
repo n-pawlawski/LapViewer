@@ -1,5 +1,10 @@
 # API agent context
 
-**Start here:** [BASE.md](BASE.md)
+**Start here:** [BASE.md](BASE.md) — includes pickup workflow and checklist.
 
-Add auxiliary docs here (e.g. `routes.md`, `streaming.md`) and link from work items.
+## Templates
+
+| Copy to | From |
+|---------|------|
+| `routes.md` | [routes.template.md](routes.template.md) |
+| `validation.md` | [validation.template.md](validation.template.md) |

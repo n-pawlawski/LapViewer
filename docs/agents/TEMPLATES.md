@@ -16,16 +16,17 @@ Create `docs/agents/<folder>/` per [AGENT_LAYOUT.md](AGENT_LAYOUT.md).
 # <Role> Agent — base context
 
 **Work type:** `<work-type>`
-Read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md` first.
+Read `docs/agents/BASE_AGENT.md`, `docs/agents/WORK_ORDERS.md`, and `docs/agents/PICKUP.md` first.
 
 ---
 
 ## Agent checklist (required)
 
 - [ ] **1. Orient** — …
-- [ ] **2. Work order** — …
-- [ ] **3. Auxiliary context** — files in this folder linked from the work item
-- [ ] … through **10. Report**
+- [ ] **2. Work item** — read goal, AC, blockers, branch, docs to update
+- [ ] **3. Start item** — In Progress + branch per [PICKUP.md](PICKUP.md) §3a
+- [ ] **4. Auxiliary context** — files in this folder linked from the work item
+- [ ] … through **11. Report** (session summary per PICKUP.md §4)
 
 ---
 
@@ -45,7 +46,7 @@ Read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md` first.
 
 ## Pickup workflow
 
-[WORK_ORDERS.md](../WORK_ORDERS.md) — filter `<work-type>`.
+[PICKUP.md](../PICKUP.md) §1–2 — discover and filter `<work-type>`. Per-item loop §3.
 
 ---
 
@@ -54,7 +55,7 @@ Read `docs/agents/BASE_AGENT.md` and `docs/agents/WORK_ORDERS.md` first.
 …
 ```
 
-Copy [client/BASE.md](client/BASE.md) as the reference implementation.
+Copy [client/BASE.md](../packs/default-web-app/agents/client/BASE.md) as the reference implementation.
 
 ---
 
@@ -73,7 +74,7 @@ Add tasks to a **feature work order** (`docs/work-orders/`) or, for global tooli
 ```md
 ### <ID> - <Short title>
 
-**Work type:** `persistence` | `api` | `client` | `test-strategy` | `unit-test` | `docs` | `architecture` | `review` | `maintenance` | `full-stack`  
+**Work type:** `persistence` | `api` | `client` | `test-strategy` | `unit-test` | `browser-qa` | `docs` | `architecture` | `review` | `maintenance` | `full-stack`  
 **Status:** Draft | Ready | In Progress | Blocked | Done | Cancelled  
 **Priority:** P0 | P1 | P2 | P3  
 **Blocked by:** <IDs or —>  
@@ -118,6 +119,7 @@ Add tasks to a **feature work order** (`docs/work-orders/`) or, for global tooli
 - `TEST` - test strategy
 - `IMPL` - full-stack (legacy; prefer typed WO items)
 - `REV` - review
+- `BQ` - browser-qa
 - `MAINT` - maintenance
 - `GIT` - maintenance
 - `CI` - maintenance
@@ -127,18 +129,17 @@ Add tasks to a **feature work order** (`docs/work-orders/`) or, for global tooli
 ## Prompt template (single item)
 
 ```text
-Act as the LapViewer <Role> Agent.
-Read docs/agents/BASE_AGENT.md and docs/agents/<folder>/BASE.md.
+Act as the <ProjectName> <Role> Agent.
+Read docs/agents/BASE_AGENT.md, docs/agents/<folder>/BASE.md, docs/agents/PICKUP.md.
 Complete work item <ID> in docs/work-orders/WO-<name>.md (or WORK_QUEUE.md).
 ```
 
 ## Prompt template (all Ready work of one type)
 
 ```text
-Act as the LapViewer <Role> Agent.
-Read docs/agents/BASE_AGENT.md, docs/agents/<folder>/BASE.md, docs/agents/WORK_ORDERS.md.
-Process every Ready item with Work type `<work-type>` in docs/work-orders/ and WORK_QUEUE.md.
-Respect Blocked by; P0 before P1; update statuses and docs when finished.
+Act as the <ProjectName> <Role> Agent.
+Read docs/agents/BASE_AGENT.md, docs/agents/<folder>/BASE.md, docs/agents/WORK_ORDERS.md, docs/agents/PICKUP.md.
+Process every Ready item with Work type `<work-type>` per PICKUP.md.
 ```
 
 See [WORK_ORDERS.md](WORK_ORDERS.md) for full dispatch text.
