@@ -8,7 +8,7 @@ export function AppShell({
   layout = "default",
 }: {
   children: React.ReactNode;
-  layout?: "default" | "intake-workstation";
+  layout?: "default" | "intake-workstation" | "compare";
 }) {  const { navigate, pathname } = useRouter();
   const { canCompare, selectedLapIds } = useCompare();
 
@@ -36,7 +36,7 @@ export function AppShell({
   const compareTabDisabled = !canCompare;
 
   return (
-    <div className={`app ${layout === "intake-workstation" ? "app--intake-workstation" : ""}`}>      <header className="app-header">
+    <div className={`app ${layout !== "default" ? `app--${layout}` : ""}`}>      <header className="app-header">
         <div className="app-header-left">
           <span className="app-brand">LapViewer</span>
           <nav className="app-nav">

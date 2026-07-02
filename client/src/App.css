@@ -87,6 +87,17 @@ body {
   overflow: hidden;
 }
 
+/* Compare — fit viewport without page scroll */
+.app.app--compare {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.app.app--compare .app-main {
+  overflow: hidden;
+}
+
 /* Buttons */
 .btn {
   appearance: none;
@@ -430,13 +441,274 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1rem 1.25rem;
-  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  gap: 0.75rem;
+  min-height: 0;
 }
 
 .compare-page-header {
   display: flex;
   align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.compare-sync-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #9aa7b5;
+}
+
+.compare-sync-select select {
+  background: #141b24;
+  border: 1px solid #2a3544;
+  border-radius: 6px;
+  color: #e7ecf1;
+  padding: 0.35rem 0.5rem;
+}
+
+.comparison-chart {
+  background: #1a222c;
+  border: 1px solid #2a3544;
+  border-radius: 12px;
+  padding: 0.5rem 0.85rem;
+  flex-shrink: 0;
+}
+
+.comparison-chart-header {
+  margin-bottom: 0.35rem;
+}
+
+.comparison-chart-colors-btn {
+  background: #141b24;
+  color: #9aa7b5;
+  border: 1px solid #2a3544;
+  border-radius: 7px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.comparison-chart-colors-btn:hover {
+  color: #e7ecf1;
+}
+
+.comparison-chart-colors-btn.is-active {
+  background: #1e2a38;
+  color: #3b82f6;
+  border-color: #3b4a5c;
+}
+
+.comparison-chart-colors-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding: 0.5rem 0.6rem;
+  margin-bottom: 0.4rem;
+  background: #141b24;
+  border: 1px solid #2a3544;
+  border-radius: 8px;
+}
+
+.comparison-chart-color-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #c5d0db;
+}
+
+.comparison-chart-color-field input[type="color"] {
+  width: 28px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #2a3544;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.comparison-chart-colors-hint {
+  font-size: 0.72rem;
+  color: #6b7a8c;
+}
+
+.comparison-chart--empty {
+  padding: 1rem;
+  color: #9aa7b5;
+  font-size: 0.9rem;
+}
+
+.comparison-chart-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.comparison-chart-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e7ecf1;
+}
+
+.comparison-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  font-size: 0.8rem;
+  color: #9aa7b5;
+}
+
+.comparison-chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.comparison-chart-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.comparison-chart-lap-time {
+  font-variant-numeric: tabular-nums;
+  color: #e7ecf1;
+  margin-left: 0.15rem;
+}
+
+.comparison-chart-legend-delta {
+  font-variant-numeric: tabular-nums;
+}
+
+.comparison-chart-legend-delta strong {
+  font-weight: 600;
+}
+
+.comparison-chart-legend-hint {
+  color: #6b7a8c;
+  font-size: 0.75rem;
+}
+
+.comparison-chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  cursor: crosshair;
+}
+
+.comparison-chart-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.comparison-chart-mode-toggle {
+  display: inline-flex;
+  border: 1px solid #2a3544;
+  border-radius: 7px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.comparison-chart-mode-btn {
+  background: #141b24;
+  color: #9aa7b5;
+  border: none;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.comparison-chart-mode-btn + .comparison-chart-mode-btn {
+  border-left: 1px solid #2a3544;
+}
+
+.comparison-chart-mode-btn:hover {
+  color: #e7ecf1;
+}
+
+.comparison-chart-mode-btn.is-active {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.comparison-chart-subtitles {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.72rem;
+  color: #6b7a8c;
+  margin-bottom: 0.35rem;
+}
+
+.comparison-chart-subtitle-right {
+  text-align: right;
+}
+
+.comparison-chart-legend-lap {
+  font-weight: 600;
+  color: #c5d0db;
+  margin-right: 0.15rem;
+}
+
+.comparison-chart-axis-label {
+  font-size: 10px;
+  fill: #9aa7b5;
+}
+
+.comparison-chart-axis-title {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.comparison-chart-split-label {
+  font-size: 10px;
+  fill: #c5d0db;
+  font-weight: 500;
+}
+
+.comparison-chart-split-label--hidden {
+  display: none;
+}
+
+.comparison-chart-delta-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.comparison-chart-sector-label {
+  font-size: 10px;
+  fill: #c5d0db;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.comparison-chart-strip-label {
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.comparison-chart-segment-label {
+  font-size: 9px;
+  fill: #e7ecf1;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }
 
 .compare-grid {
@@ -454,6 +726,7 @@ body {
   border: 1px solid #2a3544;
   border-radius: 12px;
   overflow: hidden;
+  min-height: 0;
 }
 
 .compare-pane--frozen {
@@ -483,7 +756,7 @@ body {
 .compare-pane-video {
   width: 100%;
   flex: 1;
-  min-height: 280px;
+  min-height: 0;
   background: #000;
   object-fit: contain;
 }
@@ -510,6 +783,29 @@ body {
   font-size: 0.9rem;
   color: #e7ecf1;
   min-width: 8rem;
+}
+
+.compare-pane-frame-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid #2a3544;
+  background: #141b24;
+}
+
+.compare-pane-frame-label {
+  font-size: 0.75rem;
+  color: #9aa7b5;
+  min-width: 6rem;
+  text-align: center;
+}
+
+.comparison-frame-hint {
+  font-size: 0.8rem;
+  color: #7d8b9a;
+  flex: 1 1 100%;
 }
 
 .comparison-audio-note {

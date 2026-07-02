@@ -11,6 +11,7 @@ import {
   splitSegmentMs,
   nextEmptySplitIndex,
   splitForSlot,
+  splitIndexForPlacementByTime,
   splitsByLapNumber,
   tailSegmentMs,
 } from "../utils/splits";
@@ -175,7 +176,7 @@ export function IntakeMarkingPanel({
   }, [sessionId, markers]);
 
   const addSplitAtCurrentTime = useCallback(async () => {
-    if (selectedLapNumber == null || selectedSplitIndex == null) return;
+    if (selectedLapNumber == null) return;
     const bounds = lapBounds(laps, selectedLapNumber);
     if (!bounds) return;
     const time = currentTimeRef.current;
@@ -187,19 +188,32 @@ export function IntakeMarkingPanel({
     if (nearby) {
       setSelectedSplitId(nearby.id);
       setSelectedSplitIndex(nearby.splitIndex);
-      await runMarkerMutation(() => updateMarker(nearby.id, { timeSeconds: time }));
+      const session = await runMarkerMutation(() => updateMarker(nearby.id, { timeSeconds: time }));
+      if (!session) return;
+      const updatedLapSplits = session.splits.filter((split) => split.lapNumber === lapNumber);
+      setSelectedSplitIndex(
+        splitIndexForPlacementByTime(time, trackSplits, updatedLapSplits) ?? null,
+      );
       return;
     }
 
-    const splitIndex = selectedSplitIndex;
+    if (lapSplits.length >= trackSplits.length) return;
+
+    const splitIndex =
+      splitIndexForPlacementByTime(time, trackSplits, lapSplits) ??
+      trackSplits[0]?.splitIndex;
+    if (splitIndex == null) return;
+
     const session = await runMarkerMutation(() =>
       createSplit(sessionId, lapNumber, splitIndex, time),
     );
     if (!session) return;
     const updatedLapSplits = session.splits.filter((split) => split.lapNumber === lapNumber);
-    setSelectedSplitIndex(nextEmptySplitIndex(trackSplits, updatedLapSplits) ?? null);
+    setSelectedSplitIndex(
+      splitIndexForPlacementByTime(time, trackSplits, updatedLapSplits) ?? null,
+    );
     setSelectedSplitId(null);
-  }, [sessionId, selectedLapNumber, selectedSplitIndex, laps, trackSplits, splits]);
+  }, [sessionId, selectedLapNumber, laps, trackSplits, splits]);
 
   function handleTimeUpdate() {
     const video = videoRef.current;
@@ -247,7 +261,10 @@ export function IntakeMarkingPanel({
     setSelectedSplitId(null);
     const lapSplits = splitMap.get(lapNumber) ?? [];
     setSelectedSplitIndex(
-      nextEmptySplitIndex(trackSplits, lapSplits) ?? trackSplits[0]?.splitIndex ?? null,
+      splitIndexForPlacementByTime(currentTimeRef.current, trackSplits, lapSplits) ??
+        nextEmptySplitIndex(trackSplits, lapSplits) ??
+        trackSplits[0]?.splitIndex ??
+        null,
     );
     seek(marker.timeSeconds);
   }
@@ -318,17 +335,27 @@ export function IntakeMarkingPanel({
 
   const selectedLapBounds =
     selectedLapNumber != null ? lapBounds(laps, selectedLapNumber) : null;
+  const selectedLapSplits =
+    selectedLapNumber != null ? (splitMap.get(selectedLapNumber) ?? []) : [];
+  const placementSplitIndex =
+    selectedLapNumber != null
+      ? splitIndexForPlacementByTime(currentTime, trackSplits, selectedLapSplits)
+      : null;
+  const nearbySplit =
+    selectedLapNumber != null
+      ? nearestWithinThreshold(selectedLapSplits, currentTime, MARKER_SNAP_SECONDS)
+      : undefined;
   const canAddSplit =
     trackSplits.length > 0 &&
     selectedLapNumber != null &&
-    selectedSplitIndex != null &&
     selectedLapBounds != null &&
     isTimeInsideLap(
       currentTime,
       selectedLapBounds.startSeconds,
       selectedLapBounds.endSeconds,
     ) &&
-    !splitForSlot(splitMap.get(selectedLapNumber) ?? [], selectedSplitIndex);
+    (nearbySplit != null ||
+      (selectedLapSplits.length < trackSplits.length && placementSplitIndex != null));
 
   const firstMarkerTime = markers[0]?.timeSeconds;
   const bestLapMs = bestLapTimeMsFromMarkers(markers, duration > 0 ? duration : durationSeconds);
@@ -437,14 +464,14 @@ export function IntakeMarkingPanel({
                   ? "Configure splits on the Tracks page"
                   : selectedLapNumber == null
                     ? "Select a lap first"
-                    : selectedSplitIndex == null
-                      ? "Select a split slot"
-                      : canAddSplit
-                        ? `Place ${
-                            trackSplits.find((s) => s.splitIndex === selectedSplitIndex)?.name ??
+                    : canAddSplit
+                      ? nearbySplit
+                        ? `Adjust ${nearbySplit.label} (snaps within ${MARKER_SNAP_SECONDS}s)`
+                        : `Place ${
+                            trackSplits.find((s) => s.splitIndex === placementSplitIndex)?.name ??
                             "split"
-                          } on Lap ${selectedLapNumber} (snaps within ${MARKER_SNAP_SECONDS}s)`
-                        : "Playhead must be inside the lap and slot must be empty"
+                          } on Lap ${selectedLapNumber} by lap time`
+                      : "Playhead must be inside the lap with room for another split"
               }
             >
               + Split

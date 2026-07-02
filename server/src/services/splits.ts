@@ -1,6 +1,11 @@
 import type { LapDto, SplitDto, TrackSplitDto } from "../types.js";
+import { getDb } from "../db/database.js";
 
 const EPSILON = 0.001;
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
 
 export interface SplitMarkerInput {
   id: string;
@@ -115,4 +120,64 @@ export function findSplitMarkerInLap(
       marker.timeSeconds > lap.startSeconds + EPSILON &&
       marker.timeSeconds < lap.endSeconds - EPSILON,
   );
+}
+
+/** Reassign splitIndex labels by chronological order within a lap (1st time → 1st track slot, etc.). */
+export function rebalanceLapSplitIndices(
+  sessionId: string,
+  lapNumber: number,
+  laps: LapDto[],
+  trackSplits: TrackSplitDto[],
+): void {
+  const bounds = lapBoundsForNumber(laps, lapNumber);
+  if (!bounds || trackSplits.length === 0) return;
+
+  const orderedTrack = [...trackSplits].sort((a, b) => a.splitIndex - b.splitIndex);
+  const db = getDb();
+
+  const markers = db
+    .prepare(`SELECT id, timeSeconds FROM markers WHERE sessionId = ? AND kind = 'split'`)
+    .all(sessionId) as Array<{ id: string; timeSeconds: number }>;
+
+  const inLap = markers
+    .filter(
+      (marker) =>
+        marker.timeSeconds > bounds.startSeconds + EPSILON &&
+        marker.timeSeconds < bounds.endSeconds - EPSILON,
+    )
+    .sort((a, b) => a.timeSeconds - b.timeSeconds);
+
+  if (inLap.length === 0) return;
+
+  const assignCount = Math.min(inLap.length, orderedTrack.length);
+  const ts = nowIso();
+  const clearStmt = db.prepare(
+    `UPDATE markers SET splitIndex = NULL, updatedAt = ? WHERE id = ?`,
+  );
+  const assignStmt = db.prepare(
+    `UPDATE markers SET splitIndex = ?, label = ?, updatedAt = ? WHERE id = ?`,
+  );
+
+  const rebalance = db.transaction(() => {
+    for (const marker of inLap) {
+      clearStmt.run(ts, marker.id);
+    }
+    for (let i = 0; i < assignCount; i++) {
+      const trackSplit = orderedTrack[i];
+      assignStmt.run(trackSplit.splitIndex, trackSplit.name, ts, inLap[i].id);
+    }
+  });
+  rebalance();
+}
+
+/** Rebalance every lap in a session (e.g. on load to fix legacy slot assignments). */
+export function rebalanceSessionSplitIndices(
+  sessionId: string,
+  laps: LapDto[],
+  trackSplits: TrackSplitDto[],
+): void {
+  if (trackSplits.length === 0) return;
+  for (const lap of laps) {
+    rebalanceLapSplitIndices(sessionId, lap.lapNumber, laps, trackSplits);
+  }
 }

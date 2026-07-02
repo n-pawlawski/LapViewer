@@ -8,8 +8,9 @@ import {
   assertTimeInsideLap,
   assignSplitsToLaps,
   findLapForSplitTime,
-  findSplitMarkerInLap,
   lapBoundsForNumber,
+  rebalanceLapSplitIndices,
+  rebalanceSessionSplitIndices,
 } from "../services/splits.js";
 import { getTrackByName } from "../services/tracks.js";
 import { getTrackSplitsByName } from "../services/trackSplits.js";
@@ -143,10 +144,11 @@ export function getSessionById(id: string): SessionDetail | null {
   if (!row) return null;
 
   const laps = lapsForSession(row);
+  const trackSplits = trackSplitsForSession(row);
+  rebalanceSessionSplitIndices(row.id, laps, trackSplits);
   const summary = toSummary(row);
   const markers = lapStartMarkersToDto(getLapStartMarkersForSession(row.id));
   const splits = splitsForSession(row, laps);
-  const trackSplits = trackSplitsForSession(row);
 
   return {
     ...summary,
@@ -355,43 +357,37 @@ export function insertMarker(
     }
     assertTimeInsideLap(timeSeconds, bounds.startSeconds, bounds.endSeconds);
 
-    const splitMarkers = getSplitMarkersForSession(sessionId);
-    const existing = findSplitMarkerInLap(
-      splitMarkers,
-      laps,
-      options.lapNumber,
-      options.splitIndex,
-    );
-    if (existing) {
-      return updateMarker(existing.id, { timeSeconds });
-    }
-
     const id = randomUUID();
     const ts = nowIso();
     getDb()
       .prepare(
         `INSERT INTO markers (id, sessionId, timeSeconds, kind, label, ignored, splitIndex, createdAt, updatedAt)
-         VALUES (@id, @sessionId, @timeSeconds, 'split', @label, 0, @splitIndex, @createdAt, @updatedAt)`,
+         VALUES (@id, @sessionId, @timeSeconds, 'split', @label, 0, NULL, @createdAt, @updatedAt)`,
       )
       .run({
         id,
         sessionId,
         timeSeconds,
         label: trackSplit.name,
-        splitIndex: options.splitIndex,
         createdAt: ts,
         updatedAt: ts,
       });
+
+    const lapsAfter = lapsForSession(session);
+    rebalanceLapSplitIndices(sessionId, options.lapNumber, lapsAfter, track.splits);
 
     getDb()
       .prepare(`UPDATE sessions SET updatedAt = ? WHERE id = ?`)
       .run(ts, sessionId);
 
+    const updatedSplits = splitsForSession(session, lapsAfter);
+    const created = updatedSplits.find((s) => s.id === id);
+
     return {
       id,
       sessionId,
       timeSeconds,
-      label: trackSplit.name,
+      label: created?.label ?? trackSplit.name,
       ignored: false,
       kind: "split",
     };
@@ -467,21 +463,6 @@ export function updateMarker(markerId: string, body: UpdateMarkerBody): MarkerDt
       throw Object.assign(new Error("Split is outside any lap"), { code: "VALIDATION" });
     }
     assertTimeInsideLap(timeSeconds, lap.startSeconds, lap.endSeconds);
-    if (row.splitIndex != null) {
-      const splitMarkers = getSplitMarkersForSession(row.sessionId);
-      const duplicate = findSplitMarkerInLap(
-        splitMarkers,
-        laps,
-        lap.lapNumber,
-        row.splitIndex,
-      );
-      if (duplicate && duplicate.id !== markerId) {
-        throw Object.assign(
-          new Error("That split slot is already marked on this lap"),
-          { code: "VALIDATION" },
-        );
-      }
-    }
   } else if (body.timeSeconds !== undefined && body.timeSeconds !== row.timeSeconds) {
     const lapMarkers = getLapStartMarkersForSession(row.sessionId);
     const lapIndex = lapMarkers.findIndex((m) => m.id === markerId);
@@ -529,6 +510,16 @@ export function updateMarker(markerId: string, body: UpdateMarkerBody): MarkerDt
     )
     .run(timeSeconds, label, ignored, ts, markerId);
 
+  if (row.kind === "split" && body.timeSeconds !== undefined) {
+    const lap = findLapForSplitTime(laps, timeSeconds);
+    if (lap && session.trackName) {
+      const track = getTrackByName(session.trackName);
+      if (track?.splits?.length) {
+        rebalanceLapSplitIndices(row.sessionId, lap.lapNumber, laps, track.splits);
+      }
+    }
+  }
+
   getDb()
     .prepare(`UPDATE sessions SET updatedAt = ? WHERE id = ?`)
     .run(ts, row.sessionId);
@@ -553,14 +544,36 @@ export function updateMarker(markerId: string, body: UpdateMarkerBody): MarkerDt
 
 export function deleteMarker(markerId: string): boolean {
   const row = getDb()
-    .prepare(`SELECT sessionId FROM markers WHERE id = ?`)
-    .get(markerId) as { sessionId: string } | undefined;
+    .prepare(`SELECT sessionId, kind, timeSeconds FROM markers WHERE id = ?`)
+    .get(markerId) as
+    | { sessionId: string; kind: string; timeSeconds: number }
+    | undefined;
+
+  if (!row) return false;
+
+  const session = getDb()
+    .prepare(`SELECT * FROM sessions WHERE id = ?`)
+    .get(row.sessionId) as SessionRow | undefined;
+
+  const laps = session ? lapsForSession(session) : null;
+  const splitLap =
+    row.kind === "split" && laps
+      ? findLapForSplitTime(laps, row.timeSeconds)
+      : null;
 
   const result = getDb().prepare(`DELETE FROM markers WHERE id = ?`).run(markerId);
-  if (result.changes > 0 && row) {
+  if (result.changes > 0) {
+    const ts = nowIso();
     getDb()
       .prepare(`UPDATE sessions SET updatedAt = ? WHERE id = ?`)
-      .run(nowIso(), row.sessionId);
+      .run(ts, row.sessionId);
+
+    if (splitLap && session?.trackName) {
+      const track = getTrackByName(session.trackName);
+      if (track?.splits?.length && laps) {
+        rebalanceLapSplitIndices(row.sessionId, splitLap.lapNumber, laps, track.splits);
+      }
+    }
   }
   return result.changes > 0;
 }

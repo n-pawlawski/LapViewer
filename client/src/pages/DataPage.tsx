@@ -181,7 +181,7 @@ export function DataPage() {
                       </button>
                     </div>
                   </div>
-                  <LapTable session={session} laps={detail.laps} />
+                  <LapTable session={session} laps={detail.laps} sessionDetail={detail} />
                   <CompareTray />
                 </>
               ) : (

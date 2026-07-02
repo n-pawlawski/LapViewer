@@ -7,8 +7,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { fetchSession } from "../api/sessions";
-import type { Lap, Session } from "../types";
+import { fetchSession, type SessionDetail } from "../api/sessions";
+import type { Lap, Session, Split } from "../types";
+import type { TrackSplit } from "../api/tracks";
+import { parseLapId } from "../utils/lapIds";
+import { buildSelectedLap } from "../utils/compare";
 
 const STORAGE_KEY = "lapviewer-compare-tray";
 const MAX_SELECTION = 2;
@@ -16,12 +19,15 @@ const MAX_SELECTION = 2;
 export interface SelectedLap {
   lap: Lap;
   session: Session;
+  splits: Split[];
+  trackSplits: TrackSplit[];
+  lapStartMarkerId: string | null;
 }
 
 interface CompareContextValue {
   selectedLapIds: string[];
   selectedLaps: SelectedLap[];
-  toggleLap: (lap: Lap, session: Session) => void;
+  toggleLap: (lap: Lap, session: Session, detail?: SessionDetail) => void;
   removeLap: (lapId: string) => void;
   clearAll: () => void;
   isSelected: (lapId: string) => boolean;
@@ -44,20 +50,8 @@ function loadStoredIds(): string[] {
   }
 }
 
-function sessionFromDetail(
-  detail: Awaited<ReturnType<typeof fetchSession>>,
-): Session {
-  return {
-    id: detail.id,
-    title: detail.title,
-    sourcePath: detail.sourcePath,
-    status: detail.status,
-    track: detail.track,
-    date: detail.date,
-    lapCount: detail.lapCount,
-    bestLapTimeMs: detail.bestLapTimeMs,
-    usesDemoStream: detail.status === "ready",
-  };
+function selectedLapFromDetail(detail: SessionDetail, lap: Lap): SelectedLap {
+  return buildSelectedLap(detail, lap);
 }
 
 export function CompareProvider({ children }: { children: ReactNode }) {
@@ -82,18 +76,17 @@ export function CompareProvider({ children }: { children: ReactNode }) {
     void (async () => {
       const sessionIds = new Set<string>();
       for (const lapId of ids) {
-        const match = /^(.+)-lap-\d+$/.exec(lapId);
-        if (match?.[1]) sessionIds.add(match[1]);
+        const parsed = parseLapId(lapId);
+        if (parsed) sessionIds.add(parsed.sessionId);
       }
 
       const entries: SelectedLap[] = [];
       for (const sessionId of sessionIds) {
         try {
           const detail = await fetchSession(sessionId);
-          const session = sessionFromDetail(detail);
           for (const lap of detail.laps) {
             if (ids.includes(lap.id)) {
-              entries.push({ lap, session });
+              entries.push(selectedLapFromDetail(detail, lap));
             }
           }
         } catch {
@@ -118,7 +111,7 @@ export function CompareProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const hydrateFromApi = useCallback(async () => {
-    /* tray hydration runs on mount; kept for API compatibility */
+    /* tray hydration runs on mount */
   }, []);
 
   const selectedLaps = useMemo(
@@ -130,9 +123,24 @@ export function CompareProvider({ children }: { children: ReactNode }) {
   );
 
   const toggleLap = useCallback(
-    (lap: Lap, session: Session) => {
+    (lap: Lap, session: Session, detail?: SessionDetail) => {
       setSelectionHint(null);
-      registerLap({ lap, session });
+      if (detail) {
+        registerLap(selectedLapFromDetail(detail, lap));
+      } else {
+        const cached = lapCache[lap.id];
+        if (cached) {
+          registerLap(cached);
+        } else {
+          registerLap({
+            lap,
+            session,
+            splits: [],
+            trackSplits: [],
+            lapStartMarkerId: null,
+          });
+        }
+      }
 
       setSelectedLapIds((prev) => {
         if (prev.includes(lap.id)) {
@@ -145,7 +153,7 @@ export function CompareProvider({ children }: { children: ReactNode }) {
         return [...prev, lap.id];
       });
     },
-    [registerLap],
+    [registerLap, lapCache],
   );
 
   const removeLap = useCallback((lapId: string) => {

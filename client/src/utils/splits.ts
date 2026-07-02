@@ -6,6 +6,21 @@ export function splitForSlot(lapSplits: Split[], splitIndex: number): Split | un
   return lapSplits.find((split) => split.splitIndex === splitIndex);
 }
 
+/** Which track slot a new split at this time will land in (by lap-time order). */
+export function splitIndexForPlacementByTime(
+  timeSeconds: number,
+  trackSplits: { splitIndex: number }[],
+  lapSplits: Split[],
+): number | undefined {
+  if (trackSplits.length === 0) return undefined;
+  const orderedTrack = [...trackSplits].sort((a, b) => a.splitIndex - b.splitIndex);
+  const beforeCount = lapSplits.filter(
+    (split) => split.timeSeconds < timeSeconds - EPSILON,
+  ).length;
+  if (beforeCount >= orderedTrack.length) return undefined;
+  return orderedTrack[beforeCount].splitIndex;
+}
+
 export function nextEmptySplitIndex(
   trackSplits: { splitIndex: number }[],
   lapSplits: Split[],
