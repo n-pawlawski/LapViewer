@@ -46,22 +46,25 @@ const SEED_DATA: SeedSession[] = [
 ];
 
 /** Populate demo sessions when the database is empty (dev convenience). */
-export function seedIfEmpty(): void {
-  if (countTracks() === 0) {
-    createTrack({ name: "Track A", videoFolder: "E:\\Racing Videos" });
-    createTrack({ name: "Track B", videoFolder: "E:\\Racing Videos\\spring" });
+export function seedIfEmpty(userId: string): void {
+  if (countTracks(userId) === 0) {
+    createTrack({ name: "Track A", videoFolder: "E:\\Racing Videos" }, userId);
+    createTrack({ name: "Track B", videoFolder: "E:\\Racing Videos\\spring" }, userId);
     console.log("Seeded default tracks");
   }
 
-  if (countSessions() > 0) return;
+  if (countSessions(userId) > 0) return;
 
   for (const seed of SEED_DATA) {
-    const session = createSession({
-      sourcePath: seed.sourcePath,
-      title: seed.title,
-      trackName: seed.trackName,
-      recordedAt: seed.recordedAt,
-    });
+    const session = createSession(
+      {
+        sourcePath: seed.sourcePath,
+        title: seed.title,
+        trackName: seed.trackName,
+        recordedAt: seed.recordedAt,
+      },
+      userId,
+    );
 
     const status = seed.status ?? session.status;
     getDb()
@@ -71,7 +74,7 @@ export function seedIfEmpty(): void {
       .run(seed.durationSeconds ?? null, status, session.id);
 
     for (const time of seed.markerTimes) {
-      insertMarker(session.id, time);
+      insertMarker(session.id, time, undefined, userId);
     }
   }
 

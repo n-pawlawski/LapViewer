@@ -1,4 +1,6 @@
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CompareProvider } from "./context/CompareContext";
+import { AuthGate } from "./components/AuthGate";
 import { RouterProvider, useRouter } from "./lib/router";
 import { ComparePage } from "./pages/ComparePage";
 import { DataPage } from "./pages/DataPage";
@@ -22,12 +24,36 @@ function AppRoutes() {
   }
 }
 
+function AuthenticatedApp() {
+  const { status } = useAuth();
+
+  if (status === "loading") {
+    return (
+      <div className="auth-gate">
+        <div className="auth-gate-card">
+          <p className="auth-gate-text">Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return <AuthGate />;
+  }
+
+  return (
+    <CompareProvider>
+      <AppRoutes />
+    </CompareProvider>
+  );
+}
+
 export default function App() {
   return (
     <RouterProvider>
-      <CompareProvider>
-        <AppRoutes />
-      </CompareProvider>
+      <AuthProvider>
+        <AuthenticatedApp />
+      </AuthProvider>
     </RouterProvider>
   );
 }

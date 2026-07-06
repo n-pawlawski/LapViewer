@@ -1,3 +1,5 @@
+import { apiFetch } from "./client";
+
 export interface DetectionRoi {
   x0: number;
   y0: number;
@@ -21,20 +23,6 @@ export interface UpdateDetectionProfileRequest {
   lapTimePriorMs?: number | null;
 }
 
-async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    const message =
-      typeof body.error === "string" ? body.error : `Request failed (${res.status})`;
-    throw new Error(message);
-  }
-  if (res.status === 204) {
-    return undefined as T;
-  }
-  return res.json() as Promise<T>;
-}
-
 export function sessionFrameUrl(
   sessionId: string,
   timeSec: number,
@@ -50,7 +38,9 @@ export function sessionFrameUrl(
 export async function fetchDetectionProfile(
   trackId: string,
 ): Promise<DetectionProfile | null> {
-  const res = await fetch(`/api/tracks/${trackId}/detection-profile`);
+  const res = await fetch(`/api/tracks/${trackId}/detection-profile`, {
+    credentials: "include",
+  });
   if (res.status === 404) return null;
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

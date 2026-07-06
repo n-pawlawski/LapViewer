@@ -35,6 +35,24 @@ npm run install:all
 
 Open [http://localhost:5173](http://localhost:5173) after `npm run dev`.
 
+### Auth and dev account
+
+| Variable | When | Purpose |
+|----------|------|---------|
+| `LAPVIEWER_DEV_USER=1` | Set automatically by `npm run dev` (server) | Seeds dev user **`root` / `root`** |
+| `NODE_ENV=development` | Alternative to above | Same dev-user behavior |
+| `SESSION_SECRET` | Optional | HMAC secret for session cookies (set before any hosted deploy) |
+| `CLIENT_ORIGIN` | Optional | CORS origin (default `http://localhost:5173`) |
+
+| Command | Dev user | API without login |
+|---------|----------|-------------------|
+| `npm run dev` | Seeded if missing | 401 on data routes |
+| `npm start` | **Not** seeded | 401 on data routes |
+
+After `npm run dev`, sign in with your account or the dev credentials **`root` / `root`** (dev mode only). The dev account shows a **DEV ACCOUNT** badge in the header.
+
+Verify auth isolation: `npm run test:auth --prefix server`
+
 ---
 
 ## Git workflow (summary)

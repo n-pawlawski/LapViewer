@@ -1,5 +1,6 @@
 import type { Marker } from "../types";
 import type { SessionDetail } from "./sessions";
+import { apiFetch } from "./client";
 
 export interface MarkerMutationResponse {
   marker: Marker;
@@ -8,20 +9,6 @@ export interface MarkerMutationResponse {
 
 export interface MarkerDeleteResponse {
   session: SessionDetail;
-}
-
-async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    const message =
-      typeof body.error === "string" ? body.error : `Request failed (${res.status})`;
-    throw new Error(message);
-  }
-  if (res.status === 204) {
-    return undefined as T;
-  }
-  return res.json() as Promise<T>;
 }
 
 export async function createMarker(

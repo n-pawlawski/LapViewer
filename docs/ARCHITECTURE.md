@@ -258,7 +258,7 @@ Client-side: video elements point at backend URLs (`/api/video/:id?variant=proxy
 ## Security note (local app)
 
 - Bind API to **localhost only** (`127.0.0.1`) unless you intentionally expose on LAN.
-- No auth required for v1 single-user local use.
+- **Auth (Phase 1):** Data routes require a signed httpOnly session cookie. Dev mode seeds a fixed dev user and exposes `POST /api/auth/dev-login`; `npm start` without dev flags returns 401 until real login (Phase 4).
 - Validate all file paths stay under `VIDEO_LIBRARY_ROOT` to avoid path traversal if API is ever exposed.
 
 ---

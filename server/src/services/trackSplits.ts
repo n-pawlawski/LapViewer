@@ -30,10 +30,10 @@ export function getTrackSplits(trackId: string): TrackSplitDto[] {
   return rows.map(rowToDto);
 }
 
-export function getTrackSplitsByName(trackName: string): TrackSplitDto[] {
+export function getTrackSplitsByName(trackName: string, userId: string): TrackSplitDto[] {
   const track = getDb()
-    .prepare(`SELECT id FROM tracks WHERE name = ?`)
-    .get(trackName) as { id: string } | undefined;
+    .prepare(`SELECT id FROM tracks WHERE name = ? AND userId = ?`)
+    .get(trackName, userId) as { id: string } | undefined;
   if (!track) return [];
   return getTrackSplits(track.id);
 }

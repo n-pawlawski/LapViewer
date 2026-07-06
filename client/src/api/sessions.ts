@@ -1,5 +1,6 @@
 import type { Lap, Marker, Session, Split } from "../types";
 import type { TrackSplit } from "./tracks";
+import { apiFetch } from "./client";
 
 export interface SessionSummary {
   id: string;
@@ -36,17 +37,6 @@ export interface UpdateSessionRequest {
   recordedAt?: string | null;
   notes?: string | null;
   durationSeconds?: number | null;
-}
-
-async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    const message =
-      typeof body.error === "string" ? body.error : `Request failed (${res.status})`;
-    throw new Error(message);
-  }
-  return res.json() as Promise<T>;
 }
 
 export async function fetchSessions(): Promise<SessionSummary[]> {

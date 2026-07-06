@@ -1,3 +1,5 @@
+import { apiFetch } from "./client";
+
 export interface TrackSplit {
   id: string;
   trackId: string;
@@ -26,20 +28,6 @@ export interface UpdateTrackRequest {
   notes?: string;
 }
 
-async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    const message =
-      typeof body.error === "string" ? body.error : `Request failed (${res.status})`;
-    throw new Error(message);
-  }
-  if (res.status === 204) {
-    return undefined as T;
-  }
-  return res.json() as Promise<T>;
-}
-
 export async function fetchTracks(): Promise<Track[]> {
   return apiFetch<Track[]>("/api/tracks");
 }
@@ -51,7 +39,6 @@ export async function fetchTrack(id: string): Promise<Track> {
 export async function createTrack(body: CreateTrackRequest): Promise<Track> {
   return apiFetch<Track>("/api/tracks", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 }
@@ -62,7 +49,6 @@ export async function updateTrack(
 ): Promise<Track> {
   return apiFetch<Track>(`/api/tracks/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 }
@@ -77,7 +63,6 @@ export async function replaceTrackSplits(
 ): Promise<{ splits: TrackSplit[]; track: Track }> {
   return apiFetch<{ splits: TrackSplit[]; track: Track }>(`/api/tracks/${trackId}/splits`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ splits }),
   });
 }

@@ -5,9 +5,12 @@ import { getTrackById } from "../services/tracks.js";
 
 export const systemRouter = Router();
 
-function resolveInitialDir(body: { initialDir?: string; trackId?: string }): string {
+function resolveInitialDir(
+  userId: string,
+  body: { initialDir?: string; trackId?: string },
+): string {
   if (body.trackId) {
-    const track = getTrackById(body.trackId);
+    const track = getTrackById(body.trackId, userId);
     if (track?.videoFolder) {
       return track.videoFolder;
     }
@@ -18,7 +21,7 @@ function resolveInitialDir(body: { initialDir?: string; trackId?: string }): str
 
 systemRouter.post("/pick-video-file", (req, res) => {
   const body = req.body as { initialDir?: string; trackId?: string };
-  const initialDir = resolveInitialDir(body);
+  const initialDir = resolveInitialDir(req.userId!, body);
 
   try {
     const path = pickVideoFile(initialDir);
@@ -35,7 +38,7 @@ systemRouter.post("/pick-video-file", (req, res) => {
 
 systemRouter.post("/pick-folder", (req, res) => {
   const body = req.body as { initialDir?: string; trackId?: string };
-  const initialDir = resolveInitialDir(body);
+  const initialDir = resolveInitialDir(req.userId!, body);
 
   try {
     const path = pickFolder(initialDir);

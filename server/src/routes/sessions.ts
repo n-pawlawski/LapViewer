@@ -12,12 +12,12 @@ import { streamVideoFile } from "../video.js";
 
 export const sessionsRouter = Router();
 
-sessionsRouter.get("/", (_req, res) => {
-  res.json(listSessions());
+sessionsRouter.get("/", (req, res) => {
+  res.json(listSessions(req.userId!));
 });
 
 sessionsRouter.get("/:id/markers", (req, res) => {
-  const session = getSessionById(req.params.id);
+  const session = getSessionById(req.params.id, req.userId!);
   if (!session) {
     res.status(404).json({ error: "Session not found" });
     return;
@@ -38,8 +38,8 @@ sessionsRouter.post("/:id/markers", (req, res) => {
       kind: body.kind,
       lapNumber: body.lapNumber,
       splitIndex: body.splitIndex,
-    });
-    const session = getSessionById(req.params.id);
+    }, req.userId!);
+    const session = getSessionById(req.params.id, req.userId!);
     res.status(201).json({ marker, session });
   } catch (err) {
     const error = err as Error & { code?: string };
@@ -52,7 +52,7 @@ sessionsRouter.post("/:id/markers", (req, res) => {
 });
 
 sessionsRouter.get("/:id", (req, res) => {
-  const session = getSessionById(req.params.id);
+  const session = getSessionById(req.params.id, req.userId!);
   if (!session) {
     res.status(404).json({ error: "Session not found" });
     return;
@@ -68,7 +68,7 @@ sessionsRouter.post("/", (req, res) => {
   }
 
   try {
-    const session = createSession(body);
+    const session = createSession(body, req.userId!);
     res.status(201).json(session);
   } catch (err) {
     const error = err as Error & { code?: string; sessionId?: string };
@@ -86,7 +86,7 @@ sessionsRouter.post("/", (req, res) => {
 sessionsRouter.patch("/:id", (req, res) => {
   const body = req.body as UpdateSessionBody;
   try {
-    const session = updateSession(req.params.id, body);
+    const session = updateSession(req.params.id, body, req.userId!);
     res.json(session);
   } catch (err) {
     const error = err as Error & { code?: string };
@@ -101,7 +101,7 @@ sessionsRouter.patch("/:id", (req, res) => {
 export const videoRouter = Router();
 
 videoRouter.get("/:sessionId", (req, res) => {
-  const sourcePath = getSessionSourcePath(req.params.sessionId);
+  const sourcePath = getSessionSourcePath(req.params.sessionId, req.userId!);
   if (!sourcePath) {
     res.status(404).json({ error: "Session not found" });
     return;

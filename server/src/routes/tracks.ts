@@ -11,12 +11,12 @@ import type { CreateTrackBody, ReplaceTrackSplitsBody, UpdateTrackBody } from ".
 
 export const tracksRouter = Router();
 
-tracksRouter.get("/", (_req, res) => {
-  res.json(listTracks());
+tracksRouter.get("/", (req, res) => {
+  res.json(listTracks(req.userId!));
 });
 
 tracksRouter.get("/:id", (req, res) => {
-  const track = getTrackById(req.params.id);
+  const track = getTrackById(req.params.id, req.userId!);
   if (!track) {
     res.status(404).json({ error: "Track not found" });
     return;
@@ -27,7 +27,7 @@ tracksRouter.get("/:id", (req, res) => {
 tracksRouter.post("/", (req, res) => {
   const body = req.body as CreateTrackBody;
   try {
-    const track = createTrack(body);
+    const track = createTrack(body, req.userId!);
     res.status(201).json(track);
   } catch (err) {
     const error = err as Error & { code?: string };
@@ -46,7 +46,7 @@ tracksRouter.post("/", (req, res) => {
 tracksRouter.patch("/:id", (req, res) => {
   const body = req.body as UpdateTrackBody;
   try {
-    const track = updateTrack(req.params.id, body);
+    const track = updateTrack(req.params.id, body, req.userId!);
     res.json(track);
   } catch (err) {
     const error = err as Error & { code?: string };
@@ -68,7 +68,7 @@ tracksRouter.patch("/:id", (req, res) => {
 
 tracksRouter.delete("/:id", (req, res) => {
   try {
-    deleteTrack(req.params.id);
+    deleteTrack(req.params.id, req.userId!);
     res.status(204).send();
   } catch (err) {
     const error = err as Error & { code?: string };
@@ -88,7 +88,7 @@ tracksRouter.put("/:id/splits", (req, res) => {
   }
   try {
     const splits = replaceTrackSplits(req.params.id, body.splits);
-    const track = getTrackById(req.params.id);
+    const track = getTrackById(req.params.id, req.userId!);
     res.json({ splits, track });
   } catch (err) {
     const error = err as Error & { code?: string };

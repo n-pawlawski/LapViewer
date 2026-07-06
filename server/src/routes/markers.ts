@@ -12,8 +12,8 @@ export const markersRouter = Router();
 markersRouter.patch("/:id", (req, res) => {
   const body = req.body as UpdateMarkerBody;
   try {
-    const marker = updateMarker(req.params.id, body);
-    const session = getSessionById(marker.sessionId);
+    const marker = updateMarker(req.params.id, body, req.userId!);
+    const session = getSessionById(marker.sessionId, req.userId!);
     res.json({ marker, session });
   } catch (err) {
     const error = err as Error & { code?: string };
@@ -39,7 +39,11 @@ markersRouter.delete("/:id", (req, res) => {
     return;
   }
 
-  deleteMarker(req.params.id);
-  const session = getSessionById(row.sessionId);
+  const deleted = deleteMarker(req.params.id, req.userId!);
+  if (!deleted) {
+    res.status(404).json({ error: "Marker not found" });
+    return;
+  }
+  const session = getSessionById(row.sessionId, req.userId!);
   res.json({ session });
 });

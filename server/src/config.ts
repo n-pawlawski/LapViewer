@@ -21,6 +21,17 @@ export const DATA_DIR =
 export const VIDEO_LIBRARY_ROOT =
   process.env.VIDEO_LIBRARY_ROOT ?? path.join("E:", "Racing Videos");
 
+/** True when dev user seed (root/root) is allowed. */
+export function isDevUserMode(): boolean {
+  return (
+    process.env.NODE_ENV === "development" || process.env.LAPVIEWER_DEV_USER === "1"
+  );
+}
+
+/** HMAC secret for signed session cookies. Dev fallback only — set in production. */
+export const SESSION_SECRET =
+  process.env.SESSION_SECRET ?? "lapviewer-dev-session-secret-change-me";
+
 export { FFMPEG_PATH, ffmpegAvailable };
 
 /** Downscaled frame size for lap detection scans. */

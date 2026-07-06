@@ -19,6 +19,7 @@ export interface SessionRow {
   height: number | null;
   frameRate: number | null;
   status: SessionStatus;
+  userId: string;
   createdAt: string;
   updatedAt: string;
 }

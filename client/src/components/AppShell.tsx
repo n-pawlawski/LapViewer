@@ -1,4 +1,5 @@
 import { useCompare } from "../context/CompareContext";
+import { useAuth } from "../context/AuthContext";
 import { getSelectedSessionId } from "../lib/selectedSession";
 import { useRouter } from "../lib/router";
 import { formatLapTime } from "../utils/time";
@@ -10,6 +11,7 @@ export function AppShell({
   children: React.ReactNode;
   layout?: "default" | "intake-workstation" | "compare";
 }) {  const { navigate, pathname } = useRouter();
+  const { user, logout } = useAuth();
   const { canCompare, selectedLapIds } = useCompare();
 
   function handleIntakeNav() {
@@ -75,6 +77,21 @@ export function AppShell({
           </nav>
         </div>
         <div className="app-header-right">
+          {user && (
+            <div className="app-user">
+              <span className="app-user-name">{user.displayName}</span>
+              {user.isDevAccount && (
+                <span className="app-user-badge">DEV ACCOUNT</span>
+              )}
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => void logout()}
+              >
+                Log out
+              </button>
+            </div>
+          )}
           <button
             type="button"
             className="btn btn-primary"

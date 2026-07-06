@@ -42,16 +42,26 @@ function lastLapStartAfterAnchor(
   return starts.length > 0 ? starts[starts.length - 1] : undefined;
 }
 
-detectionRouter.get("/detect-laps/:jobId", (req, res) => {
-  const job = getDetectionJob(req.params.jobId);
-  if (!job) {
+function jobOwnedByUser(jobId: string, userId: string): boolean {
+  const job = getDetectionJob(jobId);
+  if (!job) return false;
+  return getSessionById(job.sessionId, userId) !== null;
+}
+
+detectionRouter.get("/:jobId", (req, res) => {
+  if (!jobOwnedByUser(req.params.jobId, req.userId!)) {
     res.status(404).json({ error: "Detection job not found" });
     return;
   }
+  const job = getDetectionJob(req.params.jobId);
   res.json(job);
 });
 
-detectionRouter.delete("/detect-laps/:jobId", (req, res) => {
+detectionRouter.delete("/:jobId", (req, res) => {
+  if (!jobOwnedByUser(req.params.jobId, req.userId!)) {
+    res.status(404).json({ error: "Detection job not found" });
+    return;
+  }
   const cancelled = cancelDetectionJob(req.params.jobId);
   if (!cancelled) {
     const job = getDetectionJob(req.params.jobId);
@@ -68,7 +78,7 @@ detectionRouter.delete("/detect-laps/:jobId", (req, res) => {
 export const sessionDetectionRouter = Router({ mergeParams: true });
 
 sessionDetectionRouter.post("/:id/detect-laps", (req, res) => {
-  const session = getSessionById(req.params.id);
+  const session = getSessionById(req.params.id, req.userId!);
   if (!session) {
     res.status(404).json({ error: "Session not found" });
     return;
@@ -85,7 +95,7 @@ sessionDetectionRouter.post("/:id/detect-laps", (req, res) => {
     return;
   }
 
-  const track = getTrackByName(session.track);
+  const track = getTrackByName(session.track, req.userId!);
   if (!track) {
     res.status(400).json({ error: `Track "${session.track}" not found in catalog` });
     return;
@@ -97,7 +107,7 @@ sessionDetectionRouter.post("/:id/detect-laps", (req, res) => {
     return;
   }
 
-  const sourcePath = getSessionSourcePath(session.id);
+  const sourcePath = getSessionSourcePath(session.id, req.userId!);
   if (!sourcePath) {
     res.status(404).json({ error: "Session video not found" });
     return;
@@ -138,7 +148,7 @@ sessionDetectionRouter.post("/:id/detect-laps", (req, res) => {
 });
 
 sessionDetectionRouter.get("/:id/frame", async (req, res) => {
-  const session = getSessionById(req.params.id);
+  const session = getSessionById(req.params.id, req.userId!);
   if (!session) {
     res.status(404).json({ error: "Session not found" });
     return;
@@ -150,7 +160,7 @@ sessionDetectionRouter.get("/:id/frame", async (req, res) => {
     return;
   }
 
-  const sourcePath = getSessionSourcePath(session.id);
+  const sourcePath = getSessionSourcePath(session.id, req.userId!);
   if (!sourcePath) {
     res.status(404).json({ error: "Session video not found" });
     return;
@@ -171,7 +181,7 @@ sessionDetectionRouter.get("/:id/frame", async (req, res) => {
 export const trackDetectionRouter = Router({ mergeParams: true });
 
 trackDetectionRouter.get("/:trackId/detection-profile", (req, res) => {
-  const track = getTrackById(req.params.trackId);
+  const track = getTrackById(req.params.trackId, req.userId!);
   if (!track) {
     res.status(404).json({ error: "Track not found" });
     return;
@@ -185,7 +195,7 @@ trackDetectionRouter.get("/:trackId/detection-profile", (req, res) => {
 });
 
 trackDetectionRouter.put("/:trackId/detection-profile", (req, res) => {
-  const track = getTrackById(req.params.trackId);
+  const track = getTrackById(req.params.trackId, req.userId!);
   if (!track) {
     res.status(404).json({ error: "Track not found" });
     return;
@@ -207,7 +217,7 @@ trackDetectionRouter.put("/:trackId/detection-profile", (req, res) => {
 });
 
 trackDetectionRouter.get("/:trackId/detection-profile/bank", (req, res) => {
-  const track = getTrackById(req.params.trackId);
+  const track = getTrackById(req.params.trackId, req.userId!);
   if (!track) {
     res.status(404).json({ error: "Track not found" });
     return;
@@ -226,7 +236,7 @@ trackDetectionRouter.get("/:trackId/detection-profile/bank", (req, res) => {
 });
 
 trackDetectionRouter.post("/:trackId/detection-profile/bank", async (req, res) => {
-  const track = getTrackById(req.params.trackId);
+  const track = getTrackById(req.params.trackId, req.userId!);
   if (!track) {
     res.status(404).json({ error: "Track not found" });
     return;
@@ -254,12 +264,12 @@ trackDetectionRouter.post("/:trackId/detection-profile/bank", async (req, res) =
     let roiGray: Buffer;
 
     if (body.extractFromSession) {
-      const session = getSessionById(body.sourceSessionId);
+      const session = getSessionById(body.sourceSessionId, req.userId!);
       if (!session) {
         res.status(404).json({ error: "Source session not found" });
         return;
       }
-      const sourcePath = getSessionSourcePath(body.sourceSessionId);
+      const sourcePath = getSessionSourcePath(body.sourceSessionId, req.userId!);
       if (!sourcePath) {
         res.status(404).json({ error: "Source session video not found" });
         return;

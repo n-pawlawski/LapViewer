@@ -564,6 +564,32 @@ The user wants each agent type in its own directory with a mandatory checklist i
 
 ---
 
+### D-018 - Dev-only seeded account for local development
+
+**Status:** Accepted  
+**Date:** 2026-07-05  
+**Owner:** User  
+**Related docs:** `docs/features/USERS_V1.md`, `docs/ROADMAP.md`, `docs/DEVELOPMENT.md`
+
+### Context
+
+Phase 1 introduces users and session ownership. Local development needs a frictionless way to work without building real signup yet.
+
+### Decision
+
+1. A fixed dev user (`dev@lapviewer.local`, **Dev Driver**, UUID `00000000-0000-4000-8000-000000000001`) may be seeded **only** when `NODE_ENV=development` or `LAPVIEWER_DEV_USER=1`.
+2. `npm start` without dev flags does **not** seed the dev user; unauthenticated API calls return 401.
+3. Dev login is via an explicit **Continue as Dev** button — not silent auto-login.
+4. Hosted/production environments never auto-create the dev user.
+5. Sessions and tracks are scoped per authenticated user; tracks use `UNIQUE(userId, name)`.
+
+### Consequences
+
+- Existing local databases backfill orphan rows to the dev user in dev mode only.
+- Phase 4 adds real signup/login before deploy.
+
+---
+
 ### D-010 - Intake registers session; auto-save on change; no Done button
 
 **Status:** Accepted  

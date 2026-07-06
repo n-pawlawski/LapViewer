@@ -53,6 +53,19 @@ We do **not** need Postgres unless the project becomes multi-user, cloud-hosted,
 
 ## Minimum durable schema
 
+### `users`
+
+Account records for session and track ownership ([USERS_V1](features/USERS_V1.md)).
+
+| Column | Purpose |
+|--------|---------|
+| `id` | UUID primary key |
+| `email` | Unique login identifier |
+| `displayName` | Shown in header |
+| `passwordHash` | Null for dev-only user in Phase 1 |
+| `role` | e.g. `user` |
+| `createdAt` | ISO timestamp |
+
 ### `sessions`
 
 Persists every video added to LapViewer.
@@ -60,6 +73,7 @@ Persists every video added to LapViewer.
 | Column | Purpose |
 |--------|---------|
 | `id` | Stable session ID |
+| `userId` | Owner (`users.id`) — all queries filter by this |
 | `title` | Display name |
 | `sourcePath` | Absolute path to original video in native mode, or container path in Docker mode |
 | `sourceRoot` | Root used when registered |
@@ -103,7 +117,9 @@ For v1, environment variables are enough; no settings table required.
 
 ### `tracks` and `track_splits`
 
-Track catalog for organizing sessions and defining per-track split definitions. See server schema in `server/src/db/database.ts`.
+Track catalog for organizing sessions and defining per-track split definitions. Tracks are **per-user** (`userId` FK, `UNIQUE(userId, name)`). See server schema in `server/src/db/database.ts`.
+
+**Migration (Phase 1):** Existing rows without `userId` are backfilled to the dev user when `LAPVIEWER_DEV_USER=1` or `NODE_ENV=development`. Without dev mode, startup fails if orphan rows exist — delete `data/lapviewer.db` or run once in dev mode.
 
 ### `detection_profiles` (assisted lap detection)
 

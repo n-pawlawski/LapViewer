@@ -98,7 +98,7 @@ function getMarkerInputs(sessionId: string) {
 
 function trackSplitsForSession(row: SessionRow) {
   if (!row.trackName) return [];
-  return getTrackSplitsByName(row.trackName);
+  return getTrackSplitsByName(row.trackName, row.userId);
 }
 
 function splitsForSession(row: SessionRow, laps: LapDto[]) {
@@ -130,17 +130,17 @@ function toSummary(row: SessionRow): SessionSummary {
   };
 }
 
-export function listSessions(): SessionSummary[] {
+export function listSessions(userId: string): SessionSummary[] {
   const rows = getDb()
-    .prepare(`SELECT * FROM sessions ORDER BY createdAt DESC`)
-    .all() as SessionRow[];
+    .prepare(`SELECT * FROM sessions WHERE userId = ? ORDER BY createdAt DESC`)
+    .all(userId) as SessionRow[];
   return rows.map(toSummary);
 }
 
-export function getSessionById(id: string): SessionDetail | null {
-  const row = getDb().prepare(`SELECT * FROM sessions WHERE id = ?`).get(id) as
-    | SessionRow
-    | undefined;
+export function getSessionById(id: string, userId: string): SessionDetail | null {
+  const row = getDb()
+    .prepare(`SELECT * FROM sessions WHERE id = ? AND userId = ?`)
+    .get(id, userId) as SessionRow | undefined;
   if (!row) return null;
 
   const laps = lapsForSession(row);
@@ -162,10 +162,10 @@ export function getSessionById(id: string): SessionDetail | null {
   };
 }
 
-export function getSessionSourcePath(id: string): string | null {
+export function getSessionSourcePath(id: string, userId: string): string | null {
   const row = getDb()
-    .prepare(`SELECT sourcePath FROM sessions WHERE id = ?`)
-    .get(id) as { sourcePath: string } | undefined;
+    .prepare(`SELECT sourcePath FROM sessions WHERE id = ? AND userId = ?`)
+    .get(id, userId) as { sourcePath: string } | undefined;
   return row?.sourcePath ?? null;
 }
 
@@ -215,7 +215,7 @@ export function findSessionByPath(sourcePath: string): SessionRow | null {
   return row ? rowToSession(row) : null;
 }
 
-export function createSession(body: CreateSessionBody): SessionDetail {
+export function createSession(body: CreateSessionBody, userId: string): SessionDetail {
   const normalized = path.normalize(body.sourcePath);
   const existing = findSessionByPath(normalized);
   if (existing) {
@@ -237,17 +237,18 @@ export function createSession(body: CreateSessionBody): SessionDetail {
   getDb()
     .prepare(
       `INSERT INTO sessions (
-        id, title, sourcePath, sourceRoot, relativePath, fileName,
+        id, userId, title, sourcePath, sourceRoot, relativePath, fileName,
         fileSizeBytes, fileModifiedAt, recordedAt, trackName, notes,
         durationSeconds, status, createdAt, updatedAt
       ) VALUES (
-        @id, @title, @sourcePath, @sourceRoot, @relativePath, @fileName,
+        @id, @userId, @title, @sourcePath, @sourceRoot, @relativePath, @fileName,
         @fileSizeBytes, @fileModifiedAt, @recordedAt, @trackName, @notes,
         @durationSeconds, @status, @createdAt, @updatedAt
       )`,
     )
     .run({
       id,
+      userId,
       title,
       sourcePath: normalized,
       sourceRoot,
@@ -264,13 +265,17 @@ export function createSession(body: CreateSessionBody): SessionDetail {
       updatedAt: ts,
     });
 
-  return getSessionById(id)!;
+  return getSessionById(id, userId)!;
 }
 
-export function updateSession(id: string, body: UpdateSessionBody): SessionDetail {
-  const existing = getDb().prepare(`SELECT * FROM sessions WHERE id = ?`).get(id) as
-    | SessionRow
-    | undefined;
+export function updateSession(
+  id: string,
+  body: UpdateSessionBody,
+  userId: string,
+): SessionDetail {
+  const existing = getDb()
+    .prepare(`SELECT * FROM sessions WHERE id = ? AND userId = ?`)
+    .get(id, userId) as SessionRow | undefined;
   if (!existing) {
     throw Object.assign(new Error("Session not found"), { code: "NOT_FOUND" });
   }
@@ -294,26 +299,27 @@ export function updateSession(id: string, body: UpdateSessionBody): SessionDetai
   getDb()
     .prepare(
       `UPDATE sessions SET title = ?, trackName = ?, recordedAt = ?, notes = ?, durationSeconds = ?, updatedAt = ?
-       WHERE id = ?`,
+       WHERE id = ? AND userId = ?`,
     )
-    .run(title, trackName, recordedAt, notes, durationSeconds, ts, id);
+    .run(title, trackName, recordedAt, notes, durationSeconds, ts, id, userId);
 
-  return getSessionById(id)!;
+  return getSessionById(id, userId)!;
 }
 
 export function insertMarker(
   sessionId: string,
   timeSeconds: number,
-  options?: {
+  options: {
     label?: string;
     kind?: "lapStart" | "split";
     lapNumber?: number;
     splitIndex?: number;
-  },
+  } | undefined,
+  userId: string,
 ): MarkerDto {
   const session = getDb()
-    .prepare(`SELECT * FROM sessions WHERE id = ?`)
-    .get(sessionId) as SessionRow | undefined;
+    .prepare(`SELECT * FROM sessions WHERE id = ? AND userId = ?`)
+    .get(sessionId, userId) as SessionRow | undefined;
   if (!session) {
     throw Object.assign(new Error("Session not found"), { code: "NOT_FOUND" });
   }
@@ -336,7 +342,7 @@ export function insertMarker(
         { code: "VALIDATION" },
       );
     }
-    const track = getTrackByName(session.trackName);
+    const track = getTrackByName(session.trackName, session.userId);
     if (!track?.splits?.length) {
       throw Object.assign(
         new Error("Track has no splits defined — configure them on the Tracks page"),
@@ -425,7 +431,11 @@ export function insertMarker(
   };
 }
 
-export function updateMarker(markerId: string, body: UpdateMarkerBody): MarkerDto {
+export function updateMarker(
+  markerId: string,
+  body: UpdateMarkerBody,
+  userId: string,
+): MarkerDto {
   const row = getDb()
     .prepare(`SELECT * FROM markers WHERE id = ?`)
     .get(markerId) as
@@ -453,8 +463,11 @@ export function updateMarker(markerId: string, body: UpdateMarkerBody): MarkerDt
   }
 
   const session = getDb()
-    .prepare(`SELECT * FROM sessions WHERE id = ?`)
-    .get(row.sessionId) as SessionRow;
+    .prepare(`SELECT * FROM sessions WHERE id = ? AND userId = ?`)
+    .get(row.sessionId, userId) as SessionRow | undefined;
+  if (!session) {
+    throw Object.assign(new Error("Session not found"), { code: "NOT_FOUND" });
+  }
   const laps = lapsForSession(session);
 
   if (row.kind === "split") {
@@ -513,7 +526,7 @@ export function updateMarker(markerId: string, body: UpdateMarkerBody): MarkerDt
   if (row.kind === "split" && body.timeSeconds !== undefined) {
     const lap = findLapForSplitTime(laps, timeSeconds);
     if (lap && session.trackName) {
-      const track = getTrackByName(session.trackName);
+      const track = getTrackByName(session.trackName, session.userId);
       if (track?.splits?.length) {
         rebalanceLapSplitIndices(row.sessionId, lap.lapNumber, laps, track.splits);
       }
@@ -542,7 +555,7 @@ export function updateMarker(markerId: string, body: UpdateMarkerBody): MarkerDt
   };
 }
 
-export function deleteMarker(markerId: string): boolean {
+export function deleteMarker(markerId: string, userId: string): boolean {
   const row = getDb()
     .prepare(`SELECT sessionId, kind, timeSeconds FROM markers WHERE id = ?`)
     .get(markerId) as
@@ -552,8 +565,9 @@ export function deleteMarker(markerId: string): boolean {
   if (!row) return false;
 
   const session = getDb()
-    .prepare(`SELECT * FROM sessions WHERE id = ?`)
-    .get(row.sessionId) as SessionRow | undefined;
+    .prepare(`SELECT * FROM sessions WHERE id = ? AND userId = ?`)
+    .get(row.sessionId, userId) as SessionRow | undefined;
+  if (!session) return false;
 
   const laps = session ? lapsForSession(session) : null;
   const splitLap =
@@ -569,7 +583,7 @@ export function deleteMarker(markerId: string): boolean {
       .run(ts, row.sessionId);
 
     if (splitLap && session?.trackName) {
-      const track = getTrackByName(session.trackName);
+      const track = getTrackByName(session.trackName, session.userId);
       if (track?.splits?.length && laps) {
         rebalanceLapSplitIndices(row.sessionId, splitLap.lapNumber, laps, track.splits);
       }
@@ -578,7 +592,9 @@ export function deleteMarker(markerId: string): boolean {
   return result.changes > 0;
 }
 
-export function countSessions(): number {
-  const row = getDb().prepare(`SELECT COUNT(*) as c FROM sessions`).get() as { c: number };
+export function countSessions(userId: string): number {
+  const row = getDb()
+    .prepare(`SELECT COUNT(*) as c FROM sessions WHERE userId = ?`)
+    .get(userId) as { c: number };
   return row.c;
 }
