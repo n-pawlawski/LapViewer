@@ -48,6 +48,24 @@ function absoluteTimeForPane(
   return window.startSeconds + comparisonTime;
 }
 
+function compareSpaceShouldIgnore(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  if (tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (tag === "INPUT") {
+    const type = (target as HTMLInputElement).type.toLowerCase();
+    return (
+      type === "text" ||
+      type === "search" ||
+      type === "number" ||
+      type === "password" ||
+      type === "email"
+    );
+  }
+  if (target.isContentEditable) return true;
+  return false;
+}
+
 function CompareView({
   initialPanes,
   syncPoint,
@@ -154,6 +172,19 @@ function CompareView({
     setContentLoading(false);
     playbackRef.current.seek(0, true);
   }, [playback.videosReady, visualsLoadKey, windows, panes]);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.code !== "Space" && event.key !== " ") return;
+      if (event.repeat) return;
+      if (compareSpaceShouldIgnore(event.target)) return;
+      event.preventDefault();
+      playbackRef.current.togglePlay();
+    }
+
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, []);
 
   const getAdjustable = useCallback(
     (paneIndex: 0 | 1) => {

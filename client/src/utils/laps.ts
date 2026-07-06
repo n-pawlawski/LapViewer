@@ -17,6 +17,21 @@ export function lapTimeMsAtMarker(
   return null;
 }
 
+/** Lap number (1-based) for the last lap-start marker at or before playhead time. */
+export function lapNumberLeftOfTime(
+  markers: { timeSeconds: number }[],
+  timeSeconds: number,
+): number | null {
+  if (markers.length === 0) return null;
+
+  let lapNumber: number | null = null;
+  for (let i = 0; i < markers.length; i++) {
+    if (markers[i].timeSeconds > timeSeconds + 0.001) break;
+    lapNumber = i + 1;
+  }
+  return lapNumber;
+}
+
 export function bestLapTimeMsFromMarkers(
   markers: { timeSeconds: number; ignored?: boolean }[],
   durationSeconds: number | null,

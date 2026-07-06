@@ -3,7 +3,15 @@ import { createMarker, createSplit, deleteMarker, updateMarker } from "../api/ma
 import { sessionVideoUrl, updateSession, type SessionDetail } from "../api/sessions";
 import type { Lap, Marker, SessionStatus, Split } from "../types";
 import type { TrackSplit } from "../api/tracks";
-import { bestLapTimeMsFromMarkers, lapTimeMsAtMarker } from "../utils/laps";
+import { IntakeShortcutsModal } from "./IntakeShortcutsModal";
+import { IntakeSidePanel, type IntakeSidePanelTab } from "./IntakeSidePanel";
+import { bestLapTimeMsFromMarkers, lapNumberLeftOfTime, lapTimeMsAtMarker } from "../utils/laps";
+import {
+  findActionForEvent,
+  formatShortcutBinding,
+  loadIntakeShortcuts,
+  saveIntakeShortcuts,
+} from "../utils/intakeShortcuts";
 import { seekJumpTarget } from "../utils/seek";
 import {
   isTimeInsideLap,
@@ -65,10 +73,15 @@ export function IntakeMarkingPanel({
   const [selectedLapNumber, setSelectedLapNumber] = useState<number | null>(null);
   const [selectedSplitId, setSelectedSplitId] = useState<string | null>(null);
   const [selectedSplitIndex, setSelectedSplitIndex] = useState<number | null>(null);
+  const [shortcuts, setShortcuts] = useState(loadIntakeShortcuts);
+  const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
+  const [sidePanelTab, setSidePanelTab] = useState<IntakeSidePanelTab>("laps");
   const durationPersisted = useRef(durationSeconds != null);
+  const lastSyncedLapRef = useRef<number | null>(null);
 
   const playable = status === "ready";
   const frameStep = frameStepSeconds(DEFAULT_VIDEO_FPS);
+  const splitMap = useMemo(() => splitsByLapNumber(splits), [splits]);
 
   useEffect(() => {
     currentTimeRef.current = currentTime;
@@ -104,8 +117,52 @@ export function IntakeMarkingPanel({
         video.currentTime = clamped;
       }
       setCurrentTime(clamped);
+      currentTimeRef.current = clamped;
     },
     [duration],
+  );
+
+  const syncActiveLapFromSeeker = useCallback(
+    (time: number) => {
+      const lapNumber = lapNumberLeftOfTime(markers, time);
+
+      if (lapNumber == null) {
+        if (lastSyncedLapRef.current !== null) {
+          lastSyncedLapRef.current = null;
+          setSelectedMarkerId(null);
+          setSelectedLapNumber(null);
+          setSelectedSplitId(null);
+          setSelectedSplitIndex(null);
+        }
+        return;
+      }
+
+      const marker = markers[lapNumber - 1];
+      const lapSplits = splitMap.get(lapNumber) ?? [];
+      const placementIndex =
+        splitIndexForPlacementByTime(time, trackSplits, lapSplits) ??
+        nextEmptySplitIndex(trackSplits, lapSplits) ??
+        trackSplits[0]?.splitIndex ??
+        null;
+
+      if (lapNumber !== lastSyncedLapRef.current) {
+        lastSyncedLapRef.current = lapNumber;
+        setSelectedSplitId(null);
+      }
+
+      setSelectedMarkerId(marker.id);
+      setSelectedLapNumber(lapNumber);
+      setSelectedSplitIndex(placementIndex);
+    },
+    [markers, splitMap, trackSplits],
+  );
+
+  const seekAndSync = useCallback(
+    (time: number) => {
+      seek(time);
+      syncActiveLapFromSeeker(time);
+    },
+    [seek, syncActiveLapFromSeeker],
   );
 
   const togglePlay = useCallback(() => {
@@ -125,9 +182,9 @@ export function IntakeMarkingPanel({
       const video = videoRef.current;
       if (video) video.pause();
       setPlaying(false);
-      seek(currentTimeRef.current + direction * frameStep);
+      seekAndSync(currentTimeRef.current + direction * frameStep);
     },
-    [frameStep, seek],
+    [frameStep, seekAndSync],
   );
 
   const stepJump = useCallback(
@@ -142,9 +199,19 @@ export function IntakeMarkingPanel({
         markers,
         dur,
       );
-      seek(target);
+      seekAndSync(target);
     },
-    [markers, duration, durationSeconds, seek],
+    [markers, duration, durationSeconds, seekAndSync],
+  );
+
+  const stepSeek = useCallback(
+    (deltaSeconds: number) => {
+      const video = videoRef.current;
+      if (video) video.pause();
+      setPlaying(false);
+      seekAndSync(currentTimeRef.current + deltaSeconds);
+    },
+    [seekAndSync],
   );
 
   async function runMarkerMutation(
@@ -215,10 +282,18 @@ export function IntakeMarkingPanel({
     setSelectedSplitId(null);
   }, [sessionId, selectedLapNumber, laps, trackSplits, splits]);
 
+  useEffect(() => {
+    lastSyncedLapRef.current = null;
+    syncActiveLapFromSeeker(currentTimeRef.current);
+  }, [markers, syncActiveLapFromSeeker]);
+
   function handleTimeUpdate() {
     const video = videoRef.current;
     if (!video) return;
-    setCurrentTime(video.currentTime);
+    const time = video.currentTime;
+    setCurrentTime(time);
+    currentTimeRef.current = time;
+    syncActiveLapFromSeeker(time);
   }
 
   function handleLoadedMetadata() {
@@ -230,7 +305,11 @@ export function IntakeMarkingPanel({
 
   function handleDeleteMarker(markerId: string) {
     void runMarkerMutation(() => deleteMarker(markerId));
-    if (selectedMarkerId === markerId) setSelectedMarkerId(null);
+    if (selectedMarkerId === markerId) {
+      setSelectedMarkerId(null);
+      setSelectedLapNumber(null);
+    }
+    lastSyncedLapRef.current = null;
   }
 
   function handleMarkerTimeCommit(markerId: string, value: string) {
@@ -241,7 +320,10 @@ export function IntakeMarkingPanel({
 
   function handleDeleteSplit(splitId: string) {
     void runMarkerMutation(() => deleteMarker(splitId));
-    if (selectedSplitId === splitId) setSelectedSplitId(null);
+    if (selectedSplitId === splitId) {
+      setSelectedSplitId(null);
+      setSelectedSplitIndex(null);
+    }
   }
 
   function handleSplitTimeCommit(splitId: string, value: string) {
@@ -253,85 +335,187 @@ export function IntakeMarkingPanel({
     void runMarkerMutation(() => updateMarker(markerId, { ignored }));
   }
 
-  const splitMap = useMemo(() => splitsByLapNumber(splits), [splits]);
+  const removeTarget = useMemo(() => {
+    if (selectedSplitId) {
+      const split = splits.find((entry) => entry.id === selectedSplitId);
+      if (split) {
+        return {
+          type: "split" as const,
+          id: split.id,
+          label: `${split.label} (Lap ${split.lapNumber})`,
+        };
+      }
+    }
 
-  function handleMarkerClick(marker: Marker, lapNumber: number) {
-    setSelectedMarkerId(marker.id);
-    setSelectedLapNumber(lapNumber);
-    setSelectedSplitId(null);
-    const lapSplits = splitMap.get(lapNumber) ?? [];
-    setSelectedSplitIndex(
-      splitIndexForPlacementByTime(currentTimeRef.current, trackSplits, lapSplits) ??
-        nextEmptySplitIndex(trackSplits, lapSplits) ??
-        trackSplits[0]?.splitIndex ??
-        null,
-    );
-    seek(marker.timeSeconds);
+    if (selectedLapNumber != null) {
+      const lapSplits = splitMap.get(selectedLapNumber) ?? [];
+      const nearby = nearestWithinThreshold(
+        lapSplits,
+        currentTime,
+        MARKER_SNAP_SECONDS,
+      );
+      if (nearby) {
+        return {
+          type: "split" as const,
+          id: nearby.id,
+          label: `${nearby.label} (Lap ${nearby.lapNumber})`,
+        };
+      }
+    }
+
+    if (selectedMarkerId) {
+      const lapNumber = markers.findIndex((marker) => marker.id === selectedMarkerId) + 1;
+      if (lapNumber > 0) {
+        return {
+          type: "lap" as const,
+          id: selectedMarkerId,
+          label: `Lap ${lapNumber} start`,
+        };
+      }
+    }
+
+    return null;
+  }, [
+    selectedSplitId,
+    splits,
+    selectedLapNumber,
+    splitMap,
+    currentTime,
+    selectedMarkerId,
+    markers,
+  ]);
+
+  const removeSelectedMarker = useCallback(() => {
+    if (!removeTarget) return;
+    if (removeTarget.type === "split") {
+      handleDeleteSplit(removeTarget.id);
+      return;
+    }
+    handleDeleteMarker(removeTarget.id);
+  }, [removeTarget]);
+
+  function handleMarkerClick(marker: Marker, _lapNumber: number) {
+    seekAndSync(marker.timeSeconds);
   }
 
   function handleSplitClick(split: Split) {
+    seekAndSync(split.timeSeconds);
     setSelectedSplitId(split.id);
-    setSelectedLapNumber(split.lapNumber);
     setSelectedSplitIndex(split.splitIndex);
-    setSelectedMarkerId(null);
-    seek(split.timeSeconds);
   }
 
   function handleSplitSlotClick(lapNumber: number, splitIndex: number, split?: Split) {
-    setSelectedLapNumber(lapNumber);
-    setSelectedSplitIndex(splitIndex);
-    setSelectedMarkerId(null);
     if (split) {
+      seekAndSync(split.timeSeconds);
       setSelectedSplitId(split.id);
-      seek(split.timeSeconds);
-    } else {
-      setSelectedSplitId(null);
+      setSelectedSplitIndex(split.splitIndex);
+      return;
     }
+
+    const marker = markers[lapNumber - 1];
+    if (marker) seekAndSync(marker.timeSeconds);
+    setSelectedSplitId(null);
+    setSelectedSplitIndex(splitIndex);
   }
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (isTypingTarget(e.target)) return;
+      if (shortcutsModalOpen) return;
 
-      if (e.code === "Space") {
+      if (e.key === "?" && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
-        togglePlay();
+        setShortcutsModalOpen(true);
         return;
       }
-      if (e.key === "m" || e.key === "M") {
+
+      if (
+        e.key === "Backspace" &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.shiftKey &&
+        removeTarget
+      ) {
         e.preventDefault();
-        addMarkerAtCurrentTime();
+        removeSelectedMarker();
         return;
       }
-      if (e.key === "s" || e.key === "S") {
-        e.preventDefault();
-        addSplitAtCurrentTime();
-        return;
-      }
-      if (e.shiftKey && e.key === "ArrowLeft") {
-        e.preventDefault();
-        stepJump("left");
-        return;
-      }
-      if (e.shiftKey && e.key === "ArrowRight") {
-        e.preventDefault();
-        stepJump("right");
-        return;
-      }
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        stepFrame(-1);
-        return;
-      }
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        stepFrame(1);
+
+
+      const action = findActionForEvent(e, shortcuts);
+      if (!action) return;
+
+      e.preventDefault();
+      switch (action) {
+        case "playPause":
+          togglePlay();
+          break;
+        case "frameBack":
+          stepFrame(-1);
+          break;
+        case "frameForward":
+          stepFrame(1);
+          break;
+        case "jumpBack":
+          stepJump("left");
+          break;
+        case "jumpForward":
+          stepJump("right");
+          break;
+        case "seekBack5":
+          stepSeek(-5);
+          break;
+        case "seekForward5":
+          stepSeek(5);
+          break;
+        case "seekBack15":
+          stepSeek(-15);
+          break;
+        case "seekForward15":
+          stepSeek(15);
+          break;
+        case "addLap":
+          addMarkerAtCurrentTime();
+          break;
+        case "addSplit":
+          addSplitAtCurrentTime();
+          break;
+        case "removeMarker":
+          removeSelectedMarker();
+          break;
       }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [togglePlay, addMarkerAtCurrentTime, addSplitAtCurrentTime, stepFrame, stepJump]);
+  }, [
+    shortcuts,
+    shortcutsModalOpen,
+    removeTarget,
+    removeSelectedMarker,
+    togglePlay,
+    addMarkerAtCurrentTime,
+    addSplitAtCurrentTime,
+    removeSelectedMarker,
+    stepFrame,
+    stepJump,
+    stepSeek,
+  ]);
+
+  const shortcutsHint = useMemo(
+    () =>
+      [
+        `${formatShortcutBinding(shortcuts.frameBack)}/${formatShortcutBinding(shortcuts.frameForward)} frame`,
+        `${formatShortcutBinding(shortcuts.jumpBack)}/${formatShortcutBinding(shortcuts.jumpForward)} jump`,
+        `${formatShortcutBinding(shortcuts.seekBack5)}/${formatShortcutBinding(shortcuts.seekForward5)} ±5s`,
+        `${formatShortcutBinding(shortcuts.seekBack15)}/${formatShortcutBinding(shortcuts.seekForward15)} ±15s`,
+        `${formatShortcutBinding(shortcuts.playPause)} play`,
+        `${formatShortcutBinding(shortcuts.addLap)} lap`,
+        `${formatShortcutBinding(shortcuts.addSplit)} split`,
+        `${formatShortcutBinding(shortcuts.removeMarker)} remove`,
+      ].join(" · "),
+    [shortcuts],
+  );
 
   const selectedLapBounds =
     selectedLapNumber != null ? lapBounds(laps, selectedLapNumber) : null;
@@ -383,7 +567,8 @@ export function IntakeMarkingPanel({
       )}
 
       {playable && (
-        <div className="intake-marking-player">
+        <div className="intake-marking-player-row intake-marking-player-row--with-panel">
+          <div className="intake-marking-player">
           <div className="intake-player-wrap">
             <video
               ref={videoRef}
@@ -425,8 +610,7 @@ export function IntakeMarkingPanel({
                     title={`Lap ${split.lapNumber} ${split.label} — ${formatVideoTime(split.timeSeconds)}`}
                     onClick={() => handleSplitClick(split)}
                   />
-                ))}
-            </div>
+                ))}            </div>
             <input
               type="range"
               className="intake-scrubber"
@@ -434,7 +618,7 @@ export function IntakeMarkingPanel({
               max={duration || 1}
               step={0.01}
               value={currentTime}
-              onChange={(e) => seek(Number(e.target.value))}
+              onChange={(e) => seekAndSync(Number(e.target.value))}
             />
           </div>
 
@@ -476,37 +660,56 @@ export function IntakeMarkingPanel({
             >
               + Split
             </button>
-            <span className="field-hint intake-shortcuts">
-              ←/→ frame · Shift+←/→ jump · Space play · M lap · S split
-            </span>
+            <button
+              type="button"
+              className="btn btn-danger btn-sm"
+              onClick={removeSelectedMarker}
+              disabled={!removeTarget}
+              title={
+                removeTarget
+                  ? `Remove ${removeTarget.label}`
+                  : "Select a marker, split, or scrub near a split to remove"
+              }
+            >
+              Remove
+            </button>
+            <span className="field-hint intake-shortcuts">{shortcutsHint}</span>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setShortcutsModalOpen(true)}
+            >
+              Shortcuts
+            </button>
           </div>
-        </div>
-      )}
+          </div>
 
-      {saveError && <p className="data-status data-status--error">{saveError}</p>}
-
-      <div className="intake-marking-panes">
-        <div className="intake-marking-pane">
-          <h3 className="pane-title">Laps & splits</h3>
-          <div className="intake-marker-table-wrap">
-            {trackSplits.length === 0 && markers.length > 0 && (
-              <p className="data-status data-status--warn intake-track-splits-hint">
-                Assign a track with splits on the <strong>Tracks</strong> page before marking
-                splits.
-              </p>
-            )}
-            {markers.length === 0 ? (
-              <p className="intake-empty-hint">
-                Scrub or frame-step to each lap start, then press <strong>M</strong> or{" "}
-                <strong>+ Lap</strong>.
-              </p>
-            ) : trackSplits.length === 0 ? (
-              <p className="intake-empty-hint">
-                Laps are marked. Configure splits for this track, then select a lap and fill each
-                split slot with <strong>S</strong>.
-              </p>
-            ) : (
-              <table className="intake-marker-table">
+          <IntakeSidePanel
+            activeTab={sidePanelTab}
+            onTabChange={setSidePanelTab}
+            proposalCount={0}
+            lapCount={markers.length}
+            detect={<p className="intake-detection-idle-hint">Auto lap detection is in development on a separate branch.</p>}
+            laps={
+              <div className="intake-marker-table-wrap">
+                {trackSplits.length === 0 && markers.length > 0 && (
+                  <p className="data-status data-status--warn intake-track-splits-hint">
+                    Assign a track with splits on the <strong>Tracks</strong> page before marking
+                    splits.
+                  </p>
+                )}
+                {markers.length === 0 ? (
+                  <p className="intake-empty-hint">
+                    Scrub or frame-step to each lap start, then press <strong>M</strong> or{" "}
+                    <strong>+ Lap</strong>.
+                  </p>
+                ) : trackSplits.length === 0 ? (
+                  <p className="intake-empty-hint">
+                    Laps are marked. Configure splits for this track, then select a lap and fill each
+                    split slot with <strong>S</strong>.
+                  </p>
+                ) : (
+                  <table className="intake-marker-table">
                 <thead>
                   <tr>
                     <th>#</th>
@@ -579,10 +782,11 @@ export function IntakeMarkingPanel({
                           <td onClick={(e) => e.stopPropagation()}>
                             <button
                               type="button"
-                              className="btn btn-secondary btn-sm"
+                              className="btn btn-danger btn-sm"
+                              aria-label={`Remove lap ${lapNumber} start marker`}
                               onClick={() => handleDeleteMarker(marker.id)}
                             >
-                              Del
+                              Remove
                             </button>
                           </td>
                         </tr>
@@ -639,10 +843,11 @@ export function IntakeMarkingPanel({
                                 {split ? (
                                   <button
                                     type="button"
-                                    className="btn btn-secondary btn-sm"
+                                    className="btn btn-danger btn-sm"
+                                    aria-label={`Remove ${split.label} on lap ${lapNumber}`}
                                     onClick={() => handleDeleteSplit(split.id)}
                                   >
-                                    Del
+                                    Remove
                                   </button>
                                 ) : null}
                               </td>
@@ -671,39 +876,51 @@ export function IntakeMarkingPanel({
                 </tbody>
               </table>
             )}
-          </div>
+              </div>
+            }
+            details={
+              <dl className="session-details-meta intake-details-meta">
+                <div>
+                  <dt>File</dt>
+                  <dd>{fileName}</dd>
+                </div>
+                <div>
+                  <dt>Duration</dt>
+                  <dd>{duration > 0 ? formatVideoTime(duration) : "—"}</dd>
+                </div>
+                <div>
+                  <dt>Frame step</dt>
+                  <dd>1/{DEFAULT_VIDEO_FPS}s</dd>
+                </div>
+                <div>
+                  <dt>Markers</dt>
+                  <dd>{markers.length}</dd>
+                </div>
+                <div>
+                  <dt>Splits</dt>
+                  <dd>{splits.length}</dd>
+                </div>
+                <div>
+                  <dt>Laps</dt>
+                  <dd>{laps.length}</dd>
+                </div>
+              </dl>
+            }
+          />
         </div>
+      )}
 
-        <div className="intake-marking-pane intake-marking-details">
-          <h3 className="pane-title">File details</h3>
-          <dl className="session-details-meta intake-details-meta">
-            <div>
-              <dt>File</dt>
-              <dd>{fileName}</dd>
-            </div>
-            <div>
-              <dt>Duration</dt>
-              <dd>{duration > 0 ? formatVideoTime(duration) : "—"}</dd>
-            </div>
-            <div>
-              <dt>Frame step</dt>
-              <dd>1/{DEFAULT_VIDEO_FPS}s</dd>
-            </div>
-            <div>
-              <dt>Markers</dt>
-              <dd>{markers.length}</dd>
-            </div>
-            <div>
-              <dt>Splits</dt>
-              <dd>{splits.length}</dd>
-            </div>
-            <div>
-              <dt>Laps</dt>
-              <dd>{laps.length}</dd>
-            </div>
-          </dl>
-        </div>
-      </div>
+      <IntakeShortcutsModal
+        open={shortcutsModalOpen}
+        shortcuts={shortcuts}
+        onClose={() => setShortcutsModalOpen(false)}
+        onSave={(next) => {
+          setShortcuts(next);
+          saveIntakeShortcuts(next);
+        }}
+      />
+
+      {saveError && <p className="data-status data-status--error">{saveError}</p>}
     </section>
   );
 }
