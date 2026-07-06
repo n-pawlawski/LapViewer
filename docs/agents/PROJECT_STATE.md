@@ -11,7 +11,7 @@ Agents read this for facts that change over time. Update when tooling or verific
 | Command | Status | Notes |
 |---------|--------|-------|
 | `npm run check` | **available** | TypeScript client + server (`verify.check`) |
-| `npm test` | **not available** | Vitest chosen [D-005](../DECISIONS.md); queue `maintenance` to install |
+| `npm test` | **available** | Node built-in runner + tsx (`server/src/**/*.test.ts`) |
 | `npm run build` | **available** | Client production build |
 
 Implementers: run `check` before `Done`; document "full test run N/A" until `test` exists.

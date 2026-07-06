@@ -7,7 +7,8 @@
     "build": "npm run build --prefix client",
     "start": "npm run start --prefix server",
     "typecheck": "npm run typecheck --prefix server && npm run typecheck --prefix client",
-    "check": "npm run typecheck"
+    "check": "npm run typecheck",
+    "test": "npm run test --prefix server"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

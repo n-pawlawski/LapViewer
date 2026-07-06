@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "cross-env LAPVIEWER_DEV_USER=1 tsx watch src/index.ts",
     "start": "tsx src/index.ts",
+    "test": "node --import tsx --test src/**/*.test.ts",
     "test:auth": "tsx scripts/auth-isolation-test.mjs",
     "typecheck": "tsc --noEmit"
   },

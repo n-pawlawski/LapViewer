@@ -38,7 +38,7 @@ Let the user seed a session with a **start anchor** and one-time **landmark ROI*
 | WO-auto-lap-detection-02 | api | Done | Detection service (port spike), background job, routes |
 | WO-auto-lap-detection-03 | client | Done | ROI calibration UI (AD-4) |
 | WO-auto-lap-detection-04 | client | Done | Detection panel + keyboard review (AD-3) |
-| WO-auto-lap-detection-05 | unit-test | Ready | Detection math + walk/stop logic tests |
+| WO-auto-lap-detection-05 | unit-test | Done | Detection math + walk/stop logic tests |
 | WO-auto-lap-detection-TS | test-strategy | Draft | Post-WO diff review + queue gaps |
 | WO-auto-lap-detection-06 | review | Draft | AC vs build |
 
