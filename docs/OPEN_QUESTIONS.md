@@ -10,12 +10,16 @@ Copy answers inline under each question, or tell me in chat and I'll update this
 
 ### 1.1 Who uses this?
 
-- [x] Only you, on your own machines
+- [x] Only you, on your own machines *(current build)*
 - [ ] You, but accessible from phone/tablet on home network
 - [ ] You, from anywhere (cloud)
-- [ ] Eventually other drivers / shared access
+- [x] Eventually other drivers / shared access *(long-term goal)*
 
 **Your answer:**
+
+**Now:** Local-first on your Windows PC ([D-001](DECISIONS.md)).
+
+**Aspiration:** Web app where anyone uploads races and compares with others — see [ROADMAP.md](ROADMAP.md). Deploy deferred; accounts and Data refactor come first.
 
 ### 1.2 How many sessions / total storage?
 
@@ -57,7 +61,7 @@ All footage comes from a **GoPro**. Exact container/codec/resolution should be c
 ### 2.1 What defines a "lap"?
 
 - [x] Start/finish line crossing (marker at SF line each lap)
-- [ ] Sector or split markers too (later)?
+- [x] Sector or split markers for timing/compare (Phase 3B — [GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md) F8)
 - [ ] Some laps excluded (outlap, inlap, formation lap)
 
 **Your answer:**
@@ -156,7 +160,9 @@ Shorter lap finishes before longer ones:
 
 **Your answer:**
 
-**Draft:** React + Node monorepo on this PC. Persistence is required either way. Native mode stores SQLite/cache in `DATA_DIR`; Docker mode must mount `DATA_DIR` and the video library from the host ([Persistence](PERSISTENCE.md)). Confirm whether you prefer native-first or Docker from day one.
+**Now:** React + Node monorepo on this PC ([D-001](DECISIONS.md)). Native mode; SQLite in `DATA_DIR`.
+
+**Later:** Hosted web app on AWS (or similar) for multi-user upload and compare — **explicitly deferred**. See [ROADMAP.md](ROADMAP.md). Finish Intake, users, and Data refactor first.
 
 ### 4.2 Should videos stay on disk where they already are?
 

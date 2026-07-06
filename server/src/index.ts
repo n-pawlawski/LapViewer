@@ -22,6 +22,17 @@ import { detectionRouter, sessionDetectionRouter, trackDetectionRouter } from ".
 import { sessionsRouter, videoRouter, lapsRouter } from "./routes/sessions.js";
 import { systemRouter } from "./routes/system.js";
 import { tracksRouter } from "./routes/tracks.js";
+import { trackReferenceRouter } from "./routes/referenceProfile.js";
+import {
+  referenceBuildRouter,
+  sessionTrackMatchRouter,
+  trackMatchRouter,
+} from "./routes/trackMatch.js";
+import {
+  sessionSplitDetectionRouter,
+  splitDetectionRouter,
+  trackSplitBankRouter,
+} from "./routes/splitDetection.js";
 import { streamVideoFile } from "./video.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -67,10 +78,21 @@ app.use("/api/laps", requireAuth, lapsRouter);
 app.use("/api/sessions", requireAuth, sessionDetectionRouter);
 app.use("/api/markers", requireAuth, markersRouter);
 app.use("/api/tracks", requireAuth, tracksRouter);
+app.use("/api/tracks", requireAuth, trackReferenceRouter);
+app.use("/api/reference-build", requireAuth, referenceBuildRouter);
+app.use("/api/sessions", requireAuth, sessionTrackMatchRouter);
+app.use("/api/match-track", requireAuth, trackMatchRouter);
 app.use("/api/tracks", requireAuth, trackDetectionRouter);
 app.use("/api/detect-laps", requireAuth, detectionRouter);
+app.use("/api/tracks", requireAuth, trackSplitBankRouter);
+app.use("/api/sessions", requireAuth, sessionSplitDetectionRouter);
+app.use("/api/detect-splits", requireAuth, splitDetectionRouter);
 app.use("/api/system", requireAuth, systemRouter);
 app.use("/api/video", requireAuth, videoRouter);
+
+app.use("/api", (_req, res) => {
+  res.status(404).json({ error: "API route not found" });
+});
 
 if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist));

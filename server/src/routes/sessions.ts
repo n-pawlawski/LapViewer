@@ -11,6 +11,7 @@ import {
 } from "../services/sessions.js";
 import type { CreateMarkerBody, CreateSessionBody, UpdateSessionBody } from "../types.js";
 import { streamVideoFile } from "../video.js";
+import { scheduleSplitBankUpsert } from "../services/splitBankSync.js";
 
 export const sessionsRouter = Router();
 
@@ -42,6 +43,9 @@ sessionsRouter.post("/:id/markers", (req, res) => {
       splitIndex: body.splitIndex,
     }, req.userId!);
     const session = getSessionById(req.params.id, req.userId!);
+    if (marker.kind === "split") {
+      scheduleSplitBankUpsert(marker.id, req.userId!);
+    }
     res.status(201).json({ marker, session });
   } catch (err) {
     const error = err as Error & { code?: string };

@@ -23,7 +23,7 @@ LapViewer docs should make it possible to:
 
 | Layer | Purpose | Primary docs |
 |-------|---------|--------------|
-| Product | Why the app exists, who uses it, what success means | `PROJECT_OVERVIEW.md`, `FEATURES.md`, `FEATURE_LIFECYCLE.md`, `OPEN_QUESTIONS.md` |
+| Product | Why the app exists, who uses it, what success means | `PROJECT_OVERVIEW.md`, `ROADMAP.md`, `FEATURES.md`, `FEATURE_LIFECYCLE.md`, `OPEN_QUESTIONS.md` |
 | UX / workflow | How the user moves through the app | `UI_FORMS.md`, `INTAKE_FLOW.md`, focused feature specs |
 | Architecture | How the app is structured and run | `ARCHITECTURE.md`, `TECHNICAL_APPROACH.md` |
 | Data / persistence | What data exists, where it lives, ownership rules | `PERSISTENCE.md`, `VIDEO_LIBRARY.md` |
@@ -55,8 +55,12 @@ Each concern should have one primary home.
 | Concern | Source of truth | Notes |
 |---------|-----------------|-------|
 | Feature list and acceptance criteria | `FEATURES.md` | Split into focused feature specs when a section grows too large |
+| Product roadmap (pre-deploy phases) | `docs/ROADMAP.md` | Phase order; links to feature specs; deploy deferred |
 | View & compare v1 (active build) | `docs/features/VIEW_COMPARE_V1.md` | VC-1–VC-5 phases; mock-first per **D-017** |
+| Users & dev account v1 | `docs/features/USERS_V1.md` | Roadmap Phase 1; dev seed pattern |
+| Data form v2 refactor | `docs/features/DATA_FORM_V2.md` | Roadmap Phase 2; layout + organization |
 | Assisted lap detection v1 | `docs/features/AUTO_LAP_DETECTION_V1.md` | F7; spike-derived; MVP AD-1–AD-4, splits AD-5; decisions resolved |
+| Reference-lap lap & split detection | `docs/features/GOPRO_LAP_SPLIT_DETECTION.md` | F8; spike passed GO; M2-LV next |
 | Feature lifecycle and done gates | `FEATURE_LIFECYCLE.md` | Owns readiness, status, traceability, review, and done criteria |
 | User screen behavior | `UI_FORMS.md` | Keep route/form behavior here, not scattered across architecture docs |
 | Intake process | `INTAKE_FLOW.md` | Owns import user flow and edge cases |

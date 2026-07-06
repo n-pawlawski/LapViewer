@@ -3,7 +3,7 @@
 **Status:** Draft
 **Date:** 2026-07-02
 **Owner:** Product/architecture design pass (from vision spike)
-**Related:** [FEATURES.md](../FEATURES.md) (F3 lap marking, F7 assisted detection), [INTAKE_FLOW.md](../INTAKE_FLOW.md), [UI_FORMS.md](../UI_FORMS.md), [TECHNICAL_APPROACH.md](../TECHNICAL_APPROACH.md), [PERSISTENCE.md](../PERSISTENCE.md), [OPEN_QUESTIONS.md](../OPEN_QUESTIONS.md)
+**Related:** [FEATURES.md](../FEATURES.md) (F3 lap marking, F7 assisted detection), [GOPRO_LAP_SPLIT_DETECTION.md](GOPRO_LAP_SPLIT_DETECTION.md) (long-term reference-lap architecture), [INTAKE_FLOW.md](../INTAKE_FLOW.md), [UI_FORMS.md](../UI_FORMS.md), [TECHNICAL_APPROACH.md](../TECHNICAL_APPROACH.md), [PERSISTENCE.md](../PERSISTENCE.md), [OPEN_QUESTIONS.md](../OPEN_QUESTIONS.md)
 
 ---
 

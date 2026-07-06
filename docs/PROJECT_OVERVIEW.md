@@ -4,7 +4,9 @@
 
 LapViewer is a **personal racing footage analysis tool**. It turns raw onboard or track-side video into structured lap data you can browse, compare, and replay — without needing professional telemetry software or manual stopwatch work.
 
-The primary user is **you**: a driver reviewing your own sessions to understand pace, consistency, and where time is gained or lost lap-to-lap.
+The primary user today is **you**: a driver reviewing your own sessions to understand pace, consistency, and where time is gained or lost lap-to-lap.
+
+**Long-term:** a hosted web app where drivers upload races and compare laps with others. See [Roadmap](ROADMAP.md) — deployment is deferred until core local features are solid.
 
 ## Problem
 
@@ -57,16 +59,22 @@ Data form (browse & select laps)
 - [ ] Select 2–4 laps and play them synchronized in a comparison view.
 - [ ] Works for your actual footage (720p–1080p, typical race length).
 
-## Non-goals (for now)
+## Non-goals (v1 — local build)
 
-These are explicitly out of scope until you decide otherwise:
+These do not block the current local-first build:
 
-- Automatic lap detection from video/audio/GPS
 - Live streaming or in-car real-time capture
-- Multi-user accounts, sharing, or public galleries
 - Mobile-native apps
 - Telemetry overlay (speed, throttle, GPS trace) unless added later
 - Video editing (cutting, transcoding beyond what storage requires)
+- **Cloud deploy, upload pipeline, cross-user compare** — phased later; see [Roadmap](ROADMAP.md)
+
+## Planned after v1 (see Roadmap)
+
+- User accounts (dev account locally first, then real auth)
+- Data form refactor (toolbar, organization, optional all-laps view)
+- Assisted lap detection — [AUTO_LAP_DETECTION_V1.md](features/AUTO_LAP_DETECTION_V1.md)
+- Hosted multi-user web app (upload + compare with others)
 
 ## Glossary
 

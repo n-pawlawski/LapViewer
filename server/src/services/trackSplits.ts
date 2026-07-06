@@ -7,6 +7,7 @@ interface TrackSplitRow {
   trackId: string;
   splitIndex: number;
   name: string;
+  progress: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,13 +18,14 @@ function rowToDto(row: TrackSplitRow): TrackSplitDto {
     trackId: row.trackId,
     splitIndex: row.splitIndex,
     name: row.name,
+    progress: row.progress ?? undefined,
   };
 }
 
 export function getTrackSplits(trackId: string): TrackSplitDto[] {
   const rows = getDb()
     .prepare(
-      `SELECT id, trackId, splitIndex, name, createdAt, updatedAt
+      `SELECT id, trackId, splitIndex, name, progress, createdAt, updatedAt
        FROM track_splits WHERE trackId = ? ORDER BY splitIndex`,
     )
     .all(trackId) as TrackSplitRow[];
@@ -59,8 +61,8 @@ export function replaceTrackSplits(
   const replace = db.transaction(() => {
     db.prepare(`DELETE FROM track_splits WHERE trackId = ?`).run(trackId);
     const insert = db.prepare(
-      `INSERT INTO track_splits (id, trackId, splitIndex, name, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO track_splits (id, trackId, splitIndex, name, progress, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, NULL, ?, ?)`,
     );
     names.forEach((name, index) => {
       insert.run(randomUUID(), trackId, index + 1, name, now, now);

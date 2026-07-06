@@ -6,6 +6,10 @@ import {
   updateMarker,
 } from "../services/sessions.js";
 import type { UpdateMarkerBody } from "../types.js";
+import {
+  scheduleSplitBankRemove,
+  scheduleSplitBankUpsert,
+} from "../services/splitBankSync.js";
 
 export const markersRouter = Router();
 
@@ -14,6 +18,9 @@ markersRouter.patch("/:id", (req, res) => {
   try {
     const marker = updateMarker(req.params.id, body, req.userId!);
     const session = getSessionById(marker.sessionId, req.userId!);
+    if (marker.kind === "split" && body.timeSeconds !== undefined) {
+      scheduleSplitBankUpsert(marker.id, req.userId!);
+    }
     res.json({ marker, session });
   } catch (err) {
     const error = err as Error & { code?: string };
@@ -31,8 +38,8 @@ markersRouter.patch("/:id", (req, res) => {
 
 markersRouter.delete("/:id", (req, res) => {
   const row = getDb()
-    .prepare(`SELECT sessionId FROM markers WHERE id = ?`)
-    .get(req.params.id) as { sessionId: string } | undefined;
+    .prepare(`SELECT sessionId, kind FROM markers WHERE id = ?`)
+    .get(req.params.id) as { sessionId: string; kind: string } | undefined;
 
   if (!row) {
     res.status(404).json({ error: "Marker not found" });
@@ -43,6 +50,9 @@ markersRouter.delete("/:id", (req, res) => {
   if (!deleted) {
     res.status(404).json({ error: "Marker not found" });
     return;
+  }
+  if (row.kind === "split") {
+    scheduleSplitBankRemove(req.params.id);
   }
   const session = getSessionById(row.sessionId, req.userId!);
   res.json({ session });

@@ -26,9 +26,13 @@ When you add, rename, or split a doc, update all three in the same change.
 |---------|------|----------------|
 | Run commands & status | `README.md` | All |
 | Product vision | `docs/PROJECT_OVERVIEW.md` | documentation, review |
+| Product roadmap | `docs/ROADMAP.md` | documentation, architecture, review |
 | Doc system & SOT rules | `docs/DOCUMENTATION_SYSTEM.md` | documentation, architecture, review |
 | Feature list & AC | `docs/FEATURES.md` | documentation, client, api, review |
+| Users & dev account v1 | `docs/features/USERS_V1.md` | documentation, persistence, api, client |
+| Data form v2 refactor | `docs/features/DATA_FORM_V2.md` | documentation, client |
 | Assisted lap detection v1 | `docs/features/AUTO_LAP_DETECTION_V1.md` | documentation, architecture, api, persistence, client |
+| Reference-lap lap & split detection | `docs/features/GOPRO_LAP_SPLIT_DETECTION.md` | documentation, architecture, api, persistence, client |
 | Feature lifecycle & done gates | `docs/FEATURE_LIFECYCLE.md` | documentation, review |
 | UX / three forms | `docs/UI_FORMS.md` | documentation, client, browser-qa |
 | Visual design | `docs/UI_DESIGN.md` | client, browser-qa |

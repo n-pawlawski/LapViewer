@@ -84,3 +84,27 @@ export function tailSegmentMs(
   const from = lastSplit?.timeSeconds ?? lapStartSeconds;
   return Math.round((lapEndSeconds - from) * 1000);
 }
+
+/** Playhead time for marking an empty split slot — strictly inside the lap, after prior splits. */
+export function seekTimeForEmptySplitSlot(
+  bounds: { startSeconds: number; endSeconds: number },
+  lapSplits: Split[],
+  trackSplits: { splitIndex: number }[],
+  splitIndex: number,
+): number {
+  const orderedTrack = [...trackSplits].sort((a, b) => a.splitIndex - b.splitIndex);
+  const slotIdx = orderedTrack.findIndex((trackSplit) => trackSplit.splitIndex === splitIndex);
+  const minTime = bounds.startSeconds + EPSILON + 0.05;
+  const maxTime = bounds.endSeconds - EPSILON - 0.05;
+
+  for (let i = (slotIdx >= 0 ? slotIdx : orderedTrack.length) - 1; i >= 0; i--) {
+    const prior = splitForSlot(lapSplits, orderedTrack[i].splitIndex);
+    if (prior) {
+      const gap = maxTime - prior.timeSeconds;
+      return Math.min(prior.timeSeconds + Math.max(0.5, gap / 2), maxTime);
+    }
+  }
+
+  const lapSpan = bounds.endSeconds - bounds.startSeconds;
+  return Math.min(minTime + Math.min(1, lapSpan / 3), maxTime);
+}

@@ -1,15 +1,14 @@
 import type { ReactNode } from "react";
 
-export type IntakeSidePanelTab = "detect" | "laps" | "details";
+export type IntakeSidePanelTab = "suggest" | "laps";
 
 interface IntakeSidePanelProps {
   activeTab: IntakeSidePanelTab;
   onTabChange: (tab: IntakeSidePanelTab) => void;
   proposalCount: number;
   lapCount: number;
-  detect: ReactNode;
+  suggest: ReactNode;
   laps: ReactNode;
-  details: ReactNode;
 }
 
 export function IntakeSidePanel({
@@ -17,9 +16,8 @@ export function IntakeSidePanel({
   onTabChange,
   proposalCount,
   lapCount,
-  detect,
+  suggest,
   laps,
-  details,
 }: IntakeSidePanelProps) {
   return (
     <aside className="intake-side-panel" aria-label="Marking tools">
@@ -27,14 +25,14 @@ export function IntakeSidePanel({
         <button
           type="button"
           role="tab"
-          id="intake-tab-detect"
-          aria-selected={activeTab === "detect"}
-          aria-controls="intake-panel-detect"
-          className={`intake-side-panel-tab${activeTab === "detect" ? " is-active" : ""}`}
-          onClick={() => onTabChange("detect")}
-          title="Auto-detect laps"
+          id="intake-tab-suggest"
+          aria-selected={activeTab === "suggest"}
+          aria-controls="intake-panel-suggest"
+          className={`intake-side-panel-tab${activeTab === "suggest" ? " is-active" : ""}`}
+          onClick={() => onTabChange("suggest")}
+          title="Suggest split markers from track reference pool"
         >
-          Auto-detect
+          Suggest splits
           {proposalCount > 0 && (
             <span className="intake-side-panel-badge">{proposalCount}</span>
           )}
@@ -52,28 +50,17 @@ export function IntakeSidePanel({
           Laps & splits
           {lapCount > 0 && <span className="intake-side-panel-badge">{lapCount}</span>}
         </button>
-        <button
-          type="button"
-          role="tab"
-          id="intake-tab-details"
-          aria-selected={activeTab === "details"}
-          aria-controls="intake-panel-details"
-          className={`intake-side-panel-tab${activeTab === "details" ? " is-active" : ""}`}
-          onClick={() => onTabChange("details")}
-        >
-          Details
-        </button>
       </div>
 
       <div className="intake-side-panel-body">
-        {activeTab === "detect" && (
+        {activeTab === "suggest" && (
           <div
-            id="intake-panel-detect"
+            id="intake-panel-suggest"
             role="tabpanel"
-            aria-labelledby="intake-tab-detect"
+            aria-labelledby="intake-tab-suggest"
             className="intake-side-panel-pane"
           >
-            {detect}
+            {suggest}
           </div>
         )}
         {activeTab === "laps" && (
@@ -84,16 +71,6 @@ export function IntakeSidePanel({
             className="intake-side-panel-pane"
           >
             {laps}
-          </div>
-        )}
-        {activeTab === "details" && (
-          <div
-            id="intake-panel-details"
-            role="tabpanel"
-            aria-labelledby="intake-tab-details"
-            className="intake-side-panel-pane"
-          >
-            {details}
           </div>
         )}
       </div>

@@ -622,6 +622,138 @@ Intake must leave the library in a state where new races are discoverable on the
 
 ---
 
+### D-019 - Reference-lap vision stack: Node first
+
+**Status:** Accepted  
+**Date:** 2026-07-06  
+**Owner:** Design pass  
+**Related docs:** `docs/features/GOPRO_LAP_SPLIT_DETECTION.md`, `docs/ARCHITECTURE.md`, D-024 (spike gate)
+
+### Context
+
+Phase 3B reference-lap matching needs frame extraction and image fingerprints. The generic GoPro design suggested a Python/OpenCV worker.
+
+### Decision
+
+Use **Node + ffmpeg + sharp** for the progress-curve spike and initial M3-LV implementation. Python/OpenCV is opt-in only if the spike fails on Node-only fingerprints (requires explicit approval).
+
+### Consequences
+
+- Spike script lives under `server/scripts/` alongside existing vision spikes.
+- No new process model until Node path is exhausted.
+
+---
+
+### D-020 - Reference profile storage: `track_reference_profiles`
+
+**Status:** Accepted  
+**Date:** 2026-07-06  
+**Owner:** Design pass  
+**Related docs:** `docs/features/GOPRO_LAP_SPLIT_DETECTION.md`, `docs/PERSISTENCE.md`
+
+### Context
+
+Reference-lap metadata (bounds, crop, tunables) must persist per track without overloading `tracks` or conflating with `detection_profiles` (3A ROI-NCC).
+
+### Decision
+
+Add **`track_reference_profiles`** (1:1 with `tracks`, CASCADE delete) and **`track_reference_points`** for sampled fingerprints. Extend **`track_splits`** with nullable **`progress REAL`**.
+
+### Consequences
+
+- M2-LV persistence work order adds additive migrations only.
+- `detection_profiles` remains the 3A lap-start path until convergence (see design §Relationship to Phase 3A).
+
+---
+
+### D-021 - Split canonical form: progress on track, timestamps on markers
+
+**Status:** Accepted  
+**Date:** 2026-07-06  
+**Owner:** Design pass  
+**Related docs:** `docs/features/GOPRO_LAP_SPLIT_DETECTION.md`, `docs/OPEN_QUESTIONS.md` §2.1
+
+### Context
+
+Splits must be reusable across sessions while Data/Compare already consume timestamp-based markers.
+
+### Decision
+
+**`track_splits.progress`** (0..1 on reference lap) is the canonical split definition. Session **`markers`** (`kind: split`) store detected/confirmed times. Data and Compare keep reading markers; no parallel lap-results table in v1.
+
+### Consequences
+
+- Reference lap editor must write progress when splits are marked.
+- Cross-session compare requires aligned `splitIndex` slots on the same track.
+
+---
+
+### D-022 - Phase 3 sequencing: AD-5 before M3-LV build
+
+**Status:** Accepted  
+**Date:** 2026-07-06  
+**Owner:** Design pass  
+**Related docs:** `docs/ROADMAP.md`, `docs/features/AUTO_LAP_DETECTION_V1.md`, `docs/features/GOPRO_LAP_SPLIT_DETECTION.md`
+
+### Context
+
+Two detection paths coexist: 3A ROI-NCC (delivered) and 3B reference-lap progress (designed).
+
+### Decision
+
+**Default:** finish **AD-5** (NCC split keyframes) before M3-LV implementation work orders. The **progress-curve spike** ([WO-gopro-progress-spike](work-orders/WO-gopro-progress-spike.md)) may run in parallel if capacity allows.
+
+### Consequences
+
+- ROADMAP Phase 3B implementation blocked until spike go-gate passes.
+- AD-5 split templates may bootstrap `track_reference_points` when a reference profile exists (design path B).
+
+---
+
+### D-023 - Detection output persistence: proposals in job, accept to markers
+
+**Status:** Accepted  
+**Date:** 2026-07-06  
+**Owner:** Design pass  
+**Related docs:** `docs/features/GOPRO_LAP_SPLIT_DETECTION.md`, D-010
+
+### Context
+
+3B must not silently insert markers; must align with 3A review flow and Intake auto-save.
+
+### Decision
+
+Progress-matching jobs return **proposals only** (plus curve samples and confidence). Accepting a proposal uses existing marker create/PATCH APIs — same pattern as AD-3.
+
+### Consequences
+
+- No `LapResult` / `manual_corrections` tables in v1.
+- Job endpoints mirror `/api/detect-laps/*` shape.
+
+---
+
+### D-024 - Compare split deltas before Data lap columns
+
+**Status:** Accepted  
+**Date:** 2026-07-06  
+**Owner:** Design pass  
+**Related docs:** `docs/features/GOPRO_LAP_SPLIT_DETECTION.md`, `docs/features/VIEW_COMPARE_V1.md`, D-009
+
+### Context
+
+M6-LV adds sector timing comparison. Compare already supports split sync points; Data lap table does not show sector columns.
+
+### Decision
+
+Ship **Compare split delta table** first (M6-LV). Defer per-sector columns on the Data lap table to a later slice.
+
+### Consequences
+
+- F8.3 acceptance criteria target Compare UI only.
+- Reuse `client/src/utils/splits.ts` for segment math.
+
+---
+
 ## Superseded decisions
 
 No superseded decisions yet.

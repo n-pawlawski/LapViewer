@@ -5,17 +5,15 @@ import type { Lap, Marker, SessionStatus, Split } from "../types";
 import type { TrackSplit } from "../api/tracks";
 import { IntakeShortcutsModal } from "./IntakeShortcutsModal";
 import { IntakeSidePanel, type IntakeSidePanelTab } from "./IntakeSidePanel";
-import { RoiCalibrationModal } from "./RoiCalibrationModal";
 import {
-  addBankEntryFromSession,
-  cancelDetectionJob,
-  fetchDetectionJob,
-  fetchDetectionProfile,
-  startDetection,
-  type DetectionJobStatus,
-  type DetectionProfile,
-} from "../api/detection";
-import { DetectionReviewPanel, type LocalProposal } from "./DetectionReviewPanel";
+  cancelSplitDetectionJob,
+  fetchSplitBankSummary,
+  fetchSplitDetectionJob,
+  startSplitDetection,
+  type SplitBankSummaryDto,
+  type SplitDetectionJobStatus,
+} from "../api/splitDetection";
+import { SplitDetectionPanel, type LocalSplitProposal } from "./SplitDetectionPanel";
 import { bestLapTimeMsFromMarkers, lapNumberLeftOfTime, lapTimeMsAtMarker } from "../utils/laps";
 import {
   findActionForEvent,
@@ -29,6 +27,7 @@ import {
   lapBounds,
   splitSegmentMs,
   nextEmptySplitIndex,
+  seekTimeForEmptySplitSlot,
   splitForSlot,
   splitIndexForPlacementByTime,
   splitsByLapNumber,
@@ -37,6 +36,7 @@ import {
 import { formatLapTime, formatVideoTime, parseVideoTime } from "../utils/time";
 import { MARKER_SNAP_SECONDS, nearestWithinThreshold } from "../utils/markers";
 import { DEFAULT_VIDEO_FPS, frameStepSeconds } from "../utils/video";
+import { missingSplitIndicesForLap } from "../utils/splitDetection";
 
 type SaveState = "saved" | "saving" | "error";
 
@@ -65,7 +65,7 @@ export function IntakeMarkingPanel({
   sessionId,
   sessionTitle,
   status,
-  fileName,
+  fileName: _fileName,
   durationSeconds,
   trackId,
   markers,
@@ -88,155 +88,175 @@ export function IntakeMarkingPanel({
   const [selectedSplitIndex, setSelectedSplitIndex] = useState<number | null>(null);
   const [shortcuts, setShortcuts] = useState(loadIntakeShortcuts);
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
-  const [detectionProfile, setDetectionProfile] = useState<DetectionProfile | null>(null);
-  const [roiModalOpen, setRoiModalOpen] = useState(false);
-  const [sidePanelTab, setSidePanelTab] = useState<IntakeSidePanelTab>("detect");
-  const [detectionStatus, setDetectionStatus] = useState<DetectionJobStatus | "idle">("idle");
-  const [detectionProgress, setDetectionProgress] = useState(0);
-  const [detectionLapTimeMs, setDetectionLapTimeMs] = useState<number | undefined>();
-  const [detectionError, setDetectionError] = useState<string | null>(null);
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
-  const [proposals, setProposals] = useState<LocalProposal[]>([]);
-  const [reviewIndex, setReviewIndex] = useState(0);
-  const [detecting, setDetecting] = useState(false);
+  const [sidePanelTab, setSidePanelTab] = useState<IntakeSidePanelTab>("laps");
+  const [splitBankSummary, setSplitBankSummary] = useState<SplitBankSummaryDto | null>(null);
+  const [splitDetectStatus, setSplitDetectStatus] = useState<SplitDetectionJobStatus | "idle">("idle");
+  const [splitDetectProgress, setSplitDetectProgress] = useState(0);
+  const [splitDetectError, setSplitDetectError] = useState<string | null>(null);
+  const [splitJobId, setSplitJobId] = useState<string | null>(null);
+  const [splitProposals, setSplitProposals] = useState<LocalSplitProposal[]>([]);
+  const [splitReviewIndex, setSplitReviewIndex] = useState(0);
+  const [splitDetecting, setSplitDetecting] = useState(false);
   const durationPersisted = useRef(durationSeconds != null);
   const lastSyncedLapRef = useRef<number | null>(null);
 
   const playable = status === "ready";
   const frameStep = frameStepSeconds(DEFAULT_VIDEO_FPS);
   const splitMap = useMemo(() => splitsByLapNumber(splits), [splits]);
-  const hasTrackRoi = Boolean(detectionProfile?.roi);
-  const calibrationFrameTime = markers[0]?.timeSeconds ?? currentTime;
-  const detectionReviewActive = proposals.length > 0;
-  const canAutoDetect =
-    markers.length >= 1 && hasTrackRoi && !detecting && trackId != null;
+  const splitReviewActive = splitProposals.length > 0;
 
-  const selectProposalIndex = useCallback((index: number) => {
-    setReviewIndex(Math.max(0, Math.min(proposals.length - 1, index)));
-  }, [proposals.length]);
+  const missingSplitIndices = useMemo(() => {
+    if (selectedLapNumber == null) return [];
+    const lapSplits = splitMap.get(selectedLapNumber) ?? [];
+    const bounds = lapBounds(laps, selectedLapNumber);
+    const medians = splitBankSummary?.medianOffsetBySplitIndex;
+    if (bounds && medians && Object.keys(medians).length > 0) {
+      return missingSplitIndicesForLap(
+        bounds.startSeconds,
+        lapSplits.map((s) => ({ splitIndex: s.splitIndex, timeSeconds: s.timeSeconds })),
+        trackSplits,
+        medians,
+      );
+    }
+    return trackSplits
+      .map((ts) => ts.splitIndex)
+      .filter((splitIndex) => !lapSplits.some((s) => s.splitIndex === splitIndex));
+  }, [selectedLapNumber, splitMap, trackSplits, splitBankSummary, laps]);
 
-  const nudgeCurrentProposal = useCallback(
-    (direction: -1 | 1) => {
-      setProposals((prev) => {
-        if (prev.length === 0) return prev;
-        const idx = Math.min(reviewIndex, prev.length - 1);
-        const next = [...prev];
-        const item = next[idx]!;
-        next[idx] = {
-          ...item,
-          time: Math.max(0, item.time + direction * frameStep),
-        };
-        return next;
-      });
+  const bankCoversMissing = useMemo(() => {
+    if (!splitBankSummary || missingSplitIndices.length === 0) return false;
+    return missingSplitIndices.every((idx) => (splitBankSummary.bySplitIndex[idx] ?? 0) > 0);
+  }, [splitBankSummary, missingSplitIndices]);
+
+  const suggestDisabledReason = useMemo(() => {
+    if (!trackId) return "Assign a track to this session.";
+    if (trackSplits.length === 0) return "Configure splits on the Tracks page.";
+    if (selectedLapNumber == null) return "Select a lap in the table or timeline.";
+    if (missingSplitIndices.length === 0) {
+      return "Every split is assigned and within timing tolerance for this lap.";
+    }
+    if (!splitBankSummary || splitBankSummary.totalEntries === 0) {
+      return "No reference images yet — mark splits manually on any lap first.";
+    }
+    const missingBank = missingSplitIndices.filter(
+      (idx) => (splitBankSummary.bySplitIndex[idx] ?? 0) === 0,
+    );
+    if (missingBank.length > 0) {
+      return `No reference for split ${missingBank.join(", ")} — mark those on another lap first.`;
+    }
+    return null;
+  }, [trackId, trackSplits.length, selectedLapNumber, missingSplitIndices, splitBankSummary]);
+
+  const canSuggestSplits =
+    trackId != null &&
+    selectedLapNumber != null &&
+    missingSplitIndices.length > 0 &&
+    bankCoversMissing &&
+    !splitDetecting;
+
+  const refreshSplitBankSummary = useCallback(async () => {
+    if (!trackId) {
+      setSplitBankSummary(null);
+      return;
+    }
+    try {
+      const summary = await fetchSplitBankSummary(trackId);
+      setSplitBankSummary(summary);
+    } catch {
+      setSplitBankSummary(null);
+    }
+  }, [trackId]);
+
+  useEffect(() => {
+    void refreshSplitBankSummary();
+  }, [refreshSplitBankSummary, splits.length]);
+
+  const selectSplitProposalIndex = useCallback(
+    (index: number) => {
+      setSplitReviewIndex(Math.max(0, Math.min(splitProposals.length - 1, index)));
     },
-    [reviewIndex, frameStep],
+    [splitProposals.length],
   );
 
-  const rejectCurrentProposal = useCallback(() => {
-    setProposals((prev) => {
+  const rejectCurrentSplitProposal = useCallback(() => {
+    setSplitProposals((prev) => {
       if (prev.length === 0) return prev;
-      const next = prev.filter((_, index) => index !== reviewIndex);
+      const next = prev.filter((_, index) => index !== splitReviewIndex);
       if (next.length === 0) {
-        setDetectionStatus("idle");
-        setDetectionLapTimeMs(undefined);
-      } else if (reviewIndex >= next.length) {
-        setReviewIndex(next.length - 1);
+        setSplitDetectStatus("idle");
+      } else if (splitReviewIndex >= next.length) {
+        setSplitReviewIndex(next.length - 1);
       }
       return next;
     });
-  }, [reviewIndex]);
+  }, [splitReviewIndex]);
 
-  const acceptCurrentProposal = useCallback(async () => {
-    if (!trackId || proposals.length === 0) return;
-    const proposal = proposals[Math.min(reviewIndex, proposals.length - 1)];
+  const acceptCurrentSplitProposal = useCallback(async () => {
+    if (selectedLapNumber == null || splitProposals.length === 0) return;
+    const proposal = splitProposals[Math.min(splitReviewIndex, splitProposals.length - 1)];
     if (!proposal) return;
 
+    const time = currentTimeRef.current;
     setSaveState("saving");
     setSaveError(null);
     try {
-      const nearby = nearestWithinThreshold(markers, proposal.time, MARKER_SNAP_SECONDS);
-      if (!nearby) {
-        const result = await createMarker(sessionId, proposal.time);
-        onSessionUpdated(result.session);
-      } else if (Math.abs(nearby.timeSeconds - proposal.time) > 0.001) {
-        const result = await updateMarker(nearby.id, { timeSeconds: proposal.time });
-        onSessionUpdated(result.session);
-      }
-      await addBankEntryFromSession(trackId, sessionId, proposal.time);
-      rejectCurrentProposal();
+      const result = await createSplit(sessionId, selectedLapNumber, proposal.splitIndex, time);
+      onSessionUpdated(result.session);
+      rejectCurrentSplitProposal();
+      await refreshSplitBankSummary();
       setSaveState("saved");
     } catch (err) {
       setSaveState("error");
       setSaveError(err instanceof Error ? err.message : "Accept failed");
     }
   }, [
-    trackId,
-    proposals,
-    reviewIndex,
-    markers,
+    selectedLapNumber,
+    splitProposals,
+    splitReviewIndex,
     sessionId,
     onSessionUpdated,
-    rejectCurrentProposal,
+    rejectCurrentSplitProposal,
+    refreshSplitBankSummary,
   ]);
 
-  const handleStartDetection = useCallback(async () => {
-    const anchorTime = markers[0]?.timeSeconds;
-    if (anchorTime == null || !trackId) return;
+  const handleStartSplitDetection = useCallback(async () => {
+    if (selectedLapNumber == null || !trackId) return;
 
-    setDetectionError(null);
-    setProposals([]);
-    setDetectionLapTimeMs(undefined);
-    setDetectionStatus("queued");
-    setDetectionProgress(0);
-    setDetecting(true);
-    setSidePanelTab("detect");
+    setSplitDetectError(null);
+    setSplitProposals([]);
+    setSplitDetectStatus("queued");
+    setSplitDetectProgress(0);
+    setSplitDetecting(true);
+    setSidePanelTab("suggest");
 
     try {
-      const { jobId } = await startDetection(sessionId, anchorTime);
-      setActiveJobId(jobId);
-      setDetectionStatus("running");
+      const { jobId } = await startSplitDetection(sessionId, selectedLapNumber);
+      setSplitJobId(jobId);
+      setSplitDetectStatus("running");
     } catch (err) {
-      setDetecting(false);
-      setDetectionStatus("error");
-      setDetectionError(err instanceof Error ? err.message : "Could not start detection");
+      setSplitDetecting(false);
+      setSplitDetectStatus("error");
+      setSplitDetectError(err instanceof Error ? err.message : "Could not start split detection");
     }
-  }, [markers, trackId, sessionId]);
+  }, [selectedLapNumber, trackId, sessionId]);
 
-  const handleCancelDetection = useCallback(async () => {
-    if (!activeJobId) return;
+  const handleCancelSplitDetection = useCallback(async () => {
+    if (!splitJobId) return;
     try {
-      await cancelDetectionJob(activeJobId);
+      await cancelSplitDetectionJob(splitJobId);
     } catch {
       // Job may already be finished.
     }
-    setActiveJobId(null);
-    setDetecting(false);
-    setDetectionStatus("cancelled");
-  }, [activeJobId]);
+    setSplitJobId(null);
+    setSplitDetecting(false);
+    setSplitDetectStatus("cancelled");
+  }, [splitJobId]);
 
   useEffect(() => {
-    if (!trackId) {
-      setDetectionProfile(null);
-      return;
+    if (splitProposals.length > 0) {
+      setSidePanelTab("suggest");
     }
-    let cancelled = false;
-    void fetchDetectionProfile(trackId)
-      .then((profile) => {
-        if (!cancelled) setDetectionProfile(profile);
-      })
-      .catch(() => {
-        if (!cancelled) setDetectionProfile(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [trackId]);
-
-  useEffect(() => {
-    if (proposals.length > 0) {
-      setSidePanelTab("detect");
-    }
-  }, [proposals.length]);
+  }, [splitProposals.length]);
 
   useEffect(() => {
     currentTimeRef.current = currentTime;
@@ -321,48 +341,49 @@ export function IntakeMarkingPanel({
   );
 
   useEffect(() => {
-    if (!activeJobId) return;
+    if (!splitJobId) return;
     let cancelled = false;
 
     async function poll() {
       try {
-        const job = await fetchDetectionJob(activeJobId!);
+        const job = await fetchSplitDetectionJob(splitJobId!);
         if (cancelled) return;
-        setDetectionStatus(job.status);
-        setDetectionProgress(job.progress);
-        if (job.lapTimeMs != null) setDetectionLapTimeMs(job.lapTimeMs);
+        setSplitDetectStatus(job.status);
+        setSplitDetectProgress(job.progress);
         if (job.proposals?.length) {
-          setProposals(
+          setSplitProposals(
             job.proposals.map((p) => ({
-              id: `proposal-${p.time.toFixed(3)}`,
-              time: p.time,
+              id: p.id,
+              splitIndex: p.splitIndex,
+              label: p.label,
+              time: p.timeSeconds,
               score: p.score,
               confidence: p.confidence,
             })),
           );
         }
         if (job.status === "done") {
-          setDetecting(false);
-          setActiveJobId(null);
-          setSidePanelTab("detect");
-          setReviewIndex(0);
-          if (job.proposals?.[0]) seekAndSync(job.proposals[0].time);
+          setSplitDetecting(false);
+          setSplitJobId(null);
+          setSidePanelTab("suggest");
+          setSplitReviewIndex(0);
+          if (job.proposals?.[0]) seekAndSync(job.proposals[0].timeSeconds);
         }
         if (job.status === "error") {
-          setDetecting(false);
-          setActiveJobId(null);
-          setDetectionError(job.error ?? "Detection failed");
+          setSplitDetecting(false);
+          setSplitJobId(null);
+          setSplitDetectError(job.error ?? "Split detection failed");
         }
         if (job.status === "cancelled") {
-          setDetecting(false);
-          setActiveJobId(null);
+          setSplitDetecting(false);
+          setSplitJobId(null);
         }
       } catch (err) {
         if (cancelled) return;
-        setDetecting(false);
-        setActiveJobId(null);
-        setDetectionStatus("error");
-        setDetectionError(err instanceof Error ? err.message : "Detection poll failed");
+        setSplitDetecting(false);
+        setSplitJobId(null);
+        setSplitDetectStatus("error");
+        setSplitDetectError(err instanceof Error ? err.message : "Split detection poll failed");
       }
     }
 
@@ -372,20 +393,20 @@ export function IntakeMarkingPanel({
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [activeJobId, seekAndSync]);
+  }, [splitJobId, seekAndSync]);
 
   useEffect(() => {
-    if (proposals.length === 0) return;
-    if (reviewIndex >= proposals.length) {
-      setReviewIndex(Math.max(0, proposals.length - 1));
+    if (splitProposals.length === 0) return;
+    if (splitReviewIndex >= splitProposals.length) {
+      setSplitReviewIndex(Math.max(0, splitProposals.length - 1));
     }
-  }, [proposals.length, reviewIndex]);
+  }, [splitProposals.length, splitReviewIndex]);
 
   useEffect(() => {
-    if (!detectionReviewActive) return;
-    const proposal = proposals[reviewIndex];
+    if (!splitReviewActive) return;
+    const proposal = splitProposals[splitReviewIndex];
     if (proposal) seekAndSync(proposal.time);
-  }, [reviewIndex, detectionReviewActive, proposals, seekAndSync]);
+  }, [splitReviewIndex, splitReviewActive, splitProposals, seekAndSync]);
 
   const togglePlay = useCallback(() => {
     const video = videoRef.current;
@@ -488,9 +509,13 @@ export function IntakeMarkingPanel({
 
     if (lapSplits.length >= trackSplits.length) return;
 
-    const splitIndex =
-      splitIndexForPlacementByTime(time, trackSplits, lapSplits) ??
-      trackSplits[0]?.splitIndex;
+    const emptySelectedSlot =
+      selectedSplitIndex != null && !splitForSlot(lapSplits, selectedSplitIndex);
+    const splitIndex = emptySelectedSlot
+      ? selectedSplitIndex
+      : splitIndexForPlacementByTime(time, trackSplits, lapSplits) ??
+        nextEmptySplitIndex(trackSplits, lapSplits) ??
+        trackSplits[0]?.splitIndex;
     if (splitIndex == null) return;
 
     const session = await runMarkerMutation(() =>
@@ -502,7 +527,7 @@ export function IntakeMarkingPanel({
       splitIndexForPlacementByTime(time, trackSplits, updatedLapSplits) ?? null,
     );
     setSelectedSplitId(null);
-  }, [sessionId, selectedLapNumber, laps, trackSplits, splits]);
+  }, [sessionId, selectedLapNumber, selectedSplitIndex, laps, trackSplits, splits]);
 
   useEffect(() => {
     lastSyncedLapRef.current = null;
@@ -616,8 +641,23 @@ export function IntakeMarkingPanel({
     handleDeleteMarker(removeTarget.id);
   }, [removeTarget]);
 
-  function handleMarkerClick(marker: Marker, _lapNumber: number) {
-    seekAndSync(marker.timeSeconds);
+  function handleMarkerClick(marker: Marker, lapNumber: number) {
+    const bounds = lapBounds(laps, lapNumber);
+    const lapSplits = splitMap.get(lapNumber) ?? [];
+    const nextEmpty = nextEmptySplitIndex(trackSplits, lapSplits);
+
+    if (bounds && nextEmpty != null) {
+      const seekTime = seekTimeForEmptySplitSlot(bounds, lapSplits, trackSplits, nextEmpty);
+      seek(seekTime);
+      lastSyncedLapRef.current = lapNumber;
+      setSelectedSplitIndex(nextEmpty);
+    } else {
+      seekAndSync(marker.timeSeconds);
+    }
+
+    setSelectedMarkerId(marker.id);
+    setSelectedLapNumber(lapNumber);
+    setSelectedSplitId(null);
   }
 
   function handleSplitClick(split: Split) {
@@ -635,9 +675,20 @@ export function IntakeMarkingPanel({
     }
 
     const marker = markers[lapNumber - 1];
-    if (marker) seekAndSync(marker.timeSeconds);
+    const bounds = lapBounds(laps, lapNumber);
+    const lapSplits = splitMap.get(lapNumber) ?? [];
+    setSelectedMarkerId(marker?.id ?? null);
+    setSelectedLapNumber(lapNumber);
     setSelectedSplitId(null);
     setSelectedSplitIndex(splitIndex);
+
+    if (bounds) {
+      const seekTime = seekTimeForEmptySplitSlot(bounds, lapSplits, trackSplits, splitIndex);
+      seek(seekTime);
+      lastSyncedLapRef.current = lapNumber;
+    } else if (marker) {
+      seekAndSync(marker.timeSeconds);
+    }
   }
 
   useEffect(() => {
@@ -663,36 +714,21 @@ export function IntakeMarkingPanel({
         return;
       }
 
-      if (detectionReviewActive) {
+      if (splitReviewActive) {
         const key = e.key.toLowerCase();
         if (key === ",") {
           e.preventDefault();
-          selectProposalIndex(reviewIndex - 1);
+          selectSplitProposalIndex(splitReviewIndex - 1);
           return;
         }
         if (key === ".") {
           e.preventDefault();
-          selectProposalIndex(reviewIndex + 1);
-          return;
-        }
-        if (key === "y") {
-          e.preventDefault();
-          void acceptCurrentProposal();
+          selectSplitProposalIndex(splitReviewIndex + 1);
           return;
         }
         if (key === "x") {
           e.preventDefault();
-          rejectCurrentProposal();
-          return;
-        }
-        if (e.key === "[") {
-          e.preventDefault();
-          nudgeCurrentProposal(-1);
-          return;
-        }
-        if (e.key === "]") {
-          e.preventDefault();
-          nudgeCurrentProposal(1);
+          rejectCurrentSplitProposal();
           return;
         }
       }
@@ -733,7 +769,11 @@ export function IntakeMarkingPanel({
           addMarkerAtCurrentTime();
           break;
         case "addSplit":
-          addSplitAtCurrentTime();
+          if (splitReviewActive) {
+            void acceptCurrentSplitProposal();
+          } else {
+            void addSplitAtCurrentTime();
+          }
           break;
         case "removeMarker":
           removeSelectedMarker();
@@ -746,14 +786,13 @@ export function IntakeMarkingPanel({
   }, [
     shortcuts,
     shortcutsModalOpen,
-    detectionReviewActive,
+    splitReviewActive,
     removeTarget,
     removeSelectedMarker,
-    reviewIndex,
-    selectProposalIndex,
-    acceptCurrentProposal,
-    rejectCurrentProposal,
-    nudgeCurrentProposal,
+    splitReviewIndex,
+    selectSplitProposalIndex,
+    acceptCurrentSplitProposal,
+    rejectCurrentSplitProposal,
     togglePlay,
     addMarkerAtCurrentTime,
     addSplitAtCurrentTime,
@@ -790,16 +829,24 @@ export function IntakeMarkingPanel({
     selectedLapNumber != null
       ? nearestWithinThreshold(selectedLapSplits, currentTime, MARKER_SNAP_SECONDS)
       : undefined;
-  const canAddSplit =
-    trackSplits.length > 0 &&
+  const emptySelectedSlot =
     selectedLapNumber != null &&
+    selectedSplitIndex != null &&
+    !splitForSlot(selectedLapSplits, selectedSplitIndex);
+  const playheadInsideLap =
     selectedLapBounds != null &&
     isTimeInsideLap(
       currentTime,
       selectedLapBounds.startSeconds,
       selectedLapBounds.endSeconds,
-    ) &&
+    );
+  const canAddSplit =
+    trackSplits.length > 0 &&
+    selectedLapNumber != null &&
+    selectedLapBounds != null &&
+    playheadInsideLap &&
     (nearbySplit != null ||
+      emptySelectedSlot ||
       (selectedLapSplits.length < trackSplits.length && placementSplitIndex != null));
 
   const firstMarkerTime = markers[0]?.timeSeconds;
@@ -825,22 +872,6 @@ export function IntakeMarkingPanel({
         <p className="data-status data-status--error">
           Video file is not available ({status}). Check the path on disk.
         </p>
-      )}
-
-      {playable && trackId && !hasTrackRoi && (
-        <div className="intake-roi-prompt">
-          <p>
-            This track needs a <strong>start/finish landmark</strong> box before auto-detect can
-            run. Place your first lap marker near the line, then calibrate the ROI.
-          </p>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => setRoiModalOpen(true)}
-          >
-            Calibrate landmark ROI
-          </button>
-        </div>
       )}
 
       {playable && (
@@ -889,18 +920,21 @@ export function IntakeMarkingPanel({
                   />
                 ))}
               {duration > 0 &&
-                proposals.map((proposal, index) => (
+                splitProposals.map((proposal, index) => (
                   <button
                     key={proposal.id}
                     type="button"
-                    className={`intake-timeline-marker intake-timeline-marker--suggested ${
-                      detectionReviewActive && index === reviewIndex
+                    className={`intake-timeline-marker intake-timeline-marker--split-suggested ${
+                      splitReviewActive && index === splitReviewIndex
                         ? "intake-timeline-marker--selected"
                         : ""
                     }`}
                     style={{ left: `${(proposal.time / duration) * 100}%` }}
-                    title={`Suggested lap start — ${formatVideoTime(proposal.time)} (${(proposal.confidence * 100).toFixed(0)}%)`}
-                    onClick={() => selectProposalIndex(index)}
+                    title={`Suggested ${proposal.label} — ${formatVideoTime(proposal.time)} (${(proposal.confidence * 100).toFixed(0)}%)`}
+                    onClick={() => {
+                      selectSplitProposalIndex(index);
+                      seekAndSync(proposal.time);
+                    }}
                   />
                 ))}
             </div>
@@ -934,17 +968,15 @@ export function IntakeMarkingPanel({
             <button
               type="button"
               className="btn btn-auto-detect"
-              onClick={() => void handleStartDetection()}
-              disabled={!canAutoDetect}
+              onClick={() => void handleStartSplitDetection()}
+              disabled={!canSuggestSplits}
               title={
-                !hasTrackRoi
-                  ? "Calibrate track ROI first"
-                  : markers.length === 0
-                    ? "Place a start anchor (first lap marker) first"
-                    : "Propose lap starts from anchor using visual detection"
+                canSuggestSplits
+                  ? `Suggest missing splits on lap ${selectedLapNumber} using track reference images`
+                  : (suggestDisabledReason ?? "Cannot suggest splits")
               }
             >
-              {detecting ? "Detecting…" : "Auto-detect laps"}
+              {splitDetecting ? "Scanning…" : "Suggest splits"}
             </button>
             <button
               type="button"
@@ -956,14 +988,21 @@ export function IntakeMarkingPanel({
                   ? "Configure splits on the Tracks page"
                   : selectedLapNumber == null
                     ? "Select a lap first"
-                    : canAddSplit
-                      ? nearbySplit
-                        ? `Adjust ${nearbySplit.label} (snaps within ${MARKER_SNAP_SECONDS}s)`
-                        : `Place ${
-                            trackSplits.find((s) => s.splitIndex === placementSplitIndex)?.name ??
-                            "split"
-                          } on Lap ${selectedLapNumber} by lap time`
-                      : "Playhead must be inside the lap with room for another split"
+                    : !playheadInsideLap
+                      ? "Scrub inside the lap — splits cannot sit on the lap start or end marker"
+                      : canAddSplit
+                        ? nearbySplit
+                          ? `Adjust ${nearbySplit.label} (snaps within ${MARKER_SNAP_SECONDS}s)`
+                          : emptySelectedSlot
+                            ? `Place ${
+                                trackSplits.find((s) => s.splitIndex === selectedSplitIndex)?.name ??
+                                "split"
+                              } on Lap ${selectedLapNumber}`
+                            : `Place ${
+                                trackSplits.find((s) => s.splitIndex === placementSplitIndex)?.name ??
+                                "split"
+                              } on Lap ${selectedLapNumber} by lap time`
+                        : "This lap already has all splits marked"
               }
             >
               + Split
@@ -989,40 +1028,37 @@ export function IntakeMarkingPanel({
             >
               Shortcuts
             </button>
-            {trackId && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => setRoiModalOpen(true)}
-                title={
-                  hasTrackRoi
-                    ? "Adjust the track landmark ROI used for auto-detect"
-                    : "Set the track landmark ROI for auto-detect"
-                }
-              >
-                {hasTrackRoi ? "Edit ROI" : "Calibrate ROI"}
-              </button>
-            )}
           </div>
           </div>
 
           <IntakeSidePanel
             activeTab={sidePanelTab}
             onTabChange={setSidePanelTab}
-            proposalCount={proposals.length}
+            proposalCount={splitProposals.length}
             lapCount={markers.length}
-            detect={
-              <DetectionReviewPanel
-                status={detecting ? detectionStatus : proposals.length > 0 ? "done" : detectionStatus}
-                progress={detectionProgress}
-                proposals={proposals}
-                reviewIndex={reviewIndex}
-                lapTimeMs={detectionLapTimeMs}
-                error={detectionError}
-                onSelectIndex={selectProposalIndex}
-                onAccept={() => void acceptCurrentProposal()}
-                onReject={rejectCurrentProposal}
-                onCancelJob={() => void handleCancelDetection()}
+            suggest={
+              <SplitDetectionPanel
+                status={
+                  splitDetecting
+                    ? splitDetectStatus
+                    : splitProposals.length > 0
+                      ? "done"
+                      : splitDetectStatus
+                }
+                progress={splitDetectProgress}
+                proposals={splitProposals}
+                reviewIndex={splitReviewIndex}
+                bankSummary={splitBankSummary}
+                missingSplitIndices={missingSplitIndices}
+                selectedLapNumber={selectedLapNumber}
+                detecting={splitDetecting}
+                canSuggest={canSuggestSplits}
+                suggestDisabledReason={suggestDisabledReason}
+                error={splitDetectError}
+                onSelectIndex={selectSplitProposalIndex}
+                onAccept={() => void acceptCurrentSplitProposal()}
+                onReject={rejectCurrentSplitProposal}
+                onCancelJob={() => void handleCancelSplitDetection()}
               />
             }
             laps={
@@ -1213,60 +1249,6 @@ export function IntakeMarkingPanel({
             )}
               </div>
             }
-            details={
-              <dl className="session-details-meta intake-details-meta">
-                <div>
-                  <dt>File</dt>
-                  <dd>{fileName}</dd>
-                </div>
-                <div>
-                  <dt>Duration</dt>
-                  <dd>{duration > 0 ? formatVideoTime(duration) : "—"}</dd>
-                </div>
-                <div>
-                  <dt>Frame step</dt>
-                  <dd>1/{DEFAULT_VIDEO_FPS}s</dd>
-                </div>
-                <div>
-                  <dt>Landmark ROI</dt>
-                  <dd>
-                    {trackId ? (
-                      hasTrackRoi ? (
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => setRoiModalOpen(true)}
-                        >
-                          Configured · Edit
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => setRoiModalOpen(true)}
-                        >
-                          Not set · Calibrate
-                        </button>
-                      )
-                    ) : (
-                      "Assign a track first"
-                    )}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Markers</dt>
-                  <dd>{markers.length}</dd>
-                </div>
-                <div>
-                  <dt>Splits</dt>
-                  <dd>{splits.length}</dd>
-                </div>
-                <div>
-                  <dt>Laps</dt>
-                  <dd>{laps.length}</dd>
-                </div>
-              </dl>
-            }
           />
         </div>
       )}
@@ -1280,19 +1262,6 @@ export function IntakeMarkingPanel({
           saveIntakeShortcuts(next);
         }}
       />
-
-      {trackId && (
-        <RoiCalibrationModal
-          open={roiModalOpen}
-          sessionId={sessionId}
-          trackId={trackId}
-          frameTimeSec={calibrationFrameTime}
-          durationSeconds={duration}
-          initialRoi={detectionProfile?.roi}
-          onClose={() => setRoiModalOpen(false)}
-          onSaved={setDetectionProfile}
-        />
-      )}
 
       {saveError && <p className="data-status data-status--error">{saveError}</p>}
     </section>

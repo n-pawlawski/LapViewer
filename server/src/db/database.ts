@@ -306,6 +306,67 @@ function migrate(database: Database.Database): void {
   `);
 
   migrateUserOwnership(database);
+
+  const splitCols = tableColumns(database, "track_splits");
+  if (splitCols.length > 0 && !splitCols.includes("progress")) {
+    database.exec(`ALTER TABLE track_splits ADD COLUMN progress REAL`);
+  }
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS track_reference_profiles (
+      id TEXT PRIMARY KEY,
+      trackId TEXT NOT NULL UNIQUE REFERENCES tracks(id) ON DELETE CASCADE,
+      referenceSessionId TEXT NOT NULL REFERENCES sessions(id),
+      referenceLapNumber INTEGER NOT NULL,
+      referenceStartMarkerId TEXT REFERENCES markers(id),
+      referenceEndMarkerId TEXT REFERENCES markers(id),
+      referenceStartSeconds REAL NOT NULL,
+      referenceEndSeconds REAL NOT NULL,
+      cropTop REAL NOT NULL DEFAULT 0.15,
+      cropBottom REAL NOT NULL DEFAULT 0.20,
+      cropLeft REAL NOT NULL DEFAULT 0,
+      cropRight REAL NOT NULL DEFAULT 0,
+      direction TEXT NOT NULL DEFAULT 'unknown',
+      scanFps INTEGER NOT NULL DEFAULT 5,
+      minLapTimeMs INTEGER NOT NULL DEFAULT 25000,
+      maxProgressJumpPerSec REAL NOT NULL DEFAULT 0.12,
+      lapBoundaryConfidenceMin REAL NOT NULL DEFAULT 0.65,
+      splitConfidenceMin REAL NOT NULL DEFAULT 0.61,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
+    );
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS track_reference_points (
+      id TEXT PRIMARY KEY,
+      profileId TEXT NOT NULL REFERENCES track_reference_profiles(id) ON DELETE CASCADE,
+      timestampMs INTEGER NOT NULL,
+      progress REAL NOT NULL,
+      featurePath TEXT NOT NULL,
+      perceptualHash TEXT,
+      createdAt TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_track_reference_points_profile
+      ON track_reference_points(profileId, progress);
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS track_split_bank (
+      id TEXT PRIMARY KEY,
+      trackId TEXT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+      splitIndex INTEGER NOT NULL,
+      sourceMarkerId TEXT NOT NULL UNIQUE REFERENCES markers(id) ON DELETE CASCADE,
+      sourceSessionId TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      timeSeconds REAL NOT NULL,
+      lapOffsetSeconds REAL NOT NULL,
+      frameGray BLOB NOT NULL,
+      confirmedAt TEXT NOT NULL,
+      createdAt TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_track_split_bank_track
+      ON track_split_bank(trackId, splitIndex);
+  `);
 }
 
 export function closeDatabase(): void {

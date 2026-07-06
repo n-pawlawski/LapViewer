@@ -17,6 +17,7 @@ Implementation plans for features: **typed work items** consumed by specialized 
 | [_TEMPLATE.md](_TEMPLATE.md) | Blank work order |
 | [WO-ui-shell.md](WO-ui-shell.md) | Example: first UI slice (Draft) |
 | [WO-auto-lap-detection.md](WO-auto-lap-detection.md) | F7 assisted lap detection MVP (Ready) |
+| [WO-gopro-progress-spike.md](WO-gopro-progress-spike.md) | F8 progress-curve spike (Done — GO) |
 
 ## Do not
 

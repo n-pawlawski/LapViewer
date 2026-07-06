@@ -102,6 +102,7 @@ export interface TrackSplitDto {
   trackId: string;
   splitIndex: number;
   name: string;
+  progress?: number;
 }
 
 export interface CreateSessionBody {
@@ -215,4 +216,131 @@ export interface DetectionJobDto {
 export interface StartDetectionBody {
   anchorTime: number;
   endTime?: number;
+}
+
+export interface ReferenceProfileCrop {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+export interface ReferenceProfileDto {
+  id: string;
+  trackId: string;
+  referenceSessionId: string;
+  referenceLapNumber: number;
+  referenceStartMarkerId?: string;
+  referenceEndMarkerId?: string;
+  referenceStartSeconds: number;
+  referenceEndSeconds: number;
+  crop: ReferenceProfileCrop;
+  direction: "clockwise" | "counterclockwise" | "unknown";
+  scanFps: number;
+  minLapTimeMs: number;
+  maxProgressJumpPerSec: number;
+  lapBoundaryConfidenceMin: number;
+  splitConfidenceMin: number;
+  referencePointCount: number;
+  splits: TrackSplitDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProgressJobStatus = "queued" | "running" | "done" | "error" | "cancelled";
+
+export interface ReferenceBuildJobDto {
+  jobId: string;
+  trackId: string;
+  status: ProgressJobStatus;
+  progress: number;
+  pointCount?: number;
+  error?: string;
+}
+
+export interface TrackMatchProposalDto {
+  id: string;
+  kind: "lapStart" | "split";
+  timeSeconds: number;
+  splitIndex?: number;
+  lapNumber?: number;
+  confidence: number;
+}
+
+export interface ProgressCurveSampleDto {
+  timestampMs: number;
+  timeSec: number;
+  estimatedProgress: number;
+  confidence: number;
+  visualScore: number;
+}
+
+export interface LowConfidenceRangeDto {
+  startMs: number;
+  endMs: number;
+  avgConfidence: number;
+}
+
+export interface TrackMatchJobDto {
+  jobId: string;
+  sessionId: string;
+  trackId: string;
+  status: ProgressJobStatus;
+  progress: number;
+  curveSamples?: ProgressCurveSampleDto[];
+  proposals?: TrackMatchProposalDto[];
+  lowConfidenceRanges?: LowConfidenceRangeDto[];
+  error?: string;
+}
+
+export interface StartTrackMatchBody {
+  trackId: string;
+  scanStart?: number;
+  scanEnd?: number;
+}
+
+export interface AcceptTrackMatchBody {
+  proposalIds: string[];
+}
+
+export interface SplitBankSummaryDto {
+  trackId: string;
+  bySplitIndex: Record<number, number>;
+  medianOffsetBySplitIndex: Record<number, number>;
+  totalEntries: number;
+}
+
+export interface SplitDetectionProposalDto {
+  id: string;
+  splitIndex: number;
+  label: string;
+  timeSeconds: number;
+  score: number;
+  confidence: number;
+}
+
+export interface SplitDetectionJobDto {
+  jobId: string;
+  sessionId: string;
+  lapNumber: number;
+  status: ProgressJobStatus;
+  progress: number;
+  proposals?: SplitDetectionProposalDto[];
+  error?: string;
+}
+
+export interface StartSplitDetectionBody {
+  lapNumber: number;
+}
+
+export interface SaveReferenceProfileBody {
+  referenceSessionId: string;
+  referenceLapNumber: number;
+  crop?: Partial<ReferenceProfileCrop>;
+  direction?: ReferenceProfileDto["direction"];
+  scanFps?: number;
+  minLapTimeMs?: number;
+  maxProgressJumpPerSec?: number;
+  lapBoundaryConfidenceMin?: number;
+  splitConfidenceMin?: number;
 }

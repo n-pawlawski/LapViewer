@@ -138,10 +138,11 @@ Spike-validated ROI + template-bank detection on Intake. User seeds a start anch
 
 Semi-automatic lap **and split** timing via a reusable **track profile**: one reference lap defines normalized track progress (`0.0 → 1.0`); new videos are matched to that map; laps = progress wraparound; splits = progress crossings.
 
-- Design: [features/GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md)
-- Milestones M1–M7 in that doc (import → track profile → visual matching → sequence alignment → lap/split detection → comparison → correction)
+- Design: [features/GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md) — LapViewer milestones **M2-LV–M7-LV**; integration design complete
+- Spike gate: [work-orders/WO-gopro-progress-spike.md](work-orders/WO-gopro-progress-spike.md) — **passed GO** on `GX010012` (2026-07-06); M2-LV may proceed
+- Decisions: D-019–D-024 in [DECISIONS.md](DECISIONS.md)
 
-**Relationship:** 3A delivers immediate value on Intake with the existing marker model. 3B is the architecture for accurate split deltas and cross-session comparison when a reference lap exists. Converge after AD-5 (split keyframes) or when reference-lap matching is ready to replace/augment ROI-only detection.
+**Relationship:** 3A delivers immediate value on Intake with the existing marker model. 3B is the architecture for accurate split deltas and cross-session comparison when a reference lap exists. **Default sequencing:** finish AD-5 first; run progress spike in parallel if capacity. Converge when reference-lap matching passes the spike go-gate.
 
 ---
 
@@ -199,6 +200,6 @@ Decide before implementation of each phase:
 | [features/USERS_V1.md](features/USERS_V1.md) | Phase 1 detail |
 | [features/DATA_FORM_V2.md](features/DATA_FORM_V2.md) | Phase 2 detail |
 | [features/AUTO_LAP_DETECTION_V1.md](features/AUTO_LAP_DETECTION_V1.md) | Phase 3A — assisted lap starts |
-| [features/GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md) | Phase 3B — reference-lap progress, splits, comparison |
+| [features/GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md) | Phase 3B — reference-lap progress (F8); spike WO |
 | [DECISIONS.md](DECISIONS.md) | Accepted choices (add D-0XX for dev account when Phase 1 starts) |
 | [CONTINUATION.md](CONTINUATION.md) | Current implementation status |

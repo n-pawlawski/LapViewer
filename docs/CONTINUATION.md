@@ -14,7 +14,7 @@
 | **Phase 0** | Intake markers + API — done |
 | **Phase 1** | Users & dev account — done ([USERS_V1.md](features/USERS_V1.md), D-018) |
 | **Phase 2** | Data v2 — done ([DATA_FORM_V2.md](features/DATA_FORM_V2.md)) on `feature/data-form-v2` |
-| **Phase 3** | Auto lap detection — WO-01..05 done; WO-06 review open ([AUTO_LAP_DETECTION_V1.md](features/AUTO_LAP_DETECTION_V1.md)) |
+| **Phase 3** | 3A auto lap detection — WO-01..05 done; WO-06 review open. **3B** spike **GO** ([GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md)); next M2-LV persistence |
 
 ---
 

@@ -163,6 +163,27 @@ export async function renderFramePng(
   }
 }
 
+export async function loadFullFrameGrayFromFile(filePath: string): Promise<Uint8Array> {
+  const { data } = await sharp(filePath).greyscale().raw().toBuffer({ resolveWithObject: true });
+  return data;
+}
+
+export async function extractFullFrameGrayFromVideo(
+  videoPath: string,
+  timeSec: number,
+): Promise<Buffer> {
+  const tmpDir = path.join(DATA_DIR, "cache", "split-bank-tmp");
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const framePath = path.join(tmpDir, `split-bank-${Date.now()}.png`);
+  extractFramePng(videoPath, timeSec, framePath);
+  try {
+    const gray = await loadFullFrameGrayFromFile(framePath);
+    return Buffer.from(gray);
+  } finally {
+    fs.rmSync(framePath, { force: true });
+  }
+}
+
 function scanCacheDir(sessionId: string, scanFps: number, scanStart: number): string {
   return path.join(
     DATA_DIR,

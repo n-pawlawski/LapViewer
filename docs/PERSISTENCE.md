@@ -154,6 +154,59 @@ Deleting a detection profile cascades to its bank entries. Bank entries are **no
 
 Access layer: `server/src/services/detectionProfiles.ts`.
 
+### Reference-lap detection (Phase 3B)
+
+Proposed schema for [GOPRO_LAP_SPLIT_DETECTION](features/GOPRO_LAP_SPLIT_DETECTION.md) — **M2-LV migrated** (2026-07-06). Decisions D-019–D-024.
+
+#### `track_reference_profiles`
+
+One row per track (1:1 with `tracks`, CASCADE on track delete). Stores reference lap bounds, crop, and sequence-alignment tunables.
+
+| Column | Purpose |
+|--------|---------|
+| `id` | Stable profile ID |
+| `trackId` | Parent track (UNIQUE) |
+| `referenceSessionId` | Session containing reference lap |
+| `referenceLapNumber` | Lap number used as reference (1-based) |
+| `referenceStartMarkerId` | Optional FK → `markers.id` |
+| `referenceEndMarkerId` | Optional FK → end boundary marker |
+| `cropTop`, `cropBottom`, `cropLeft`, `cropRight` | Normalized crop (0..1) |
+| `direction` | `clockwise` \| `counterclockwise` \| `unknown` |
+| `scanFps` | Sample rate for matching (default 5) |
+| `minLapTimeMs`, `maxProgressJumpPerSec` | Sequence alignment |
+| `lapBoundaryConfidenceMin`, `splitConfidenceMin` | Review thresholds |
+| `createdAt`, `updatedAt` | Audit |
+
+#### `track_reference_points`
+
+Visual fingerprints sampled along the reference lap.
+
+| Column | Purpose |
+|--------|---------|
+| `id` | Stable point ID |
+| `profileId` | FK → `track_reference_profiles` |
+| `timestampMs` | Time in reference video |
+| `progress` | 0.0–1.0 on reference lap |
+| `featurePath` | Path under `DATA_DIR/cache/features/` |
+| `perceptualHash` | Optional pHash |
+| `createdAt` | Audit |
+
+#### `track_splits.progress`
+
+Add nullable `progress REAL` to existing `track_splits` — canonical split position on reference lap (0..1). **Migrated.** Session split markers remain timestamp-based instances.
+
+#### Cache layout
+
+```text
+DATA_DIR/cache/features/{profileId}/
+  {pointId}.raw          # grayscale crop bytes (NCC)
+DATA_DIR/cache/{trackId}/
+  ref-build-{profileId}/ # reference lap scan frames
+  match-scan/            # session match scan frames
+```
+
+Match-job frame caches follow existing `lap-detect-fps*` pattern; not stored in SQLite except debug exports. **`track_reference_points` migrated.**
+
 ---
 
 ## Native local persistence

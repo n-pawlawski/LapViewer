@@ -24,6 +24,15 @@
 | PATCH | `/api/tracks/:id` | Update track | cookie | |
 | DELETE | `/api/tracks/:id` | Delete track | cookie | |
 | PUT | `/api/tracks/:id/splits` | Replace splits | cookie | |
+| GET | `/api/tracks/:trackId/reference-profile` | Reference lap profile + split progress | cookie | 404 if none |
+| PUT | `/api/tracks/:trackId/reference-profile` | Save reference lap from session | cookie | Body: `referenceSessionId`, `referenceLapNumber` |
+| POST | `/api/tracks/:trackId/reference-profile/build` | Build reference point fingerprints | cookie | 202 `{ jobId }` |
+| GET | `/api/reference-build/:jobId` | Reference build job status | cookie | |
+| DELETE | `/api/reference-build/:jobId` | Cancel reference build | cookie | |
+| POST | `/api/sessions/:id/match-track` | Start progress-matching job | cookie | Body: `{ trackId, scanStart?, scanEnd? }` |
+| GET | `/api/match-track/:jobId` | Match job status + curve + proposals | cookie | |
+| DELETE | `/api/match-track/:jobId` | Cancel match job | cookie | |
+| POST | `/api/sessions/:id/match-track/:jobId/accept` | Accept proposals → markers | cookie | Body: `{ proposalIds[] }` |
 | GET | `/api/tracks/:trackId/detection-profile` | Detection profile | cookie | |
 | PUT | `/api/tracks/:trackId/detection-profile` | Update profile | cookie | |
 | GET | `/api/tracks/:trackId/detection-profile/bank` | Template bank | cookie | |

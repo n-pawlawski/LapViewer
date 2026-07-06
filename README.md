@@ -15,6 +15,7 @@ A personal web application for uploading racing footage, marking lap boundaries,
 | Document                                               | Purpose                                                                               |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------- |
 | [Project Overview](docs/PROJECT_OVERVIEW.md)           | Vision, users, core workflow, and success criteria                                    |
+| [Roadmap](docs/ROADMAP.md)                             | Pre-deploy phases: Intake, users, Data refactor, then hosting (deferred)              |
 | [Documentation System](docs/DOCUMENTATION_SYSTEM.md)   | Scalable map for product, architecture, testing, communication, and agent docs        |
 | [Feature Lifecycle](docs/FEATURE_LIFECYCLE.md)         | Gates for feature readiness, implementation, verification, traceability, and done     |
 | [Decisions](docs/DECISIONS.md)                         | Project decision log for architecture, product, testing, and workflow choices         |

@@ -271,6 +271,42 @@ See [UI Forms — Comparison form](UI_FORMS.md#3-comparison-form).
 
 ---
 
+## F8 — Reference-lap track progress (Phase 3B)
+
+**Design spec:** [features/GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md) (LapViewer integration complete; **Ready for spike**).
+
+**Intent:** Semi-automatic lap **and split** timing via a reusable track reference lap. Normalize track position to `0.0 → 1.0`; match new footage to that map; detect laps (wraparound) and splits (progress crossings); compare sector deltas in Compare.
+
+**Status:** Spike passed (GO); M2-LV persistence next. **Blocked on** M2-LV work order for schema + Intake reference-lap editor.
+
+**Relationship to F7:** F7 (3A) delivers ROI-NCC lap starts now; F8 (3B) is the long-term architecture for split timing and Compare deltas. Default sequencing: AD-5 first; spike may run in parallel.
+
+### F8.1 Reference lap profile
+
+**Acceptance criteria:**
+
+- [x] User can mark a reference lap on Intake (start, splits, end) and save `track_reference_profiles` for a track.
+- [x] `track_splits.progress` stores canonical split positions (0..1).
+- [x] Reference session + lap number persisted.
+
+### F8.2 Progress matching (spike-gated)
+
+**Acceptance criteria:**
+
+- [x] Progress-curve spike passes go-gate on same-session test footage.
+- [x] Background job produces `timestamp → progress` curve and lap/split proposals with confidence.
+- [x] User reviews and accepts proposals → existing `markers` API.
+
+### F8.3 Compare split deltas
+
+**Acceptance criteria:**
+
+- [x] Compare shows sector delta table for two laps on the same track.
+- [x] Deltas use `m:ss.mmm`; sync point selector unchanged.
+- [x] Cross-session compare works when track splits align by `splitIndex`.
+
+---
+
 ## Feature priority (proposed)
 
 | Priority | Features |
@@ -279,4 +315,4 @@ See [UI Forms — Comparison form](UI_FORMS.md#3-comparison-form).
 | **P0 — MVP (full product)** | F1.1, F1.2, F2.1, F3.1, F3.3, F6.1 |
 | **P1 — Core value** | F3.2, F1.3, F5.3 (4-up grid) |
 | **P2 — Enhanced** | F2.2, F6.2, F7 (assisted lap detection — [spec](features/AUTO_LAP_DETECTION_V1.md)) |
-| **P3 — Later** | F3.4, F5.4, telemetry |
+| **P3 — Later** | F3.4, F5.4, F8 (reference-lap detection — [spec](features/GOPRO_LAP_SPLIT_DETECTION.md)), telemetry |

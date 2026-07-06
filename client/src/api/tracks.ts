@@ -5,6 +5,7 @@ export interface TrackSplit {
   trackId: string;
   splitIndex: number;
   name: string;
+  progress?: number;
 }
 
 export interface Track {
