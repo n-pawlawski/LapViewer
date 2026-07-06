@@ -1,0 +1,32 @@
+---
+description: Local-only git workflow — no remote; merge verified work to dev
+alwaysApply: true
+---
+
+# LapViewer Git Workflow (local only)
+
+This repo is **local-only for now**: there is no configured `origin` remote.
+
+## Do not push
+
+- Do **not** run `git push` or try to add/configure a remote unless the user explicitly asks.
+- If push fails with "no remote", treat that as expected — report success for local commit/merge instead of retrying push.
+
+## Merge to `dev` when work is done
+
+- Base branch: **`dev`** ([D-004](docs/DECISIONS.md)).
+- Feature work lives on `feature/*`, `fix/*`, or `chore/*` branches branched from `dev`.
+- After changes are verified (`npm run check`, relevant tests), **merge the feature branch into `dev` locally**:
+
+```bash
+git checkout dev
+git merge feature/<name>
+```
+
+- Prefer a normal merge (no force-push to `dev`).
+- Leave the feature branch in place unless the user asks to delete it.
+
+## Commit expectations
+
+- Commit on the feature branch during work; merge to `dev` when the item is complete and verified.
+- Never change `git config`, force-push protected branches, or commit secrets ([D-012](docs/DECISIONS.md)).

@@ -16,4 +16,4 @@ Use that file to:
 - Dispatch by **Work type** — read `docs/agents/<folder>/BASE.md` and complete its checklist unless a single ID is named.
 - Keep docs, implementation, and verification aligned.
 
-Do not implement `Draft` work queue items. Ask before adding dependencies, deleting data, adding a git remote, deploying, or making broad architecture changes. Agents manage git per `docs/DECISIONS.md` D-012 (branch, commit, merge); never change `git config`, force-push protected branches, or commit secrets.
+Do not implement `Draft` work queue items. Ask before adding dependencies, deleting data, adding a git remote, deploying, or making broad architecture changes. Agents manage git per `docs/DECISIONS.md` D-012 (branch, commit, merge); never change `git config`, force-push protected branches, or commit secrets. **No remote yet** — merge verified work to `dev` locally; see `lapviewer-git-workflow.mdc`.
