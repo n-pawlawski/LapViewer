@@ -1454,6 +1454,99 @@ body {
   color: #7d8b9a;
 }
 
+.intake-view-scope {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #141b24;
+  border: 1px solid #2a3544;
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.intake-view-scope-controls {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.intake-view-scope-divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 1.25rem;
+  background: #2a3544;
+}
+
+.intake-view-scope-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.intake-view-scope-label {
+  flex-shrink: 0;
+  width: 2.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7d8b9a;
+}
+
+.intake-view-scope-group {
+  display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.intake-view-scope-group--scroll {
+  flex: 1;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+}
+
+.intake-view-scope-option {
+  appearance: none;
+  border: 1px solid #2a3544;
+  background: #1a222c;
+  color: #c5d0db;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.intake-view-scope-option:hover:not(:disabled) {
+  border-color: #3b82f6;
+  color: #e7ecf1;
+}
+
+.intake-view-scope-option.is-active {
+  background: #1e3a5f;
+  border-color: #3b82f6;
+  color: #93c5fd;
+}
+
+.intake-view-scope-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.intake-time-readout-scope {
+  color: #7d8b9a;
+  font-size: 0.85em;
+}
+
 .intake-save-state--saved {
   color: #86efac;
 }

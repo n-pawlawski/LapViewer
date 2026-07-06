@@ -5,6 +5,7 @@ import type { Lap, Marker, SessionStatus, Split } from "../types";
 import type { TrackSplit } from "../api/tracks";
 import { IntakeShortcutsModal } from "./IntakeShortcutsModal";
 import { IntakeSidePanel, type IntakeSidePanelTab } from "./IntakeSidePanel";
+import { IntakeViewScopeBar } from "./IntakeViewScopeBar";
 import {
   cancelSplitDetectionJob,
   fetchSplitBankSummary,
@@ -37,6 +38,14 @@ import { formatLapTime, formatVideoTime, parseVideoTime } from "../utils/time";
 import { MARKER_SNAP_SECONDS, nearestWithinThreshold } from "../utils/markers";
 import { DEFAULT_VIDEO_FPS, frameStepSeconds } from "../utils/video";
 import { missingSplitIndicesForLap } from "../utils/splitDetection";
+import {
+  clampTimeToWindow,
+  computeIntakeViewWindow,
+  isTimeInWindow,
+  timelinePercentInWindow,
+  type IntakeLapScope,
+  type IntakeViewMode,
+} from "../utils/intakeViewScope";
 
 type SaveState = "saved" | "saving" | "error";
 
@@ -97,6 +106,8 @@ export function IntakeMarkingPanel({
   const [splitProposals, setSplitProposals] = useState<LocalSplitProposal[]>([]);
   const [splitReviewIndex, setSplitReviewIndex] = useState(0);
   const [splitDetecting, setSplitDetecting] = useState(false);
+  const [viewMode, setViewMode] = useState<IntakeViewMode>("full-race");
+  const [lapScope, setLapScope] = useState<IntakeLapScope>("all");
   const durationPersisted = useRef(durationSeconds != null);
   const lastSyncedLapRef = useRef<number | null>(null);
 
@@ -104,6 +115,21 @@ export function IntakeMarkingPanel({
   const frameStep = frameStepSeconds(DEFAULT_VIDEO_FPS);
   const splitMap = useMemo(() => splitsByLapNumber(splits), [splits]);
   const splitReviewActive = splitProposals.length > 0;
+
+  const effectiveDuration = duration > 0 ? duration : (durationSeconds ?? 0);
+  const viewWindow = useMemo(
+    () =>
+      computeIntakeViewWindow({
+        viewMode,
+        lapScope,
+        markers,
+        laps,
+        durationSeconds: effectiveDuration,
+      }),
+    [viewMode, lapScope, markers, laps, effectiveDuration],
+  );
+  const viewSpanSeconds = Math.max(0.01, viewWindow.endSeconds - viewWindow.startSeconds);
+  const scopedTime = currentTime - viewWindow.startSeconds;
 
   const missingSplitIndices = useMemo(() => {
     if (selectedLapNumber == null) return [];
@@ -286,16 +312,35 @@ export function IntakeMarkingPanel({
   const seek = useCallback(
     (time: number) => {
       const video = videoRef.current;
-      const max = duration > 0 ? duration : time;
-      const clamped = Math.max(0, Math.min(max, time));
+      const max = effectiveDuration > 0 ? effectiveDuration : time;
+      const clamped = clampTimeToWindow(Math.max(0, Math.min(max, time)), viewWindow);
       if (video) {
         video.currentTime = clamped;
       }
       setCurrentTime(clamped);
       currentTimeRef.current = clamped;
     },
-    [duration],
+    [effectiveDuration, viewWindow],
   );
+
+  useEffect(() => {
+    if (viewMode === "only-laps" && markers.length === 0) {
+      setViewMode("full-race");
+      setLapScope("all");
+    }
+  }, [viewMode, markers.length]);
+
+  useEffect(() => {
+    if (typeof lapScope === "number" && lapScope > markers.length) {
+      setLapScope("all");
+    }
+  }, [lapScope, markers.length]);
+
+  useEffect(() => {
+    if (!isTimeInWindow(currentTimeRef.current, viewWindow)) {
+      seek(clampTimeToWindow(currentTimeRef.current, viewWindow));
+    }
+  }, [viewWindow, seek]);
 
   const syncActiveLapFromSeeker = useCallback(
     (time: number) => {
@@ -338,6 +383,38 @@ export function IntakeMarkingPanel({
       syncActiveLapFromSeeker(time);
     },
     [seek, syncActiveLapFromSeeker],
+  );
+
+  const handleViewModeChange = useCallback(
+    (mode: IntakeViewMode) => {
+      setViewMode(mode);
+      if (mode === "only-laps" && markers.length > 0) {
+        seekAndSync(markers[0]!.timeSeconds);
+      }
+    },
+    [markers, seekAndSync],
+  );
+
+  const handleLapScopeChange = useCallback(
+    (scope: IntakeLapScope) => {
+      setLapScope(scope);
+      if (typeof scope === "number") {
+        const marker = markers[scope - 1];
+        const bounds = lapBounds(laps, scope);
+        if (marker) {
+          lastSyncedLapRef.current = scope;
+          setSelectedMarkerId(marker.id);
+          setSelectedLapNumber(scope);
+          setSelectedSplitId(null);
+          seekAndSync(bounds?.startSeconds ?? marker.timeSeconds);
+        }
+        return;
+      }
+      if (markers.length > 0) {
+        seekAndSync(markers[0]!.timeSeconds);
+      }
+    },
+    [markers, laps, seekAndSync],
   );
 
   useEffect(() => {
@@ -537,7 +614,13 @@ export function IntakeMarkingPanel({
   function handleTimeUpdate() {
     const video = videoRef.current;
     if (!video) return;
-    const time = video.currentTime;
+    let time = video.currentTime;
+    if (time > viewWindow.endSeconds + 0.05) {
+      time = viewWindow.endSeconds;
+      video.pause();
+      video.currentTime = time;
+      setPlaying(false);
+    }
     setCurrentTime(time);
     currentTimeRef.current = time;
     syncActiveLapFromSeeker(time);
@@ -850,7 +933,27 @@ export function IntakeMarkingPanel({
       (selectedLapSplits.length < trackSplits.length && placementSplitIndex != null));
 
   const firstMarkerTime = markers[0]?.timeSeconds;
-  const bestLapMs = bestLapTimeMsFromMarkers(markers, duration > 0 ? duration : durationSeconds);
+  const bestLapMs = bestLapTimeMsFromMarkers(markers, effectiveDuration);
+
+  const visibleLapMarkers = useMemo(() => {
+    if (viewMode !== "only-laps" || typeof lapScope !== "number") {
+      return markers.map((marker, index) => ({ marker, lapNumber: index + 1 }));
+    }
+    const marker = markers[lapScope - 1];
+    return marker ? [{ marker, lapNumber: lapScope }] : [];
+  }, [viewMode, lapScope, markers]);
+
+  const visibleSplits = useMemo(() => {
+    if (viewMode !== "only-laps" || typeof lapScope !== "number") {
+      return splits.filter((split) => isTimeInWindow(split.timeSeconds, viewWindow));
+    }
+    return splits.filter((split) => split.lapNumber === lapScope);
+  }, [viewMode, lapScope, splits, viewWindow]);
+
+  const visibleSplitProposals = useMemo(
+    () => splitProposals.filter((proposal) => isTimeInWindow(proposal.time, viewWindow)),
+    [splitProposals, viewWindow],
+  );
 
   return (
     <section className="intake-marking">
@@ -875,6 +978,15 @@ export function IntakeMarkingPanel({
       )}
 
       {playable && (
+        <>
+          <IntakeViewScopeBar
+            viewMode={viewMode}
+            onViewModeChange={handleViewModeChange}
+            lapScope={lapScope}
+            onLapScopeChange={handleLapScopeChange}
+            lapCount={markers.length}
+            hasLapMarkers={markers.length > 0}
+          />
         <div className="intake-marking-player-row intake-marking-player-row--with-panel">
           <div className="intake-marking-player">
           <div className="intake-player-wrap">
@@ -893,59 +1005,68 @@ export function IntakeMarkingPanel({
 
           <div className="intake-timeline">
             <div className="intake-timeline-track">
-              {duration > 0 &&
-                markers.map((marker, index) => (
+              {viewSpanSeconds > 0 &&
+                visibleLapMarkers.map(({ marker, lapNumber }) => (
                   <button
                     key={marker.id}
                     type="button"
                     className={`intake-timeline-marker intake-timeline-marker--lap ${
                       selectedMarkerId === marker.id ? "intake-timeline-marker--selected" : ""
                     }`}
-                    style={{ left: `${(marker.timeSeconds / duration) * 100}%` }}
-                    title={`Lap ${index + 1} — ${formatVideoTime(marker.timeSeconds)}`}
-                    onClick={() => handleMarkerClick(marker, index + 1)}
+                    style={{
+                      left: `${timelinePercentInWindow(marker.timeSeconds, viewWindow)}%`,
+                    }}
+                    title={`Lap ${lapNumber} — ${formatVideoTime(marker.timeSeconds)}`}
+                    onClick={() => handleMarkerClick(marker, lapNumber)}
                   />
                 ))}
-              {duration > 0 &&
-                splits.map((split) => (
+              {viewSpanSeconds > 0 &&
+                visibleSplits.map((split) => (
                   <button
                     key={split.id}
                     type="button"
                     className={`intake-timeline-marker intake-timeline-marker--split ${
                       selectedSplitId === split.id ? "intake-timeline-marker--selected" : ""
                     }`}
-                    style={{ left: `${(split.timeSeconds / duration) * 100}%` }}
+                    style={{
+                      left: `${timelinePercentInWindow(split.timeSeconds, viewWindow)}%`,
+                    }}
                     title={`Lap ${split.lapNumber} ${split.label} — ${formatVideoTime(split.timeSeconds)}`}
                     onClick={() => handleSplitClick(split)}
                   />
                 ))}
-              {duration > 0 &&
-                splitProposals.map((proposal, index) => (
-                  <button
-                    key={proposal.id}
-                    type="button"
-                    className={`intake-timeline-marker intake-timeline-marker--split-suggested ${
-                      splitReviewActive && index === splitReviewIndex
-                        ? "intake-timeline-marker--selected"
-                        : ""
-                    }`}
-                    style={{ left: `${(proposal.time / duration) * 100}%` }}
-                    title={`Suggested ${proposal.label} — ${formatVideoTime(proposal.time)} (${(proposal.confidence * 100).toFixed(0)}%)`}
-                    onClick={() => {
-                      selectSplitProposalIndex(index);
-                      seekAndSync(proposal.time);
-                    }}
-                  />
-                ))}
+              {viewSpanSeconds > 0 &&
+                visibleSplitProposals.map((proposal) => {
+                  const index = splitProposals.findIndex((entry) => entry.id === proposal.id);
+                  return (
+                    <button
+                      key={proposal.id}
+                      type="button"
+                      className={`intake-timeline-marker intake-timeline-marker--split-suggested ${
+                        splitReviewActive && index === splitReviewIndex
+                          ? "intake-timeline-marker--selected"
+                          : ""
+                      }`}
+                      style={{
+                        left: `${timelinePercentInWindow(proposal.time, viewWindow)}%`,
+                      }}
+                      title={`Suggested ${proposal.label} — ${formatVideoTime(proposal.time)} (${(proposal.confidence * 100).toFixed(0)}%)`}
+                      onClick={() => {
+                        selectSplitProposalIndex(index);
+                        seekAndSync(proposal.time);
+                      }}
+                    />
+                  );
+                })}
             </div>
             <input
               type="range"
               className="intake-scrubber"
               min={0}
-              max={duration || 1}
+              max={viewSpanSeconds}
               step={0.01}
-              value={currentTime}
-              onChange={(e) => seekAndSync(Number(e.target.value))}
+              value={Math.max(0, Math.min(viewSpanSeconds, scopedTime))}
+              onChange={(e) => seekAndSync(viewWindow.startSeconds + Number(e.target.value))}
             />
           </div>
 
@@ -960,7 +1081,17 @@ export function IntakeMarkingPanel({
               Frame →
             </button>
             <span className="intake-time-readout">
-              {formatVideoTime(currentTime)} / {formatVideoTime(duration)}
+              {formatVideoTime(currentTime)}
+              {viewMode === "only-laps" ? (
+                <>
+                  {" "}
+                  <span className="intake-time-readout-scope">
+                    ({formatVideoTime(viewWindow.startSeconds)}–{formatVideoTime(viewWindow.endSeconds)})
+                  </span>
+                </>
+              ) : (
+                <> / {formatVideoTime(effectiveDuration)}</>
+              )}
             </span>
             <button type="button" className="btn btn-primary" onClick={addMarkerAtCurrentTime}>
               + Lap
@@ -1251,6 +1382,7 @@ export function IntakeMarkingPanel({
             }
           />
         </div>
+        </>
       )}
 
       <IntakeShortcutsModal
