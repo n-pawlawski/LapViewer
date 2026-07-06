@@ -1,9 +1,11 @@
 import { Router } from "express";
 import {
   createSession,
+  deleteSession,
   getSessionById,
   getSessionSourcePath,
   insertMarker,
+  listAllLaps,
   listSessions,
   updateSession,
 } from "../services/sessions.js";
@@ -96,6 +98,21 @@ sessionsRouter.patch("/:id", (req, res) => {
     }
     throw err;
   }
+});
+
+sessionsRouter.delete("/:id", (req, res) => {
+  const deleted = deleteSession(req.params.id, req.userId!);
+  if (!deleted) {
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+  res.status(204).send();
+});
+
+export const lapsRouter = Router();
+
+lapsRouter.get("/", (req, res) => {
+  res.json(listAllLaps(req.userId!));
 });
 
 export const videoRouter = Router();

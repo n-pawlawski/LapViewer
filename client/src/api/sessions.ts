@@ -11,6 +11,20 @@ export interface SessionSummary {
   date?: string;
   lapCount: number;
   bestLapTimeMs?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FlatLapRow {
+  id: string;
+  sessionId: string;
+  sessionTitle: string;
+  sessionTrack?: string;
+  sessionDate?: string;
+  lapNumber: number;
+  lapTimeMs: number;
+  isBestInSession: boolean;
+  ignored: boolean;
 }
 
 export interface SessionDetail extends SessionSummary {
@@ -66,6 +80,14 @@ export async function updateSession(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+}
+
+export async function deleteSession(id: string): Promise<void> {
+  await apiFetch<void>(`/api/sessions/${id}`, { method: "DELETE" });
+}
+
+export async function fetchAllLaps(): Promise<FlatLapRow[]> {
+  return apiFetch<FlatLapRow[]>("/api/laps");
 }
 
 export function sessionVideoUrl(sessionId: string): string {

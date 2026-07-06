@@ -25,6 +25,7 @@ import type {
   UpdateMarkerBody,
   UpdateSessionBody,
 } from "../types.js";
+import type { FlatLapRow } from "../types.js";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -127,6 +128,8 @@ function toSummary(row: SessionRow): SessionSummary {
     date: row.recordedAt ?? undefined,
     lapCount: countedLaps.length,
     bestLapTimeMs: best,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
   };
 }
 
@@ -590,6 +593,40 @@ export function deleteMarker(markerId: string, userId: string): boolean {
     }
   }
   return result.changes > 0;
+}
+
+export function deleteSession(id: string, userId: string): boolean {
+  const result = getDb()
+    .prepare(`DELETE FROM sessions WHERE id = ? AND userId = ?`)
+    .run(id, userId);
+  return result.changes > 0;
+}
+
+export function listAllLaps(userId: string): FlatLapRow[] {
+  const rows = getDb()
+    .prepare(`SELECT * FROM sessions WHERE userId = ? ORDER BY createdAt DESC`)
+    .all(userId) as SessionRow[];
+
+  const flat: FlatLapRow[] = [];
+  for (const row of rows) {
+    const laps = lapsForSession(row);
+    const best = bestLapTimeMs(laps);
+    for (const lap of laps) {
+      if (lap.ignored) continue;
+      flat.push({
+        id: lap.id,
+        sessionId: row.id,
+        sessionTitle: row.title,
+        sessionTrack: row.trackName ?? undefined,
+        sessionDate: row.recordedAt ?? undefined,
+        lapNumber: lap.lapNumber,
+        lapTimeMs: lap.lapTimeMs,
+        isBestInSession: best != null && lap.lapTimeMs === best,
+        ignored: lap.ignored,
+      });
+    }
+  }
+  return flat;
 }
 
 export function countSessions(userId: string): number {

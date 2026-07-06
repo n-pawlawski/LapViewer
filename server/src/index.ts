@@ -19,7 +19,7 @@ import { requireAuth } from "./middleware/auth.js";
 import { authRouter } from "./routes/auth.js";
 import { markersRouter } from "./routes/markers.js";
 import { detectionRouter, sessionDetectionRouter, trackDetectionRouter } from "./routes/detection.js";
-import { sessionsRouter, videoRouter } from "./routes/sessions.js";
+import { sessionsRouter, videoRouter, lapsRouter } from "./routes/sessions.js";
 import { systemRouter } from "./routes/system.js";
 import { tracksRouter } from "./routes/tracks.js";
 import { streamVideoFile } from "./video.js";
@@ -63,6 +63,7 @@ app.get("/api/video/demo", (req, res) => {
 app.use("/api/auth", authRouter);
 
 app.use("/api/sessions", requireAuth, sessionsRouter);
+app.use("/api/laps", requireAuth, lapsRouter);
 app.use("/api/sessions", requireAuth, sessionDetectionRouter);
 app.use("/api/markers", requireAuth, markersRouter);
 app.use("/api/tracks", requireAuth, tracksRouter);

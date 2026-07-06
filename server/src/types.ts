@@ -43,6 +43,20 @@ export interface SessionSummary {
   date?: string;
   lapCount: number;
   bestLapTimeMs?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FlatLapRow {
+  id: string;
+  sessionId: string;
+  sessionTitle: string;
+  sessionTrack?: string;
+  sessionDate?: string;
+  lapNumber: number;
+  lapTimeMs: number;
+  isBestInSession: boolean;
+  ignored: boolean;
 }
 
 export interface LapDto {

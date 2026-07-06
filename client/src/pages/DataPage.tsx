@@ -1,113 +1,69 @@
-import { useEffect, useState } from "react";
-import {
-  fetchSession,
-  fetchSessions,
-  type SessionDetail,
-  type SessionSummary,
-} from "../api/sessions";
-import { AppShell, CompareTray } from "../components/AppShell";
-import { LapTable } from "../components/LapTable";
-import { SessionList } from "../components/SessionList";
+import { useMemo, useState } from "react";
+import { deleteSession } from "../api/sessions";
+import { AppShell } from "../components/AppShell";
+import { CompareDock } from "../components/data/CompareDock";
+import { DataToolbar } from "../components/data/DataToolbar";
+import { SessionEditModal } from "../components/data/SessionEditModal";
+import { SessionListPanel } from "../components/data/SessionListPanel";
+import { SessionWorkspace } from "../components/data/SessionWorkspace";
+import { useDataPageState } from "../hooks/useDataPageState";
+import { useSessionFilters } from "../hooks/useSessionFilters";
 import { useRouter, useSearchParams } from "../lib/router";
-import { setSelectedSessionId } from "../lib/selectedSession";
-import type { Session } from "../types";
-
-function summaryToSession(summary: SessionSummary): Session {
-  return {
-    id: summary.id,
-    title: summary.title,
-    sourcePath: summary.sourcePath,
-    status: summary.status,
-    track: summary.track,
-    date: summary.date,
-    lapCount: summary.lapCount,
-    bestLapTimeMs: summary.bestLapTimeMs,
-    usesDemoStream: summary.status === "ready",
-  };
-}
-
-function statusLabel(status: string): string {
-  switch (status) {
-    case "ready":
-      return "Ready";
-    case "processing":
-      return "Processing proxy";
-    case "missing":
-      return "Missing file";
-    default:
-      return status;
-  }
-}
+import { summaryToSession } from "../utils/sessionUtils";
 
 export function DataPage() {
   const { navigate } = useRouter();
   const searchParams = useSearchParams();
   const sessionFromUrl = searchParams.get("session");
-  const [sessions, setSessions] = useState<SessionSummary[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<SessionDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
+  const {
+    sessions,
+    selectedId,
+    setSelectedId,
+    detail,
+    loading,
+    error,
+    refreshDetail,
+    removeSessionFromList,
+  } = useDataPageState(sessionFromUrl);
 
-    fetchSessions()
-      .then((list) => {
-        if (cancelled) return;
-        setSessions(list);
-        if (list.length > 0) {
-          setSelectedId((prev) => {
-            if (sessionFromUrl && list.some((s) => s.id === sessionFromUrl)) {
-              return sessionFromUrl;
-            }
-            return prev ?? list[0].id;
-          });
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load sessions");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+  const {
+    filters,
+    setFilters,
+    trackOptions,
+    filteredSessions,
+    hasActiveFilters,
+    clearFilters,
+  } = useSessionFilters(sessions);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionFromUrl]);
-
-  useEffect(() => {
-    setSelectedSessionId(selectedId);
-  }, [selectedId]);
-
-  useEffect(() => {
-    if (!selectedId) {
-      setDetail(null);
-      return;
-    }
-
-    let cancelled = false;
-    fetchSession(selectedId)
-      .then((data) => {
-        if (!cancelled) setDetail(data);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load session");
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedId]);
+  const filteredAsSessions = useMemo(
+    () => filteredSessions.map(summaryToSession),
+    [filteredSessions],
+  );
 
   const session = detail ? summaryToSession(detail) : null;
+  const totalLapCount = useMemo(
+    () => sessions.reduce((sum, s) => sum + s.lapCount, 0),
+    [sessions],
+  );
+
+  function handleOpenIntake() {
+    if (!session) return;
+    navigate(`/intake?session=${session.id}`);
+  }
+
+  function handleDeleteFromStrip() {
+    if (!detail) return;
+    if (!window.confirm(`Remove "${detail.title}" from LapViewer? Lap markers will be deleted.`)) {
+      return;
+    }
+    void deleteSession(detail.id)
+      .then(() => removeSessionFromList(detail.id))
+      .catch((err) => {
+        console.error(err);
+      });
+  }
 
   return (
     <AppShell>
@@ -127,70 +83,64 @@ export function DataPage() {
           </div>
         )}
 
-        {sessions.length > 0 && (
-          <div className="data-panes">
-            <aside className="data-pane-left">
-              <SessionList
-                sessions={sessions.map(summaryToSession)}
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-              />
-            </aside>
-            <section className="data-pane-right">
-              {session && detail ? (
-                <>
-                  <div className="session-details">
-                    <h2 className="session-details-title">{session.title}</h2>
-                    <dl className="session-details-meta">
-                      <div>
-                        <dt>File</dt>
-                        <dd>{detail.fileName}</dd>
-                      </div>
-                      <div>
-                        <dt>Status</dt>
-                        <dd>
-                          <span className={`status-badge status-badge--${session.status}`}>
-                            {statusLabel(session.status)}
-                          </span>
-                        </dd>
-                      </div>
-                      {session.track && (
-                        <div>
-                          <dt>Track</dt>
-                          <dd>{session.track}</dd>
-                        </div>
-                      )}
-                      {session.date && (
-                        <div>
-                          <dt>Date</dt>
-                          <dd>{session.date}</dd>
-                        </div>
-                      )}
-                      <div>
-                        <dt>Laps</dt>
-                        <dd>{session.lapCount}</dd>
-                      </div>
-                    </dl>
-                    <div className="session-actions">
-                      <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => navigate(`/intake?session=${session.id}`)}
-                      >
-                        Open Intake
-                      </button>
-                    </div>
-                  </div>
-                  <LapTable session={session} laps={detail.laps} sessionDetail={detail} />
-                  <CompareTray />
-                </>
-              ) : (
-                <div className="empty-state">
-                  <p>Select a session to view laps.</p>
-                </div>
-              )}
-            </section>
-          </div>
+        {!loading && sessions.length > 0 && (
+          <>
+            <DataToolbar
+              filters={filters}
+              trackOptions={trackOptions}
+              sessionCount={sessions.length}
+              filteredCount={filteredSessions.length}
+              hasActiveFilters={hasActiveFilters}
+              onSearchChange={(search) => setFilters((f) => ({ ...f, search }))}
+              onTrackChange={(track) => setFilters((f) => ({ ...f, track }))}
+              onStatusChange={(status) => setFilters((f) => ({ ...f, status }))}
+              onSortChange={(sort) => setFilters((f) => ({ ...f, sort }))}
+              onClearFilters={clearFilters}
+            />
+            <div className="data-panes">
+              <aside className="data-pane-left">
+                <SessionListPanel
+                  sessions={filteredAsSessions}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                  emptyMessage={
+                    hasActiveFilters
+                      ? "No sessions match filters."
+                      : "No sessions yet."
+                  }
+                />
+              </aside>
+              <section className="data-pane-right">
+                <SessionWorkspace
+                  session={session}
+                  detail={detail}
+                  sessions={sessions}
+                  filters={filters}
+                  lapCount={session?.lapCount ?? 0}
+                  totalLapCount={totalLapCount}
+                  onOpenIntake={handleOpenIntake}
+                  onEdit={() => setEditOpen(true)}
+                  onDelete={handleDeleteFromStrip}
+                />
+              </section>
+            </div>
+            <CompareDock />
+          </>
+        )}
+
+        {session && detail && editOpen && (
+          <SessionEditModal
+            key={detail.id}
+            open={editOpen}
+            sessionId={detail.id}
+            title={detail.title}
+            track={detail.track ?? ""}
+            date={detail.date ?? ""}
+            notes={detail.notes ?? ""}
+            onClose={() => setEditOpen(false)}
+            onSaved={() => void refreshDetail()}
+            onDeleted={() => removeSessionFromList(detail.id)}
+          />
         )}
       </div>
     </AppShell>
