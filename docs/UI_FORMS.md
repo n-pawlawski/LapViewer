@@ -136,6 +136,25 @@ Combines what was previously split as “intake” + “markup view” — you e
 6. See live lap list with computed times.
 7. Changes auto-save; return to Data via nav when finished, or continue refining.
 
+**Phase B.1 — Landmark ROI (assisted lap detection)**
+
+When a session has a track assigned, calibrate the **start/finish landmark box** once per track:
+
+- If the track has no ROI yet, Intake shows a prompt to **Calibrate landmark ROI**.
+- Modal loads a representative frame (first lap marker time, or current playhead) via `GET /api/sessions/:id/frame`.
+- User drags/resizes a box over the visual cue; ROI is stored as normalized fractions on the track’s detection profile.
+- **Edit ROI** reopens the same modal on later sessions — no re-draw needed unless the mount changes.
+
+**Phase B.2 — Auto-detect lap starts (assisted detection)**
+
+After a start anchor and track ROI exist:
+
+1. Click **Auto-detect laps** — background scan proposes lap-start times with confidence scores.
+2. A **side panel** shows scan progress, then the proposal list for sequential review.
+3. **Suggested** markers appear on the timeline (dashed amber); confirmed markers stay solid blue.
+4. Review each proposal with keyboard shortcuts (`,`/`.` walk, `Y` accept, `X` reject, `[`/`]` nudge frame).
+5. Accepting persists a lap marker and adds a template to the track bank for future sessions.
+
 **Edit mode:** Same form when reopening an existing session to adjust markers or metadata (not only net-new intake).
 
 ### UI sketch (conceptual)

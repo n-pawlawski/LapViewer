@@ -62,6 +62,35 @@ CREATE TABLE IF NOT EXISTS track_splits (
 );
 
 CREATE INDEX IF NOT EXISTS idx_track_splits_track ON track_splits(trackId);
+
+CREATE TABLE IF NOT EXISTS detection_profiles (
+  id TEXT PRIMARY KEY,
+  trackId TEXT NOT NULL UNIQUE REFERENCES tracks(id) ON DELETE CASCADE,
+  roiX0 REAL,
+  roiY0 REAL,
+  roiX1 REAL,
+  roiY1 REAL,
+  scanFps INTEGER NOT NULL DEFAULT 5,
+  lapTimePriorMs REAL,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS detection_bank (
+  id TEXT PRIMARY KEY,
+  profileId TEXT NOT NULL REFERENCES detection_profiles(id) ON DELETE CASCADE,
+  sourceSessionId TEXT NOT NULL,
+  timeSeconds REAL NOT NULL,
+  roiX0 REAL NOT NULL,
+  roiY0 REAL NOT NULL,
+  roiX1 REAL NOT NULL,
+  roiY1 REAL NOT NULL,
+  roiGray BLOB NOT NULL,
+  confirmedAt TEXT NOT NULL,
+  createdAt TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_detection_bank_profile ON detection_bank(profileId);
 `;
 
 export function getDb(): Database.Database {
@@ -104,6 +133,37 @@ function migrate(database: Database.Database): void {
       UNIQUE(trackId, splitIndex)
     );
     CREATE INDEX IF NOT EXISTS idx_track_splits_track ON track_splits(trackId);
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS detection_profiles (
+      id TEXT PRIMARY KEY,
+      trackId TEXT NOT NULL UNIQUE REFERENCES tracks(id) ON DELETE CASCADE,
+      roiX0 REAL,
+      roiY0 REAL,
+      roiX1 REAL,
+      roiY1 REAL,
+      scanFps INTEGER NOT NULL DEFAULT 5,
+      lapTimePriorMs REAL,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS detection_bank (
+      id TEXT PRIMARY KEY,
+      profileId TEXT NOT NULL REFERENCES detection_profiles(id) ON DELETE CASCADE,
+      sourceSessionId TEXT NOT NULL,
+      timeSeconds REAL NOT NULL,
+      roiX0 REAL NOT NULL,
+      roiY0 REAL NOT NULL,
+      roiX1 REAL NOT NULL,
+      roiY1 REAL NOT NULL,
+      roiGray BLOB NOT NULL,
+      confirmedAt TEXT NOT NULL,
+      createdAt TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_detection_bank_profile ON detection_bank(profileId);
   `);
 }
 

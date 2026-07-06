@@ -5,6 +5,17 @@ import type { Lap, Marker, SessionStatus, Split } from "../types";
 import type { TrackSplit } from "../api/tracks";
 import { IntakeShortcutsModal } from "./IntakeShortcutsModal";
 import { IntakeSidePanel, type IntakeSidePanelTab } from "./IntakeSidePanel";
+import { RoiCalibrationModal } from "./RoiCalibrationModal";
+import {
+  addBankEntryFromSession,
+  cancelDetectionJob,
+  fetchDetectionJob,
+  fetchDetectionProfile,
+  startDetection,
+  type DetectionJobStatus,
+  type DetectionProfile,
+} from "../api/detection";
+import { DetectionReviewPanel, type LocalProposal } from "./DetectionReviewPanel";
 import { bestLapTimeMsFromMarkers, lapNumberLeftOfTime, lapTimeMsAtMarker } from "../utils/laps";
 import {
   findActionForEvent,
@@ -35,6 +46,7 @@ interface IntakeMarkingPanelProps {
   status: SessionStatus;
   fileName: string;
   durationSeconds: number | null;
+  trackId: string | null;
   markers: Marker[];
   splits: Split[];
   trackSplits: TrackSplit[];
@@ -55,6 +67,7 @@ export function IntakeMarkingPanel({
   status,
   fileName,
   durationSeconds,
+  trackId,
   markers,
   splits,
   trackSplits,
@@ -75,13 +88,155 @@ export function IntakeMarkingPanel({
   const [selectedSplitIndex, setSelectedSplitIndex] = useState<number | null>(null);
   const [shortcuts, setShortcuts] = useState(loadIntakeShortcuts);
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
-  const [sidePanelTab, setSidePanelTab] = useState<IntakeSidePanelTab>("laps");
+  const [detectionProfile, setDetectionProfile] = useState<DetectionProfile | null>(null);
+  const [roiModalOpen, setRoiModalOpen] = useState(false);
+  const [sidePanelTab, setSidePanelTab] = useState<IntakeSidePanelTab>("detect");
+  const [detectionStatus, setDetectionStatus] = useState<DetectionJobStatus | "idle">("idle");
+  const [detectionProgress, setDetectionProgress] = useState(0);
+  const [detectionLapTimeMs, setDetectionLapTimeMs] = useState<number | undefined>();
+  const [detectionError, setDetectionError] = useState<string | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [proposals, setProposals] = useState<LocalProposal[]>([]);
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [detecting, setDetecting] = useState(false);
   const durationPersisted = useRef(durationSeconds != null);
   const lastSyncedLapRef = useRef<number | null>(null);
 
   const playable = status === "ready";
   const frameStep = frameStepSeconds(DEFAULT_VIDEO_FPS);
   const splitMap = useMemo(() => splitsByLapNumber(splits), [splits]);
+  const hasTrackRoi = Boolean(detectionProfile?.roi);
+  const calibrationFrameTime = markers[0]?.timeSeconds ?? currentTime;
+  const detectionReviewActive = proposals.length > 0;
+  const canAutoDetect =
+    markers.length >= 1 && hasTrackRoi && !detecting && trackId != null;
+
+  const selectProposalIndex = useCallback((index: number) => {
+    setReviewIndex(Math.max(0, Math.min(proposals.length - 1, index)));
+  }, [proposals.length]);
+
+  const nudgeCurrentProposal = useCallback(
+    (direction: -1 | 1) => {
+      setProposals((prev) => {
+        if (prev.length === 0) return prev;
+        const idx = Math.min(reviewIndex, prev.length - 1);
+        const next = [...prev];
+        const item = next[idx]!;
+        next[idx] = {
+          ...item,
+          time: Math.max(0, item.time + direction * frameStep),
+        };
+        return next;
+      });
+    },
+    [reviewIndex, frameStep],
+  );
+
+  const rejectCurrentProposal = useCallback(() => {
+    setProposals((prev) => {
+      if (prev.length === 0) return prev;
+      const next = prev.filter((_, index) => index !== reviewIndex);
+      if (next.length === 0) {
+        setDetectionStatus("idle");
+        setDetectionLapTimeMs(undefined);
+      } else if (reviewIndex >= next.length) {
+        setReviewIndex(next.length - 1);
+      }
+      return next;
+    });
+  }, [reviewIndex]);
+
+  const acceptCurrentProposal = useCallback(async () => {
+    if (!trackId || proposals.length === 0) return;
+    const proposal = proposals[Math.min(reviewIndex, proposals.length - 1)];
+    if (!proposal) return;
+
+    setSaveState("saving");
+    setSaveError(null);
+    try {
+      const nearby = nearestWithinThreshold(markers, proposal.time, MARKER_SNAP_SECONDS);
+      if (!nearby) {
+        const result = await createMarker(sessionId, proposal.time);
+        onSessionUpdated(result.session);
+      } else if (Math.abs(nearby.timeSeconds - proposal.time) > 0.001) {
+        const result = await updateMarker(nearby.id, { timeSeconds: proposal.time });
+        onSessionUpdated(result.session);
+      }
+      await addBankEntryFromSession(trackId, sessionId, proposal.time);
+      rejectCurrentProposal();
+      setSaveState("saved");
+    } catch (err) {
+      setSaveState("error");
+      setSaveError(err instanceof Error ? err.message : "Accept failed");
+    }
+  }, [
+    trackId,
+    proposals,
+    reviewIndex,
+    markers,
+    sessionId,
+    onSessionUpdated,
+    rejectCurrentProposal,
+  ]);
+
+  const handleStartDetection = useCallback(async () => {
+    const anchorTime = markers[0]?.timeSeconds;
+    if (anchorTime == null || !trackId) return;
+
+    setDetectionError(null);
+    setProposals([]);
+    setDetectionLapTimeMs(undefined);
+    setDetectionStatus("queued");
+    setDetectionProgress(0);
+    setDetecting(true);
+    setSidePanelTab("detect");
+
+    try {
+      const { jobId } = await startDetection(sessionId, anchorTime);
+      setActiveJobId(jobId);
+      setDetectionStatus("running");
+    } catch (err) {
+      setDetecting(false);
+      setDetectionStatus("error");
+      setDetectionError(err instanceof Error ? err.message : "Could not start detection");
+    }
+  }, [markers, trackId, sessionId]);
+
+  const handleCancelDetection = useCallback(async () => {
+    if (!activeJobId) return;
+    try {
+      await cancelDetectionJob(activeJobId);
+    } catch {
+      // Job may already be finished.
+    }
+    setActiveJobId(null);
+    setDetecting(false);
+    setDetectionStatus("cancelled");
+  }, [activeJobId]);
+
+  useEffect(() => {
+    if (!trackId) {
+      setDetectionProfile(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchDetectionProfile(trackId)
+      .then((profile) => {
+        if (!cancelled) setDetectionProfile(profile);
+      })
+      .catch(() => {
+        if (!cancelled) setDetectionProfile(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [trackId]);
+
+  useEffect(() => {
+    if (proposals.length > 0) {
+      setSidePanelTab("detect");
+    }
+  }, [proposals.length]);
 
   useEffect(() => {
     currentTimeRef.current = currentTime;
@@ -164,6 +319,73 @@ export function IntakeMarkingPanel({
     },
     [seek, syncActiveLapFromSeeker],
   );
+
+  useEffect(() => {
+    if (!activeJobId) return;
+    let cancelled = false;
+
+    async function poll() {
+      try {
+        const job = await fetchDetectionJob(activeJobId!);
+        if (cancelled) return;
+        setDetectionStatus(job.status);
+        setDetectionProgress(job.progress);
+        if (job.lapTimeMs != null) setDetectionLapTimeMs(job.lapTimeMs);
+        if (job.proposals?.length) {
+          setProposals(
+            job.proposals.map((p) => ({
+              id: `proposal-${p.time.toFixed(3)}`,
+              time: p.time,
+              score: p.score,
+              confidence: p.confidence,
+            })),
+          );
+        }
+        if (job.status === "done") {
+          setDetecting(false);
+          setActiveJobId(null);
+          setSidePanelTab("detect");
+          setReviewIndex(0);
+          if (job.proposals?.[0]) seekAndSync(job.proposals[0].time);
+        }
+        if (job.status === "error") {
+          setDetecting(false);
+          setActiveJobId(null);
+          setDetectionError(job.error ?? "Detection failed");
+        }
+        if (job.status === "cancelled") {
+          setDetecting(false);
+          setActiveJobId(null);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        setDetecting(false);
+        setActiveJobId(null);
+        setDetectionStatus("error");
+        setDetectionError(err instanceof Error ? err.message : "Detection poll failed");
+      }
+    }
+
+    const intervalId = window.setInterval(() => void poll(), 500);
+    void poll();
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [activeJobId, seekAndSync]);
+
+  useEffect(() => {
+    if (proposals.length === 0) return;
+    if (reviewIndex >= proposals.length) {
+      setReviewIndex(Math.max(0, proposals.length - 1));
+    }
+  }, [proposals.length, reviewIndex]);
+
+  useEffect(() => {
+    if (!detectionReviewActive) return;
+    const proposal = proposals[reviewIndex];
+    if (proposal) seekAndSync(proposal.time);
+  }, [reviewIndex, detectionReviewActive, proposals, seekAndSync]);
 
   const togglePlay = useCallback(() => {
     const video = videoRef.current;
@@ -441,6 +663,39 @@ export function IntakeMarkingPanel({
         return;
       }
 
+      if (detectionReviewActive) {
+        const key = e.key.toLowerCase();
+        if (key === ",") {
+          e.preventDefault();
+          selectProposalIndex(reviewIndex - 1);
+          return;
+        }
+        if (key === ".") {
+          e.preventDefault();
+          selectProposalIndex(reviewIndex + 1);
+          return;
+        }
+        if (key === "y") {
+          e.preventDefault();
+          void acceptCurrentProposal();
+          return;
+        }
+        if (key === "x") {
+          e.preventDefault();
+          rejectCurrentProposal();
+          return;
+        }
+        if (e.key === "[") {
+          e.preventDefault();
+          nudgeCurrentProposal(-1);
+          return;
+        }
+        if (e.key === "]") {
+          e.preventDefault();
+          nudgeCurrentProposal(1);
+          return;
+        }
+      }
 
       const action = findActionForEvent(e, shortcuts);
       if (!action) return;
@@ -491,8 +746,14 @@ export function IntakeMarkingPanel({
   }, [
     shortcuts,
     shortcutsModalOpen,
+    detectionReviewActive,
     removeTarget,
     removeSelectedMarker,
+    reviewIndex,
+    selectProposalIndex,
+    acceptCurrentProposal,
+    rejectCurrentProposal,
+    nudgeCurrentProposal,
     togglePlay,
     addMarkerAtCurrentTime,
     addSplitAtCurrentTime,
@@ -566,6 +827,22 @@ export function IntakeMarkingPanel({
         </p>
       )}
 
+      {playable && trackId && !hasTrackRoi && (
+        <div className="intake-roi-prompt">
+          <p>
+            This track needs a <strong>start/finish landmark</strong> box before auto-detect can
+            run. Place your first lap marker near the line, then calibrate the ROI.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => setRoiModalOpen(true)}
+          >
+            Calibrate landmark ROI
+          </button>
+        </div>
+      )}
+
       {playable && (
         <div className="intake-marking-player-row intake-marking-player-row--with-panel">
           <div className="intake-marking-player">
@@ -610,7 +887,23 @@ export function IntakeMarkingPanel({
                     title={`Lap ${split.lapNumber} ${split.label} — ${formatVideoTime(split.timeSeconds)}`}
                     onClick={() => handleSplitClick(split)}
                   />
-                ))}            </div>
+                ))}
+              {duration > 0 &&
+                proposals.map((proposal, index) => (
+                  <button
+                    key={proposal.id}
+                    type="button"
+                    className={`intake-timeline-marker intake-timeline-marker--suggested ${
+                      detectionReviewActive && index === reviewIndex
+                        ? "intake-timeline-marker--selected"
+                        : ""
+                    }`}
+                    style={{ left: `${(proposal.time / duration) * 100}%` }}
+                    title={`Suggested lap start — ${formatVideoTime(proposal.time)} (${(proposal.confidence * 100).toFixed(0)}%)`}
+                    onClick={() => selectProposalIndex(index)}
+                  />
+                ))}
+            </div>
             <input
               type="range"
               className="intake-scrubber"
@@ -637,6 +930,21 @@ export function IntakeMarkingPanel({
             </span>
             <button type="button" className="btn btn-primary" onClick={addMarkerAtCurrentTime}>
               + Lap
+            </button>
+            <button
+              type="button"
+              className="btn btn-auto-detect"
+              onClick={() => void handleStartDetection()}
+              disabled={!canAutoDetect}
+              title={
+                !hasTrackRoi
+                  ? "Calibrate track ROI first"
+                  : markers.length === 0
+                    ? "Place a start anchor (first lap marker) first"
+                    : "Propose lap starts from anchor using visual detection"
+              }
+            >
+              {detecting ? "Detecting…" : "Auto-detect laps"}
             </button>
             <button
               type="button"
@@ -681,15 +989,42 @@ export function IntakeMarkingPanel({
             >
               Shortcuts
             </button>
+            {trackId && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setRoiModalOpen(true)}
+                title={
+                  hasTrackRoi
+                    ? "Adjust the track landmark ROI used for auto-detect"
+                    : "Set the track landmark ROI for auto-detect"
+                }
+              >
+                {hasTrackRoi ? "Edit ROI" : "Calibrate ROI"}
+              </button>
+            )}
           </div>
           </div>
 
           <IntakeSidePanel
             activeTab={sidePanelTab}
             onTabChange={setSidePanelTab}
-            proposalCount={0}
+            proposalCount={proposals.length}
             lapCount={markers.length}
-            detect={<p className="intake-detection-idle-hint">Auto lap detection is in development on a separate branch.</p>}
+            detect={
+              <DetectionReviewPanel
+                status={detecting ? detectionStatus : proposals.length > 0 ? "done" : detectionStatus}
+                progress={detectionProgress}
+                proposals={proposals}
+                reviewIndex={reviewIndex}
+                lapTimeMs={detectionLapTimeMs}
+                error={detectionError}
+                onSelectIndex={selectProposalIndex}
+                onAccept={() => void acceptCurrentProposal()}
+                onReject={rejectCurrentProposal}
+                onCancelJob={() => void handleCancelDetection()}
+              />
+            }
             laps={
               <div className="intake-marker-table-wrap">
                 {trackSplits.length === 0 && markers.length > 0 && (
@@ -893,6 +1228,32 @@ export function IntakeMarkingPanel({
                   <dd>1/{DEFAULT_VIDEO_FPS}s</dd>
                 </div>
                 <div>
+                  <dt>Landmark ROI</dt>
+                  <dd>
+                    {trackId ? (
+                      hasTrackRoi ? (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => setRoiModalOpen(true)}
+                        >
+                          Configured · Edit
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => setRoiModalOpen(true)}
+                        >
+                          Not set · Calibrate
+                        </button>
+                      )
+                    ) : (
+                      "Assign a track first"
+                    )}
+                  </dd>
+                </div>
+                <div>
                   <dt>Markers</dt>
                   <dd>{markers.length}</dd>
                 </div>
@@ -919,6 +1280,19 @@ export function IntakeMarkingPanel({
           saveIntakeShortcuts(next);
         }}
       />
+
+      {trackId && (
+        <RoiCalibrationModal
+          open={roiModalOpen}
+          sessionId={sessionId}
+          trackId={trackId}
+          frameTimeSec={calibrationFrameTime}
+          durationSeconds={duration}
+          initialRoi={detectionProfile?.roi}
+          onClose={() => setRoiModalOpen(false)}
+          onSaved={setDetectionProfile}
+        />
+      )}
 
       {saveError && <p className="data-status data-status--error">{saveError}</p>}
     </section>

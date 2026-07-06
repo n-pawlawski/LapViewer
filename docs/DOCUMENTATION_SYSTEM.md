@@ -56,6 +56,7 @@ Each concern should have one primary home.
 |---------|-----------------|-------|
 | Feature list and acceptance criteria | `FEATURES.md` | Split into focused feature specs when a section grows too large |
 | View & compare v1 (active build) | `docs/features/VIEW_COMPARE_V1.md` | VC-1–VC-5 phases; mock-first per **D-017** |
+| Assisted lap detection v1 | `docs/features/AUTO_LAP_DETECTION_V1.md` | F7; spike-derived; MVP AD-1–AD-4, splits AD-5; decisions resolved |
 | Feature lifecycle and done gates | `FEATURE_LIFECYCLE.md` | Owns readiness, status, traceability, review, and done criteria |
 | User screen behavior | `UI_FORMS.md` | Keep route/form behavior here, not scattered across architecture docs |
 | Intake process | `INTAKE_FLOW.md` | Owns import user flow and edge cases |

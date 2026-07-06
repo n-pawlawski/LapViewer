@@ -28,6 +28,7 @@ When you add, rename, or split a doc, update all three in the same change.
 | Product vision | `docs/PROJECT_OVERVIEW.md` | documentation, review |
 | Doc system & SOT rules | `docs/DOCUMENTATION_SYSTEM.md` | documentation, architecture, review |
 | Feature list & AC | `docs/FEATURES.md` | documentation, client, api, review |
+| Assisted lap detection v1 | `docs/features/AUTO_LAP_DETECTION_V1.md` | documentation, architecture, api, persistence, client |
 | Feature lifecycle & done gates | `docs/FEATURE_LIFECYCLE.md` | documentation, review |
 | UX / three forms | `docs/UI_FORMS.md` | documentation, client, browser-qa |
 | Visual design | `docs/UI_DESIGN.md` | client, browser-qa |

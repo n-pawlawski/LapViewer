@@ -143,3 +143,61 @@ export interface CreateMarkerBody {
 export interface ReplaceTrackSplitsBody {
   splits: { name: string }[];
 }
+
+/** Normalized ROI box (fractions 0..1 of frame width/height). */
+export interface DetectionRoi {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+export interface DetectionProfileDto {
+  id: string;
+  trackId: string;
+  roi?: DetectionRoi;
+  scanFps: number;
+  lapTimePriorMs?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DetectionBankEntryDto {
+  id: string;
+  profileId: string;
+  sourceSessionId: string;
+  timeSeconds: number;
+  roiUsed: DetectionRoi;
+  roiGray: Buffer;
+  confirmedAt: string;
+  createdAt: string;
+}
+
+export interface UpdateDetectionProfileBody {
+  roi?: DetectionRoi;
+  scanFps?: number;
+  lapTimePriorMs?: number | null;
+}
+
+export interface AddDetectionBankEntryBody {
+  sourceSessionId: string;
+  timeSeconds: number;
+  roiUsed?: DetectionRoi;
+  roiGray?: Buffer | Uint8Array | string;
+  extractFromSession?: boolean;
+}
+
+export interface DetectionJobDto {
+  jobId: string;
+  sessionId: string;
+  status: "queued" | "running" | "done" | "error" | "cancelled";
+  progress: number;
+  proposals?: Array<{ time: number; score: number; confidence: number }>;
+  lapTimeMs?: number;
+  error?: string;
+}
+
+export interface StartDetectionBody {
+  anchorTime: number;
+  endTime?: number;
+}

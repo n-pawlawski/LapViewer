@@ -101,6 +101,43 @@ Persists app-wide config if we want it editable from the UI.
 
 For v1, environment variables are enough; no settings table required.
 
+### `tracks` and `track_splits`
+
+Track catalog for organizing sessions and defining per-track split definitions. See server schema in `server/src/db/database.ts`.
+
+### `detection_profiles` (assisted lap detection)
+
+One profile per track layout (1:1 with `tracks`). Stores the landmark ROI and detection tuning parameters used by assisted lap detection ([AUTO_LAP_DETECTION_V1](features/AUTO_LAP_DETECTION_V1.md)).
+
+| Column | Purpose |
+|--------|---------|
+| `id` | Stable profile ID |
+| `trackId` | Parent track (unique — one profile per track) |
+| `roiX0`, `roiY0`, `roiX1`, `roiY1` | Normalized landmark box (0..1); null until calibrated |
+| `scanFps` | Frame sampling rate for detection scans (default 5) |
+| `lapTimePriorMs` | Optional lap-time seed for period estimation |
+| `createdAt`, `updatedAt` | Audit timestamps |
+
+Deleting a track cascades to its detection profile.
+
+### `detection_bank` (assisted lap detection)
+
+Growing template bank of confirmed lap-start ROIs per profile. Hybrid storage: provenance (source session + time + ROI used) plus a cached grayscale blob for fast NCC matching.
+
+| Column | Purpose |
+|--------|---------|
+| `id` | Stable bank entry ID |
+| `profileId` | Parent detection profile |
+| `sourceSessionId` | Session where this template was confirmed |
+| `timeSeconds` | Confirmed start time in source video |
+| `roiX0`..`roiY1` | ROI box used when the template was captured |
+| `roiGray` | Cached grayscale ROI vector (BLOB) |
+| `confirmedAt`, `createdAt` | Timestamps |
+
+Deleting a detection profile cascades to its bank entries. Bank entries are **not** deleted when a source session is removed (provenance may become stale; cached blob remains usable).
+
+Access layer: `server/src/services/detectionProfiles.ts`.
+
 ---
 
 ## Native local persistence

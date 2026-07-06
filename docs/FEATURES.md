@@ -242,6 +242,35 @@ See [UI Forms — Comparison form](UI_FORMS.md#3-comparison-form).
 
 ---
 
+## F7 — Assisted lap detection
+
+**v1 design spec:** [features/AUTO_LAP_DETECTION_V1.md](features/AUTO_LAP_DETECTION_V1.md) (spike-derived).
+
+**Intent:** Reduce manual marking — the user seeds a **start anchor** (and optional end) and the system proposes the remaining lap-start markers for review, improving over time via a per-track/per-mount template bank.
+
+**Status:** Design decisions resolved (spec Q1–Q6); **ready for work order** (`WO-auto-lap-detection`). MVP = AD-1..AD-4 (start/finish); splits (AD-5) follow.
+
+### F7.1 Auto-detect lap starts from an anchor
+
+**Acceptance criteria:**
+- User places a start anchor (F3.1) and clicks "Auto-detect laps".
+- System proposes lap-start markers between start and end as **editable suggestions** (not silent inserts).
+- Each proposal has a confidence; low-confidence ones are flagged for review.
+- User can accept all, or nudge/delete individual proposals.
+- Confirmed starts feed the track's template bank (accuracy improves next time).
+
+### F7.2 Detection profile & template bank (persistence)
+
+**Acceptance criteria:**
+- A per-track/per-mount profile stores the ROI, scan fps, and optional lap-time prior.
+- Confirmed start-line ROIs accumulate in the profile's bank and are reused across sessions on the same mount.
+
+### F7.3 Split auto-detection (later)
+
+**Deferred** to AD-5; spiked in `server/scripts/vision-auto-splits.mjs`.
+
+---
+
 ## Feature priority (proposed)
 
 | Priority | Features |
@@ -249,5 +278,5 @@ See [UI Forms — Comparison form](UI_FORMS.md#3-comparison-form).
 | **P0 — Next slice** | F4.1, F4.2, F5.1, F5.2 — [VIEW_COMPARE_V1](features/VIEW_COMPARE_V1.md) VC-1–VC-4 (mock data) |
 | **P0 — MVP (full product)** | F1.1, F1.2, F2.1, F3.1, F3.3, F6.1 |
 | **P1 — Core value** | F3.2, F1.3, F5.3 (4-up grid) |
-| **P2 — Enhanced** | F2.2, F6.2 |
-| **P3 — Later** | F3.4, F5.4, auto-detection, telemetry |
+| **P2 — Enhanced** | F2.2, F6.2, F7 (assisted lap detection — [spec](features/AUTO_LAP_DETECTION_V1.md)) |
+| **P3 — Later** | F3.4, F5.4, telemetry |

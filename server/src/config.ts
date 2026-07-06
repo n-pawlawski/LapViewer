@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { FFMPEG_PATH, ffmpegAvailable } from "./ffmpegPath.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "../..");
@@ -19,3 +20,9 @@ export const DATA_DIR =
 
 export const VIDEO_LIBRARY_ROOT =
   process.env.VIDEO_LIBRARY_ROOT ?? path.join("E:", "Racing Videos");
+
+export { FFMPEG_PATH, ffmpegAvailable };
+
+/** Downscaled frame size for lap detection scans. */
+export const DETECTION_FRAME_WIDTH = 320;
+export const DETECTION_FRAME_HEIGHT = 180;

@@ -272,6 +272,7 @@ export function IntakePage() {
               status={sessionDetail.status}
               fileName={sessionDetail.fileName}
               durationSeconds={sessionDetail.durationSeconds}
+              trackId={selectedTrackId || null}
               markers={sessionDetail.markers}
               splits={sessionDetail.splits ?? []}
               trackSplits={activeTrackSplits}
