@@ -45,6 +45,8 @@ When you add, rename, or split a doc, update all three in the same change.
 | Open questions | `docs/OPEN_QUESTIONS.md` | documentation, architecture |
 | Process hygiene | `docs/PROCESS_HYGIENE.md` | All implementers, maintenance |
 | Local dev | `docs/DEVELOPMENT.md` | All implementers, maintenance |
+| Deployment & AWS | `docs/DEPLOYMENT.md` | architecture, api, maintenance |
+| Agent ops (prod) | `docs/agents/operations/RUNBOOK.md` | maintenance, api — read before touching prod |
 | Tooling gaps | `docs/PROCESS_TOOLING_GAPS.md` | maintenance, test-strategy |
 | Collaboration rules | `docs/WORKING_AGREEMENT.md` | Base agent, documentation |
 | Agent coordination | `docs/AGENT_WORKFLOW.md` | Base agent |

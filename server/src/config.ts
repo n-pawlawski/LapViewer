@@ -21,8 +21,34 @@ export const DATA_DIR =
 export const VIDEO_LIBRARY_ROOT =
   process.env.VIDEO_LIBRARY_ROOT ?? path.join("E:", "Racing Videos");
 
+export type StorageBackend = "local_path" | "s3";
+
+export function storageBackend(): StorageBackend {
+  return process.env.STORAGE_BACKEND === "s3" ? "s3" : "local_path";
+}
+
+export const AWS_REGION = process.env.AWS_REGION ?? "us-east-1";
+export const S3_BUCKET = process.env.S3_BUCKET ?? "";
+
+export const DATABASE_URL = process.env.DATABASE_URL ?? "";
+
+export type DeployEnv = "production" | "staging" | "development" | "local-docker";
+
+export function deployEnv(): DeployEnv {
+  const value = process.env.DEPLOY_ENV ?? process.env.NODE_ENV ?? "development";
+  if (value === "production" || value === "staging" || value === "local-docker") {
+    return value;
+  }
+  return "development";
+}
+
+export function isProductionDeploy(): boolean {
+  return deployEnv() === "production";
+}
+
 /** True when dev user seed (root/root) is allowed. */
 export function isDevUserMode(): boolean {
+  if (isProductionDeploy()) return false;
   return (
     process.env.NODE_ENV === "development" || process.env.LAPVIEWER_DEV_USER === "1"
   );

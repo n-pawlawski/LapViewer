@@ -1,32 +1,43 @@
 ---
-description: Local-only git workflow — no remote; merge verified work to dev
+description: Git workflow — dev integration, master deploy
 alwaysApply: true
 ---
 
-# LapViewer Git Workflow (local only)
+# LapViewer Git Workflow
 
-This repo is **local-only for now**: there is no configured `origin` remote.
+## Branches
 
-## Do not push
+| Branch | Purpose |
+|--------|---------|
+| `dev` | Integration — merge verified feature/fix/chore branches here ([D-004](docs/DECISIONS.md)) |
+| `master` | Deployable snapshots — promote when check + test + smoke pass ([D-025](docs/DECISIONS.md)) |
 
-- Do **not** run `git push` or try to add/configure a remote unless the user explicitly asks.
-- If push fails with "no remote", treat that as expected — report success for local commit/merge instead of retrying push.
+## Daily work
 
-## Merge to `dev` when work is done
+1. Branch from `dev`: `feature/*`, `fix/*`, or `chore/*`
+2. Verify: `npm run check`, `npm test` when relevant
+3. Merge to `dev` locally when complete
 
-- Base branch: **`dev`** ([D-004](docs/DECISIONS.md)).
-- Feature work lives on `feature/*`, `fix/*`, or `chore/*` branches branched from `dev`.
-- After changes are verified (`npm run check`, relevant tests), **merge the feature branch into `dev` locally**:
+## Promote to deploy
+
+When deploy-ready:
 
 ```bash
-git checkout dev
-git merge feature/<name>
+git checkout master
+git merge dev
+# optional: git tag v0.x.x
 ```
 
-- Prefer a normal merge (no force-push to `dev`).
-- Leave the feature branch in place unless the user asks to delete it.
+Deploy workflow runs on push to `master` ([DEPLOYMENT.md](docs/DEPLOYMENT.md)).
 
-## Commit expectations
+## Remote
 
-- Commit on the feature branch during work; merge to `dev` when the item is complete and verified.
-- Never change `git config`, force-push protected branches, or commit secrets ([D-012](docs/DECISIONS.md)).
+No remote is configured until the user adds one. To enable GitHub CI:
+
+```bash
+git remote add origin https://github.com/<org>/LapViewer.git
+git push -u origin dev
+git push -u origin master
+```
+
+Do not change `git config`, force-push protected branches, or commit secrets ([D-012](docs/DECISIONS.md)).

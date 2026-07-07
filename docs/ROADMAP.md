@@ -12,7 +12,7 @@ Rough planning doc for LapViewer work **before any cloud deployment**.
 
 LapViewer should eventually become a **web app where anyone can upload races and compare their laps with others**. That requires hosted deployment, object storage, auth, and multi-tenant data rules.
 
-**Nothing in the phases below deploys to AWS.** See [Technical Approach — Deployment options](TECHNICAL_APPROACH.md#deployment-options) for the future hosting direction.
+**Nothing in the phases below required AWS until Phase 5.** Phase 1 Docker + observability can run locally. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ---
 
@@ -35,7 +35,7 @@ LapViewer should eventually become a **web app where anyone can upload races and
 | [`sessions` table](../server/src/db/database.ts) | `userId` scoped; DELETE + flat laps API |
 | Intake markers | Done |
 | Auth / users | Done — dev account + session scoping ([USERS_V1.md](features/USERS_V1.md)) |
-| Deploy | **Deferred** |
+| Deploy | **In progress** — see [DEPLOYMENT.md](DEPLOYMENT.md), [WO-deploy-v1.md](work-orders/WO-deploy-v1.md) |
 
 ---
 
@@ -48,7 +48,7 @@ flowchart TD
   P2[Phase2_DataRefactor]
   P3[Phase3_AutoLapDetection]
   P4[Phase4_PolishAndPackaging]
-  P5[Phase5_DeployDeferred]
+  P5[Phase5_Deploy]
 
   P0 --> P1
   P1 --> P2
@@ -64,7 +64,7 @@ flowchart TD
 | **2** | Data screen refactor | [features/DATA_FORM_V2.md](features/DATA_FORM_V2.md) — **Done** |
 | **3** | Auto lap & split markers | [features/AUTO_LAP_DETECTION_V1.md](features/AUTO_LAP_DETECTION_V1.md), [features/GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md) |
 | **4** | Polish & local packaging | [ARCHITECTURE.md](ARCHITECTURE.md), [DEVELOPMENT.md](DEVELOPMENT.md) |
-| **5** | Deploy (deferred) | Revisit when Phases 0–4 are solid |
+| **5** | Deploy (AWS SaaS) | [DEPLOYMENT.md](DEPLOYMENT.md), [WO-deploy-v1.md](work-orders/WO-deploy-v1.md) — **Active** |
 
 Work orders (`WO-*`) are created when each phase moves to **Ready** per [FEATURE_LIFECYCLE.md](FEATURE_LIFECYCLE.md).
 

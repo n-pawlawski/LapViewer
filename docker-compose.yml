@@ -1,0 +1,30 @@
+# Local Docker parity with production code paths (Mode C in docs/ARCHITECTURE.md)
+services:
+  lapviewer:
+    build:
+      context: .
+      args:
+        GIT_SHA: local-docker
+    ports:
+      - "3000:3000"
+    environment:
+      DEPLOY_ENV: local-docker
+      NODE_ENV: production
+      PORT: 3000
+      DATA_DIR: /data
+      STORAGE_BACKEND: local_path
+      SESSION_SECRET: local-docker-change-me
+      CLIENT_ORIGIN: http://localhost:3000
+      LAPVIEWER_DEV_USER: "1"
+      GIT_SHA: local-docker
+    volumes:
+      - lapviewer-data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  lapviewer-data:

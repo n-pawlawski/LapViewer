@@ -4,12 +4,14 @@ import {
   deleteSession,
   getSessionById,
   getSessionSourcePath,
+  getSessionVideoTarget,
   insertMarker,
   listAllLaps,
   listSessions,
   updateSession,
 } from "../services/sessions.js";
 import type { CreateMarkerBody, CreateSessionBody, UpdateSessionBody } from "../types.js";
+import { streamS3Object } from "../services/objectStorage.js";
 import { streamVideoFile } from "../video.js";
 import { scheduleSplitBankUpsert } from "../services/splitBankSync.js";
 
@@ -122,10 +124,14 @@ lapsRouter.get("/", (req, res) => {
 export const videoRouter = Router();
 
 videoRouter.get("/:sessionId", (req, res) => {
-  const sourcePath = getSessionSourcePath(req.params.sessionId, req.userId!);
-  if (!sourcePath) {
+  const target = getSessionVideoTarget(req.params.sessionId, req.userId!);
+  if (!target) {
     res.status(404).json({ error: "Session not found" });
     return;
   }
-  streamVideoFile(sourcePath, req, res);
+  if (target.kind === "s3") {
+    void streamS3Object(target.objectKey, req, res);
+    return;
+  }
+  streamVideoFile(target.path, req, res);
 });

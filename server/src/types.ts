@@ -1,4 +1,6 @@
 export type SessionStatus = "ready" | "missing" | "processing" | "error";
+export type StorageKind = "local_path" | "s3";
+export type UploadStatus = "pending" | "complete" | "failed";
 
 export interface SessionRow {
   id: string;
@@ -19,6 +21,9 @@ export interface SessionRow {
   height: number | null;
   frameRate: number | null;
   status: SessionStatus;
+  storageKind?: StorageKind | string;
+  objectKey?: string | null;
+  uploadStatus?: UploadStatus | string | null;
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -91,6 +96,9 @@ export interface SessionDetail extends SessionSummary {
   notes?: string;
   fileName: string;
   durationSeconds: number | null;
+  storageKind?: StorageKind;
+  objectKey?: string | null;
+  uploadStatus?: UploadStatus | null;
   markers: MarkerDto[];
   splits: SplitDto[];
   laps: LapDto[];

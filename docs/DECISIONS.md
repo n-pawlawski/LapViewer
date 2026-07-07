@@ -754,6 +754,94 @@ Ship **Compare split delta table** first (M6-LV). Defer per-sector columns on th
 
 ---
 
+### D-025 - `dev` integration, `master` deploy branch
+
+**Status:** Accepted  
+**Date:** 2026-07-06  
+**Owner:** Shared  
+**Related docs:** `docs/PROCESS_HYGIENE.md`, `docs/DEPLOYMENT.md`, `.github/workflows/ci.yml`, `.github/workflows/deploy.yml`
+
+### Context
+
+CI and deploy workflows target `master`, but integration work lives on `dev`. A clear promotion rule avoids deploying every commit.
+
+### Decision
+
+- **`dev`** — integration branch; merge verified feature work here.
+- **`master`** — deployable release snapshots; merge from `dev` when check, test, and smoke pass.
+- GitHub Actions **CI** on `dev` and `master`; **deploy** on `master` push only.
+
+### Consequences
+
+- Agents merge features to `dev` first; promote to `master` for AWS deploy.
+- Tag releases optionally from `master`.
+
+### Alternatives considered
+
+- Deploy from `dev` directly — rejected (no stable deploy pointer).
+- `main` instead of `master` — CI supports both; project uses `master` per existing workflow.
+
+---
+
+### D-026 - S3 as system of record for uploaded originals
+
+**Status:** Accepted  
+**Date:** 2026-07-06  
+**Owner:** Shared  
+**Related docs:** `docs/DEPLOYMENT.md`, `server/src/services/objectStorage.ts`, `docs/PERSISTENCE.md`
+
+### Context
+
+Public SaaS cannot store every user's GoPro files on ECS task disk. Local path intake remains for Windows dev.
+
+### Decision
+
+- Production: **`STORAGE_BACKEND=s3`** with presigned PUT upload and S3 Range GET streaming.
+- Local dev: **`local_path`** (Windows path picker) unchanged.
+- Session rows store `storageKind`, `objectKey`, `uploadStatus`.
+- Layout: `users/{userId}/sessions/{sessionId}/{fileName}`.
+
+### Consequences
+
+- Hybrid env-controlled storage; not separate codebases.
+- ECS task role needs S3 read/write; CloudFront optional later for egress.
+
+### Alternatives considered
+
+- EBS/EFS only — rejected for scale and multi-instance delivery.
+- Upload through app server — rejected for large files and task disk limits.
+
+---
+
+### D-027 - Postgres (RDS) for cloud multi-tenant data
+
+**Status:** Accepted  
+**Date:** 2026-07-06  
+**Owner:** Shared  
+**Related docs:** `docs/PERSISTENCE.md`, `infra/postgres/schema.sql`, `docs/DEPLOYMENT.md`
+
+### Context
+
+SQLite is fine for local single-user dev. Multi-tenant SaaS on ECS needs a shared database with concurrent writers.
+
+### Decision
+
+- **Production:** RDS Postgres via `DATABASE_URL`; schema in `infra/postgres/schema.sql`.
+- **Local default:** SQLite in `DATA_DIR` when `DATABASE_URL` is unset.
+- Sync service layer uses a Postgres client wrapper to avoid rewriting all queries at once.
+
+### Consequences
+
+- Greenfield cloud deploy uses Postgres; optional SQLite → export migration for existing local data later.
+- Do not run SQLite on EFS for multi-writer SaaS.
+
+### Alternatives considered
+
+- SQLite on EFS — rejected (locking, corruption risk).
+- Full ORM rewrite — deferred; mirror schema with existing SQL first.
+
+---
+
 ## Superseded decisions
 
 No superseded decisions yet.

@@ -5,6 +5,12 @@ import {
   updateSession,
   type SessionDetail,
 } from "../api/sessions";
+import {
+  completeUpload,
+  fetchStorageConfig,
+  requestUploadUrl,
+  uploadFileToPresignedUrl,
+} from "../api/upload";
 import { pickVideoFile } from "../api/system";
 import { fetchTracks, fetchTrack, type Track, type TrackSplit } from "../api/tracks";
 import { AppShell } from "../components/AppShell";
@@ -33,6 +39,9 @@ export function IntakePage() {
   const [loading, setLoading] = useState(isEditMode);
   const [metadataOpen, setMetadataOpen] = useState(!isEditMode);
   const [trackSplits, setTrackSplits] = useState<TrackSplit[]>([]);
+  const [s3UploadEnabled, setS3UploadEnabled] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const applySessionToForm = useCallback((session: SessionDetail, trackList: Track[]) => {
     setSessionDetail(session);
@@ -52,9 +61,13 @@ export function IntakePage() {
       setError(null);
 
       try {
-        const trackList = await fetchTracks();
+        const [trackList, storageConfig] = await Promise.all([
+          fetchTracks(),
+          fetchStorageConfig().catch(() => ({ storageBackend: "local_path" as const, s3UploadEnabled: false })),
+        ]);
         if (cancelled) return;
         setTracks(trackList);
+        setS3UploadEnabled(storageConfig.s3UploadEnabled);
 
         if (sessionId) {
           const session = await fetchSession(sessionId);
@@ -163,6 +176,22 @@ export function IntakePage() {
         const session = await updateSession(sessionId, payload);
         applySessionToForm(session, tracks);
         setMetadataOpen(false);
+      } else if (s3UploadEnabled && uploadFile) {
+        const { sessionId: newId, uploadUrl } = await requestUploadUrl({
+          fileName: uploadFile.name,
+          title: title.trim() || undefined,
+          trackName: selectedTrack?.name ?? null,
+          recordedAt: recordedAt || null,
+          notes: notes.trim() || null,
+          contentType: uploadFile.type || "video/mp4",
+        });
+        setUploadProgress(0);
+        await uploadFileToPresignedUrl(uploadUrl, uploadFile, setUploadProgress);
+        const session = await completeUpload(newId);
+        setUploadProgress(null);
+        setSelectedSessionId(newId);
+        navigate(`/intake?session=${newId}`);
+        applySessionToForm(session, tracks);
       } else {
         const session = await createSession({
           sourcePath: sourcePath.trim(),
@@ -285,33 +314,60 @@ export function IntakePage() {
           <>
             <h1>Register session</h1>
             <p className="intake-lead">
-              Add a video by its full path on your library drive, then mark laps.
+              {s3UploadEnabled
+                ? "Upload a GoPro video file, then mark laps."
+                : "Add a video by its full path on your library drive, then mark laps."}
             </p>
 
             <form className="intake-form" onSubmit={handleMetadataSubmit}>
-              <label className="intake-field">
-                <span>Video path</span>
-                <div className="field-with-action">
+              {s3UploadEnabled ? (
+                <label className="intake-field">
+                  <span>Video file</span>
                   <input
-                    type="text"
-                    value={sourcePath}
-                    onChange={(e) => setSourcePath(e.target.value)}
-                    placeholder="E:\Racing Videos\...\GX010012.MP4"
+                    type="file"
+                    accept="video/*,.mp4,.MP4,.mov,.MOV"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      setUploadFile(file);
+                      if (file && !title.trim()) {
+                        const baseName = file.name.replace(/\.[^.]+$/, "");
+                        if (baseName) setTitle(baseName);
+                      }
+                    }}
                     required
                   />
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={handleBrowseVideo}
-                    disabled={browsingVideo || saving}
-                  >
-                    {browsingVideo ? "…" : "Browse"}
-                  </button>
-                </div>
-                <span className="field-hint">
-                  Opens Windows Explorer on this PC via the local server.
-                </span>
-              </label>
+                  {uploadProgress !== null && (
+                    <span className="field-hint">Uploading… {uploadProgress}%</span>
+                  )}
+                  <span className="field-hint">
+                    Large GoPro files upload directly to cloud storage.
+                  </span>
+                </label>
+              ) : (
+                <label className="intake-field">
+                  <span>Video path</span>
+                  <div className="field-with-action">
+                    <input
+                      type="text"
+                      value={sourcePath}
+                      onChange={(e) => setSourcePath(e.target.value)}
+                      placeholder="E:\Racing Videos\...\GX010012.MP4"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={handleBrowseVideo}
+                      disabled={browsingVideo || saving}
+                    >
+                      {browsingVideo ? "…" : "Browse"}
+                    </button>
+                  </div>
+                  <span className="field-hint">
+                    Opens Windows Explorer on this PC via the local server.
+                  </span>
+                </label>
+              )}
 
               <label className="intake-field">
                 <span>Title</span>
@@ -371,8 +427,12 @@ export function IntakePage() {
               {error && <p className="data-status data-status--error">{error}</p>}
 
               <div className="intake-actions">
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? "Registering…" : "Register & mark laps"}
+                <button type="submit" className="btn btn-primary" disabled={saving || (s3UploadEnabled && !uploadFile)}>
+                  {saving
+                    ? uploadProgress !== null
+                      ? `Uploading… ${uploadProgress}%`
+                      : "Registering…"
+                    : "Register & mark laps"}
                 </button>
                 <button
                   type="button"

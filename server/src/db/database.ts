@@ -1,10 +1,21 @@
 import fs from "node:fs";
 import path from "node:path";
-import Database from "better-sqlite3";
-import { DATA_DIR, isDevUserMode } from "../config.js";
+import type Database from "better-sqlite3";
+import DatabaseConstructor from "better-sqlite3";
+import { DATA_DIR, DATABASE_URL, isDevUserMode } from "../config.js";
 import { ensureDevUser } from "./users.js";
+import {
+  type DbClient,
+  type PostgresDbClient,
+  checkPostgresHealth,
+  createPostgresClient,
+} from "./postgresClient.js";
+import type pg from "pg";
 
-let db: Database.Database | null = null;
+let db: DbClient | null = null;
+let sqliteDb: Database.Database | null = null;
+let pgPool: pg.Pool | null = null;
+let dbKind: "sqlite" | "postgres" = "sqlite";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS sessions (
@@ -103,6 +114,14 @@ CREATE TABLE IF NOT EXISTS users (
 );
 `;
 
+function wrapSqliteDb(database: Database.Database): DbClient {
+  return {
+    prepare: (sql) => database.prepare(sql),
+    exec: (sql) => { database.exec(sql); },
+    transaction: (fn) => database.transaction(fn) as unknown as typeof fn,
+  };
+}
+
 function tableColumns(database: Database.Database, table: string): string[] {
   return (
     database.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>
@@ -129,7 +148,7 @@ function backfillOrphanUserIds(database: Database.Database): void {
     );
   }
 
-  const devUserId = ensureDevUser(database);
+  const devUserId = ensureDevUser(wrapSqliteDb(database));
   database.prepare(`UPDATE sessions SET userId = ? WHERE userId IS NULL`).run(devUserId);
   database.prepare(`UPDATE tracks SET userId = ? WHERE userId IS NULL`).run(devUserId);
 }
@@ -232,25 +251,20 @@ function migrateUserOwnership(database: Database.Database): void {
   rebuildSessionsWithUserScope(database);
 }
 
-export function getDb(): Database.Database {
-  if (!db) {
-    throw new Error("Database not initialized. Call initDatabase() first.");
+function migrateStorageColumns(database: Database.Database): void {
+  const sessionCols = tableColumns(database, "sessions");
+  if (!sessionCols.includes("storageKind")) {
+    database.exec(`ALTER TABLE sessions ADD COLUMN storageKind TEXT NOT NULL DEFAULT 'local_path'`);
   }
-  return db;
+  if (!sessionCols.includes("objectKey")) {
+    database.exec(`ALTER TABLE sessions ADD COLUMN objectKey TEXT`);
+  }
+  if (!sessionCols.includes("uploadStatus")) {
+    database.exec(`ALTER TABLE sessions ADD COLUMN uploadStatus TEXT`);
+  }
 }
 
-export function initDatabase(): Database.Database {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  const dbPath = path.join(DATA_DIR, "lapviewer.db");
-  db = new Database(dbPath);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  db.exec(SCHEMA);
-  migrate(db);
-  return db;
-}
-
-function migrate(database: Database.Database): void {
+function migrateSqlite(database: Database.Database): void {
   const columns = database
     .prepare(`PRAGMA table_info(markers)`)
     .all() as Array<{ name: string }>;
@@ -306,6 +320,7 @@ function migrate(database: Database.Database): void {
   `);
 
   migrateUserOwnership(database);
+  migrateStorageColumns(database);
 
   const splitCols = tableColumns(database, "track_splits");
   if (splitCols.length > 0 && !splitCols.includes("progress")) {
@@ -369,9 +384,73 @@ function migrate(database: Database.Database): void {
   `);
 }
 
-export function closeDatabase(): void {
-  if (db) {
-    db.close();
-    db = null;
+export function getDbKind(): "sqlite" | "postgres" {
+  return dbKind;
+}
+
+export function getDb(): DbClient {
+  if (!db) {
+    throw new Error("Database not initialized. Call initDatabase() first.");
   }
+  return db;
+}
+
+export function getDbClient(): DbClient {
+  return getDb();
+}
+
+export async function checkDatabaseHealth(): Promise<{
+  ok: boolean;
+  kind: "sqlite" | "postgres";
+  error?: string;
+}> {
+  if (dbKind === "postgres" && pgPool) {
+    return checkPostgresHealth(pgPool);
+  }
+  try {
+    getDbClient().prepare(`SELECT 1 AS ok`).get();
+    return { ok: true, kind: dbKind };
+  } catch (err) {
+    return {
+      ok: false,
+      kind: dbKind,
+      error: err instanceof Error ? err.message : "SQLite check failed",
+    };
+  }
+}
+
+function initSqliteDatabase(): DbClient {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const dbPath = path.join(DATA_DIR, "lapviewer.db");
+  sqliteDb = new DatabaseConstructor(dbPath);
+  sqliteDb.pragma("journal_mode = WAL");
+  sqliteDb.pragma("foreign_keys = ON");
+  sqliteDb.exec(SCHEMA);
+  migrateSqlite(sqliteDb);
+  db = wrapSqliteDb(sqliteDb);
+  dbKind = "sqlite";
+  return db;
+}
+
+export async function initDatabase(): Promise<DbClient> {
+  if (DATABASE_URL) {
+    const client = await createPostgresClient(DATABASE_URL);
+    db = client;
+    dbKind = "postgres";
+    pgPool = client.pool;
+    return client;
+  }
+  return initSqliteDatabase();
+}
+
+export function closeDatabase(): void {
+  if (sqliteDb) {
+    sqliteDb.close();
+    sqliteDb = null;
+  }
+  if (pgPool) {
+    void pgPool.end();
+    pgPool = null;
+  }
+  db = null;
 }

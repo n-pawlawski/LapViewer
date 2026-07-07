@@ -1,3 +1,4 @@
+import "dotenv/config";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
@@ -9,6 +10,7 @@ import {
   DEMO_VIDEO_PATH,
   PORT,
   FFMPEG_PATH,
+  deployEnv,
   ffmpegAvailable,
   isDevUserMode,
 } from "./config.js";
@@ -16,10 +18,13 @@ import { initDatabase } from "./db/database.js";
 import { seedDevUserIfNeeded } from "./db/devSeed.js";
 import { seedIfEmpty } from "./db/seed.js";
 import { requireAuth } from "./middleware/auth.js";
+import { errorLoggingMiddleware, logger, requestLoggingMiddleware } from "./logger.js";
 import { authRouter } from "./routes/auth.js";
 import { markersRouter } from "./routes/markers.js";
 import { detectionRouter, sessionDetectionRouter, trackDetectionRouter } from "./routes/detection.js";
+import { healthRouter } from "./routes/ops.js";
 import { sessionsRouter, videoRouter, lapsRouter } from "./routes/sessions.js";
+import { uploadRouter } from "./routes/upload.js";
 import { systemRouter } from "./routes/system.js";
 import { tracksRouter } from "./routes/tracks.js";
 import { trackReferenceRouter } from "./routes/referenceProfile.js";
@@ -34,17 +39,19 @@ import {
   trackSplitBankRouter,
 } from "./routes/splitDetection.js";
 import { streamVideoFile } from "./video.js";
+import { GIT_SHA } from "./buildInfo.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(__dirname, "../../client/dist");
 
-initDatabase();
+await initDatabase();
 const devUserId = seedDevUserIfNeeded();
 if (devUserId) {
   seedIfEmpty(devUserId);
 }
 
 const app = express();
+app.use(requestLoggingMiddleware);
 app.use(
   cors({
     origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
@@ -54,18 +61,7 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 
-app.get("/api/health", (_req, res) => {
-  const exists = fs.existsSync(DEMO_VIDEO_PATH);
-  res.json({
-    ok: true,
-    dataDir: DATA_DIR,
-    demoVideo: DEMO_VIDEO_PATH,
-    demoVideoExists: exists,
-    ffmpegPath: FFMPEG_PATH,
-    ffmpegAvailable: ffmpegAvailable(),
-    devUserMode: isDevUserMode(),
-  });
-});
+app.use("/api", healthRouter);
 
 app.get("/api/video/demo", (req, res) => {
   streamVideoFile(DEMO_VIDEO_PATH, req, res);
@@ -74,6 +70,7 @@ app.get("/api/video/demo", (req, res) => {
 app.use("/api/auth", authRouter);
 
 app.use("/api/sessions", requireAuth, sessionsRouter);
+app.use("/api/sessions", requireAuth, uploadRouter);
 app.use("/api/laps", requireAuth, lapsRouter);
 app.use("/api/sessions", requireAuth, sessionDetectionRouter);
 app.use("/api/markers", requireAuth, markersRouter);
@@ -101,10 +98,17 @@ if (fs.existsSync(clientDist)) {
   });
 }
 
+app.use(errorLoggingMiddleware);
+
 app.listen(PORT, () => {
-  console.log(`LapViewer API http://localhost:${PORT}`);
-  console.log(`DATA_DIR: ${DATA_DIR}`);
-  console.log(`Demo video: ${DEMO_VIDEO_PATH}`);
-  console.log(`File exists: ${fs.existsSync(DEMO_VIDEO_PATH)}`);
-  console.log(`Dev user mode: ${isDevUserMode()}`);
+  logger.info("server_started", {
+    port: PORT,
+    gitSha: GIT_SHA,
+    deployEnv: deployEnv(),
+    dataDir: DATA_DIR,
+    ffmpegPath: FFMPEG_PATH,
+    ffmpegAvailable: ffmpegAvailable(),
+    devUserMode: isDevUserMode(),
+    demoVideoExists: fs.existsSync(DEMO_VIDEO_PATH),
+  });
 });

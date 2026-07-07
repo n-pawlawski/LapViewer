@@ -3,6 +3,10 @@
 | Method | Path | Purpose | Auth | Notes |
 |--------|------|---------|------|-------|
 | GET | `/api/health` | Health + dev mode flag | — | Returns `devUserMode` |
+| GET | `/api/ops/status` | Ops status (schema v1) | — | git SHA, DB, storage, ffmpeg |
+| GET | `/api/sessions/storage-config` | Upload mode flags | cookie | `s3UploadEnabled` |
+| POST | `/api/sessions/upload-url` | Presigned S3 PUT + session row | cookie | Production S3 only |
+| POST | `/api/sessions/:id/complete-upload` | Finalize S3 upload | cookie | ffprobe after HEAD |
 | GET | `/api/video/demo` | Demo clip stream | — | Hardcoded path |
 | GET | `/api/auth/me` | Current user | cookie optional | 401 if not logged in |
 | POST | `/api/auth/register` | Create account | — | Sets session cookie |

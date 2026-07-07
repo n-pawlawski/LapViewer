@@ -37,13 +37,15 @@ chore/<short-name>     # tooling, docs-only maintenance
 |------|-----|
 | Branch from `dev` | Predictable integration point for agents and humans |
 | One medium/large feature per branch | Reviewable PRs, easy rollback |
-| No force-push to `dev` or `main` | Protects shared history |
+| No force-push to `dev` or `master` | Protects shared history |
 | Agents manage git ([D-012](DECISIONS.md)) | Branch, commit, merge as part of work items; push when remote exists |
 | Ask before new remote / URL change | Avoids pushing to wrong host |
 | Never change `git config` | User owns machine identity settings |
 | No secrets in commits | `.env`, credentials stay ignored |
 
-`main` (or `master`) is optional until release tagging matters; use it later for release-ready snapshots off `dev`.
+**Deploy branch:** `master` ([D-025](DECISIONS.md)) — merge from `dev` when deploy-ready; GitHub Actions deploy runs on `master` push.
+
+`dev` remains the daily integration branch. Promote verified work to `master` for release snapshots and AWS deploy—not on every commit.
 
 ---
 

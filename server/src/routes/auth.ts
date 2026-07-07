@@ -3,12 +3,14 @@ import { AUTH_COOKIE_NAME, signUserId } from "../auth/session.js";
 import { optionalAuth } from "../middleware/auth.js";
 import { authenticateUser, registerUser, userRowToDto } from "../services/auth.js";
 
+import { isProductionDeploy } from "../config.js";
+
 export const authRouter = Router();
 
 const cookieOptions = {
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
+  secure: isProductionDeploy(),
   maxAge: 30 * 24 * 60 * 60 * 1000,
   path: "/",
 };

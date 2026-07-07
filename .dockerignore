@@ -1,0 +1,13 @@
+node_modules
+client/node_modules
+server/node_modules
+data
+.git
+.cursor
+*.md
+docs
+client/dist
+**/*.test.ts
+**/.env
+**/.env.*
+!config/.env.example

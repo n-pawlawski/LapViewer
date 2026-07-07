@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
-import type Database from "better-sqlite3";
 import { isDevUserMode } from "../config.js";
 import { getDb } from "./database.js";
+import type { DbClient } from "./postgresClient.js";
 
 export const DEV_USER_ID = "00000000-0000-4000-8000-000000000001";
 /** Dev-mode login identifier (sign in with password below). */
@@ -46,7 +46,7 @@ export function userToDto(row: UserRow): UserDto {
   };
 }
 
-export function ensureDevUser(db: Database.Database = getDb()): string {
+export function ensureDevUser(db: DbClient = getDb()): string {
   const existing = db
     .prepare(`SELECT * FROM users WHERE id = ?`)
     .get(DEV_USER_ID) as UserRow | undefined;
