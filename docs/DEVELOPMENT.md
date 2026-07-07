@@ -35,6 +35,44 @@ npm run install:all
 
 Open [http://localhost:5173](http://localhost:5173) after `npm run dev`.
 
+### Run dev and Docker together
+
+| Mode | URL | API |
+|------|-----|-----|
+| **Dev** (hot reload) | [http://localhost:5173](http://localhost:5173) | `localhost:3000` |
+| **Docker** (prod parity) | [http://lapviewer.docker:3090](http://lapviewer.docker:3090) | same host (built client) |
+
+Docker uses port **3090** so it does not conflict with the dev server on **3000** (or other stacks on 3080).
+
+**One-time hosts setup** (Administrator PowerShell):
+
+```powershell
+npm run docker:hosts
+```
+
+Or add manually to `C:\Windows\System32\drivers\etc\hosts` (see `config/docker-hosts.snippet`):
+
+```text
+127.0.0.1 lapviewer.docker
+```
+
+Then start Docker (separate terminal from `npm run dev`):
+
+```powershell
+npm run docker:up
+```
+
+**Video library in Docker:** copy `config/docker.env.example` to `.env` at the repo root and set `VIDEO_HOST_PATH` if your footage is not on `E:/Racing Videos`. Compose mounts that folder at `/videos` inside the container — no Docker Desktop volume edits needed.
+
+```powershell
+copy config\docker.env.example .env
+# edit .env if your racing videos live elsewhere
+```
+
+Sessions store a `relativePath` under the library root, so the same database resolves correctly in native dev (`E:\...`) and Docker (`/videos/...`).
+
+Health: [http://lapviewer.docker:3090/api/ops/status](http://lapviewer.docker:3090/api/ops/status)
+
 ### Auth and dev account
 
 | Variable | When | Purpose |

@@ -1,4 +1,10 @@
 # Local Docker parity with production code paths (Mode C in docs/ARCHITECTURE.md)
+#
+# Runs alongside npm run dev (localhost:5173 + localhost:3000).
+# Open http://lapviewer.docker:3090 — add hosts entry via config/docker-hosts.snippet
+#
+# Video library: set VIDEO_HOST_PATH in repo-root .env (see config/docker.env.example).
+# Docker Compose reads .env automatically for ${VIDEO_HOST_PATH} substitution.
 services:
   lapviewer:
     build:
@@ -6,19 +12,24 @@ services:
       args:
         GIT_SHA: local-docker
     ports:
-      - "3000:3000"
+      - "3090:3000"
+    env_file:
+      - path: .env
+        required: false
     environment:
       DEPLOY_ENV: local-docker
       NODE_ENV: production
       PORT: 3000
       DATA_DIR: /data
       STORAGE_BACKEND: local_path
+      VIDEO_LIBRARY_ROOT: /videos
       SESSION_SECRET: local-docker-change-me
-      CLIENT_ORIGIN: http://localhost:3000
+      CLIENT_ORIGIN: http://lapviewer.docker:3090
       LAPVIEWER_DEV_USER: "1"
       GIT_SHA: local-docker
     volumes:
       - lapviewer-data:/data
+      - ${VIDEO_HOST_PATH:-E:/Racing Videos}:/videos:ro
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s

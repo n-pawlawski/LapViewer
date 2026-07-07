@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { VIDEO_LIBRARY_ROOT } from "../config.js";
+import { resolveLocalVideoPath } from "../paths.js";
 import { getDb } from "../db/database.js";
 import { headS3Object, sessionObjectKey } from "./objectStorage.js";
 import { bestLapTimeMs, computeLaps } from "../services/laps.js";
@@ -38,6 +39,10 @@ function rowToSession(row: SessionRow): SessionRow {
   return row;
 }
 
+function sessionVideoPath(row: SessionRow): string {
+  return resolveLocalVideoPath(row);
+}
+
 function resolveStatus(row: SessionRow): SessionStatus {
   if (row.status === "processing" || row.status === "error") {
     return row.status;
@@ -46,7 +51,7 @@ function resolveStatus(row: SessionRow): SessionStatus {
     if (row.uploadStatus !== "complete") return "processing";
     return row.status === "missing" ? "missing" : "ready";
   }
-  return fs.existsSync(row.sourcePath) ? "ready" : "missing";
+  return fs.existsSync(sessionVideoPath(row)) ? "ready" : "missing";
 }
 
 function getLapStartMarkersForSession(sessionId: string) {
@@ -177,10 +182,12 @@ export function getSessionById(id: string, userId: string): SessionDetail | null
 
 export function getSessionSourcePath(id: string, userId: string): string | null {
   const row = getDb()
-    .prepare(`SELECT sourcePath, storageKind FROM sessions WHERE id = ? AND userId = ?`)
-    .get(id, userId) as { sourcePath: string; storageKind?: string } | undefined;
+    .prepare(`SELECT sourcePath, relativePath, storageKind FROM sessions WHERE id = ? AND userId = ?`)
+    .get(id, userId) as
+    | { sourcePath: string; relativePath?: string | null; storageKind?: string }
+    | undefined;
   if (!row || row.storageKind === "s3") return null;
-  return row.sourcePath;
+  return sessionVideoPath(row as SessionRow);
 }
 
 export function getSessionVideoTarget(
@@ -188,16 +195,22 @@ export function getSessionVideoTarget(
   userId: string,
 ): { kind: "local_path"; path: string } | { kind: "s3"; objectKey: string } | null {
   const row = getDb()
-    .prepare(`SELECT sourcePath, storageKind, objectKey, uploadStatus FROM sessions WHERE id = ? AND userId = ?`)
+    .prepare(`SELECT sourcePath, relativePath, storageKind, objectKey, uploadStatus FROM sessions WHERE id = ? AND userId = ?`)
     .get(id, userId) as
-    | { sourcePath: string; storageKind?: string; objectKey?: string | null; uploadStatus?: string | null }
+    | {
+        sourcePath: string;
+        relativePath?: string | null;
+        storageKind?: string;
+        objectKey?: string | null;
+        uploadStatus?: string | null;
+      }
     | undefined;
   if (!row) return null;
   if (row.storageKind === "s3") {
     if (!row.objectKey || row.uploadStatus !== "complete") return null;
     return { kind: "s3", objectKey: row.objectKey };
   }
-  return { kind: "local_path", path: row.sourcePath };
+  return { kind: "local_path", path: sessionVideoPath(row as SessionRow) };
 }
 
 function normalizePathParts(sourcePath: string): {

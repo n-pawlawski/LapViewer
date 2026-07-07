@@ -8,7 +8,9 @@
     "start": "npm run start --prefix server",
     "typecheck": "npm run typecheck --prefix server && npm run typecheck --prefix client",
     "check": "npm run typecheck",
-    "test": "npm run test --prefix server"
+    "test": "npm run test --prefix server",
+    "docker:up": "docker compose up --build",
+    "docker:hosts": "powershell -ExecutionPolicy Bypass -File scripts/setup-docker-hosts.ps1"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

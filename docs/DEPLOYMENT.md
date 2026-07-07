@@ -22,10 +22,12 @@ Promotion: merge `dev` → `master` when ready to deploy ([D-025](DECISIONS.md))
 Reproduces production code paths without AWS spend:
 
 ```bash
+# Add 127.0.0.1 lapviewer.docker to hosts (see config/docker-hosts.snippet)
+npm run docker:hosts   # Windows, elevated
 docker compose up --build
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Health: [http://localhost:3000/api/ops/status](http://localhost:3000/api/ops/status)
+Open [http://lapviewer.docker:3090](http://lapviewer.docker:3090) (Docker uses port **3090** so `npm run dev` can keep **3000**). Health: [http://lapviewer.docker:3090/api/ops/status](http://lapviewer.docker:3090/api/ops/status)
 
 Environment defaults in `docker-compose.yml` use `DEPLOY_ENV=local-docker`, SQLite in `/data`, and dev user seed enabled.
 

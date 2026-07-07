@@ -8,8 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-COPY server/package.json server/
-COPY client/package.json client/
+COPY server/package.json server/package-lock.json server/
+COPY client/package.json client/package-lock.json client/
 
 RUN npm run install:all
 
@@ -33,12 +33,8 @@ ENV DEPLOY_ENV=production
 ENV PORT=3000
 
 COPY package.json package-lock.json ./
-COPY server/package.json server/
-
-RUN npm ci --omit=dev --prefix server
-
+COPY --from=build /app/server ./server
 COPY --from=build /app/client/dist ./client/dist
-COPY server ./server
 COPY infra ./infra
 COPY config/.env.example ./config/.env.example
 

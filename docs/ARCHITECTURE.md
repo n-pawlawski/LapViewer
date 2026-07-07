@@ -176,13 +176,15 @@ npm start
 - Node serves built React app + API on `http://localhost:3000`
 - Same machine, no container.
 
-### Mode C — Docker (optional, not v1 blocker)
+### Mode C — Docker (optional, side-by-side with Mode A)
 
 ```bash
-docker compose up
+npm run docker:hosts   # once, elevated — adds lapviewer.docker → 127.0.0.1
+docker compose up --build
 ```
 
-- Container runs Node + bundled ffmpeg.
+- Browser: `http://lapviewer.docker:3090` (port **3090** avoids conflict with dev API on **3000**)
+- Container runs Node + bundled ffmpeg + built client.
 - **Volumes required:**
   - `./data` → app data (SQLite, cache)
   - `D:/RacingFootage:/videos:ro` → your library (example)

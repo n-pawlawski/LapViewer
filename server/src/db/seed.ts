@@ -1,5 +1,6 @@
-import { getDb } from "../db/database.js";
-import { DEMO_VIDEO_PATH } from "../config.js";
+import path from "node:path";
+import { getDb } from "./database.js";
+import { DEMO_VIDEO_PATH, VIDEO_LIBRARY_ROOT } from "../config.js";
 import {
   countSessions,
   createSession,
@@ -9,7 +10,7 @@ import { countTracks, createTrack } from "../services/tracks.js";
 
 interface SeedSession {
   title: string;
-  sourcePath: string;
+  relativePath: string;
   trackName?: string;
   recordedAt?: string;
   status?: "ready" | "processing" | "missing";
@@ -17,10 +18,14 @@ interface SeedSession {
   markerTimes: number[];
 }
 
+function libraryPath(...segments: string[]): string {
+  return path.join(VIDEO_LIBRARY_ROOT, ...segments);
+}
+
 const SEED_DATA: SeedSession[] = [
   {
     title: "2-19 Racing League",
-    sourcePath: DEMO_VIDEO_PATH,
+    relativePath: path.join("2-19 racing league", "GX010012.MP4"),
     trackName: "Track A",
     recordedAt: "2025-02-19",
     durationSeconds: 900,
@@ -28,7 +33,7 @@ const SEED_DATA: SeedSession[] = [
   },
   {
     title: "Spring Practice",
-    sourcePath: "E:\\Racing Videos\\spring\\GX010045.MP4",
+    relativePath: path.join("spring", "GX010045.MP4"),
     trackName: "Track B",
     recordedAt: "2025-03-12",
     durationSeconds: 700,
@@ -36,7 +41,7 @@ const SEED_DATA: SeedSession[] = [
   },
   {
     title: "Club Day — Heat 2",
-    sourcePath: "E:\\Racing Videos\\club\\GX010078.MP4",
+    relativePath: path.join("club", "GX010078.MP4"),
     trackName: "Track A",
     recordedAt: "2025-04-05",
     status: "processing",
@@ -48,17 +53,18 @@ const SEED_DATA: SeedSession[] = [
 /** Populate demo sessions when the database is empty (dev convenience). */
 export function seedIfEmpty(userId: string): void {
   if (countTracks(userId) === 0) {
-    createTrack({ name: "Track A", videoFolder: "E:\\Racing Videos" }, userId);
-    createTrack({ name: "Track B", videoFolder: "E:\\Racing Videos\\spring" }, userId);
+    createTrack({ name: "Track A", videoFolder: VIDEO_LIBRARY_ROOT }, userId);
+    createTrack({ name: "Track B", videoFolder: libraryPath("spring") }, userId);
     console.log("Seeded default tracks");
   }
 
   if (countSessions(userId) > 0) return;
 
   for (const seed of SEED_DATA) {
+    const sourcePath = libraryPath(seed.relativePath);
     const session = createSession(
       {
-        sourcePath: seed.sourcePath,
+        sourcePath,
         title: seed.title,
         trackName: seed.trackName,
         recordedAt: seed.recordedAt,
@@ -78,5 +84,5 @@ export function seedIfEmpty(userId: string): void {
     }
   }
 
-  console.log(`Seeded ${SEED_DATA.length} demo sessions`);
+  console.log(`Seeded ${SEED_DATA.length} demo sessions (library root: ${VIDEO_LIBRARY_ROOT})`);
 }

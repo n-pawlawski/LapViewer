@@ -5,14 +5,6 @@ import { FFMPEG_PATH, ffmpegAvailable } from "./ffmpegPath.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "../..");
 
-/** Hardcoded demo clip for the video playback spike. */
-export const DEMO_VIDEO_PATH = path.join(
-  "E:",
-  "Racing Videos",
-  "2-19 racing league",
-  "GX010012.MP4",
-);
-
 export const PORT = Number(process.env.PORT) || 3000;
 
 export const DATA_DIR =
@@ -20,6 +12,11 @@ export const DATA_DIR =
 
 export const VIDEO_LIBRARY_ROOT =
   process.env.VIDEO_LIBRARY_ROOT ?? path.join("E:", "Racing Videos");
+
+/** Demo clip for spike / seed; override in Docker via env. */
+export const DEMO_VIDEO_PATH = process.env.DEMO_VIDEO_PATH
+  ? path.normalize(process.env.DEMO_VIDEO_PATH)
+  : path.join(VIDEO_LIBRARY_ROOT, "2-19 racing league", "GX010012.MP4");
 
 export type StorageBackend = "local_path" | "s3";
 
