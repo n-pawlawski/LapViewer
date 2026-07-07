@@ -14,6 +14,7 @@ import {
 import { fetchTracks, fetchTrack, type Track, type TrackSplit } from "../api/tracks";
 import { AppShell } from "../components/AppShell";
 import { IntakeMarkingPanel } from "../components/IntakeMarkingPanel";
+import { IntakeSessionMetadataPanel } from "../components/IntakeSessionMetadataPanel";
 import { IntakeUploadZone } from "../components/IntakeUploadZone";
 import { isValidMp4File } from "../utils/videoFileValidation";
 import { useRouter, useSearchParams } from "../lib/router";
@@ -36,7 +37,6 @@ export function IntakePage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isMarkingMode);
-  const [metadataOpen, setMetadataOpen] = useState(false);
   const [trackSplits, setTrackSplits] = useState<TrackSplit[]>([]);
   const [uploadMode, setUploadMode] = useState<"direct" | "presigned">("direct");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -140,7 +140,6 @@ export function IntakePage() {
       if (sessionId) {
         const session = await updateSession(sessionId, payload);
         applySessionToForm(session, tracks);
-        setMetadataOpen(false);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -212,88 +211,38 @@ export function IntakePage() {
     <AppShell layout={isMarkingMode ? "intake-workstation" : "default"}>
       <div className={pageClass}>
         {isMarkingMode && sessionDetail && sessionId ? (
-          <>
-            <details
-              className="intake-metadata-details"
-              open={metadataOpen}
-              onToggle={(e) => setMetadataOpen(e.currentTarget.open)}
-            >
-              <summary className="intake-metadata-summary">Session metadata</summary>
-              <form className="intake-form intake-form--inline" onSubmit={handleMetadataSubmit}>
-                <label className="intake-field">
-                  <span>Title</span>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                </label>
-                <div className="intake-field">
-                  <span>Track</span>
-                  <div className="field-with-action">
-                    <select
-                      className="intake-select"
-                      value={selectedTrackId}
-                      onChange={(e) => setSelectedTrackId(e.target.value)}
-                      disabled={saving}
-                    >
-                      <option value={TRACK_PLACEHOLDER}>------ select track ------</option>
-                      {tracks.map((track) => (
-                        <option key={track.id} value={track.id}>
-                          {track.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => navigate("/tracks")}
-                      disabled={saving}
-                    >
-                      Manage tracks
-                    </button>
-                  </div>
-                </div>
-                <label className="intake-field">
-                  <span>Date</span>
-                  <input
-                    type="date"
-                    value={recordedAt}
-                    onChange={(e) => setRecordedAt(e.target.value)}
-                  />
-                </label>
-                <label className="intake-field intake-field--wide">
-                  <span>Notes</span>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={2}
-                  />
-                </label>
-                {error && <p className="data-status data-status--error">{error}</p>}
-                <div className="intake-actions">
-                  <button type="submit" className="btn btn-secondary" disabled={saving}>
-                    {saving ? "Saving…" : "Save metadata"}
-                  </button>
-                </div>
-              </form>
-            </details>
-
-            <IntakeMarkingPanel
-              sessionId={sessionId}
-              sessionTitle={sessionDetail.title}
-              status={sessionDetail.status}
-              fileName={sessionDetail.fileName}
-              durationSeconds={sessionDetail.durationSeconds}
-              trackId={selectedTrackId || null}
-              markers={sessionDetail.markers}
-              splits={sessionDetail.splits ?? []}
-              trackSplits={activeTrackSplits}
-              laps={sessionDetail.laps}
-              onSessionUpdated={handleSessionUpdated}
-              onBackToData={() => navigate(`/?session=${sessionId}`)}
-            />
-          </>
+          <IntakeMarkingPanel
+            sessionId={sessionId}
+            sessionTitle={sessionDetail.title}
+            status={sessionDetail.status}
+            fileName={sessionDetail.fileName}
+            durationSeconds={sessionDetail.durationSeconds}
+            trackId={selectedTrackId || null}
+            markers={sessionDetail.markers}
+            splits={sessionDetail.splits ?? []}
+            trackSplits={activeTrackSplits}
+            laps={sessionDetail.laps}
+            onSessionUpdated={handleSessionUpdated}
+            onBackToData={() => navigate(`/?session=${sessionId}`)}
+            sessionMetadataPanel={
+              <IntakeSessionMetadataPanel
+                title={title}
+                onTitleChange={setTitle}
+                selectedTrackId={selectedTrackId}
+                onTrackChange={setSelectedTrackId}
+                tracks={tracks}
+                trackPlaceholder={TRACK_PLACEHOLDER}
+                recordedAt={recordedAt}
+                onRecordedAtChange={setRecordedAt}
+                notes={notes}
+                onNotesChange={setNotes}
+                saving={saving}
+                error={error}
+                onSubmit={handleMetadataSubmit}
+                onManageTracks={() => navigate("/tracks")}
+              />
+            }
+          />
         ) : (
           <>
             <h1>Add session</h1>

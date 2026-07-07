@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createMarker, createSplit, deleteMarker, updateMarker } from "../api/markers";
 import { sessionVideoUrl, updateSession, type SessionDetail } from "../api/sessions";
 import type { Lap, Marker, SessionStatus, Split } from "../types";
@@ -66,6 +66,7 @@ interface IntakeMarkingPanelProps {
   laps: Lap[];
   onSessionUpdated: (session: SessionDetail) => void;
   onBackToData: () => void;
+  sessionMetadataPanel: ReactNode;
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -87,6 +88,7 @@ export function IntakeMarkingPanel({
   laps,
   onSessionUpdated,
   onBackToData,
+  sessionMetadataPanel,
 }: IntakeMarkingPanelProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const currentTimeRef = useRef(0);
@@ -1347,6 +1349,7 @@ export function IntakeMarkingPanel({
             onTabChange={setSidePanelTab}
             proposalCount={splitProposals.length}
             lapCount={markers.length}
+            session={sessionMetadataPanel}
             suggest={
               <SplitDetectionPanel
                 status={

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type IntakeSidePanelTab = "suggest" | "laps";
+export type IntakeSidePanelTab = "suggest" | "laps" | "session";
 
 interface IntakeSidePanelProps {
   activeTab: IntakeSidePanelTab;
@@ -9,6 +9,7 @@ interface IntakeSidePanelProps {
   lapCount: number;
   suggest: ReactNode;
   laps: ReactNode;
+  session: ReactNode;
 }
 
 export function IntakeSidePanel({
@@ -18,6 +19,7 @@ export function IntakeSidePanel({
   lapCount,
   suggest,
   laps,
+  session,
 }: IntakeSidePanelProps) {
   return (
     <aside className="intake-side-panel" aria-label="Marking tools">
@@ -50,6 +52,18 @@ export function IntakeSidePanel({
           Laps & splits
           {lapCount > 0 && <span className="intake-side-panel-badge">{lapCount}</span>}
         </button>
+        <button
+          type="button"
+          role="tab"
+          id="intake-tab-session"
+          aria-selected={activeTab === "session"}
+          aria-controls="intake-panel-session"
+          className={`intake-side-panel-tab${activeTab === "session" ? " is-active" : ""}`}
+          onClick={() => onTabChange("session")}
+          title="Session metadata"
+        >
+          Session
+        </button>
       </div>
 
       <div className="intake-side-panel-body">
@@ -71,6 +85,16 @@ export function IntakeSidePanel({
             className="intake-side-panel-pane"
           >
             {laps}
+          </div>
+        )}
+        {activeTab === "session" && (
+          <div
+            id="intake-panel-session"
+            role="tabpanel"
+            aria-labelledby="intake-tab-session"
+            className="intake-side-panel-pane"
+          >
+            {session}
           </div>
         )}
       </div>
