@@ -1,18 +1,18 @@
 # Product Roadmap
 
-Rough planning doc for LapViewer work **before any cloud deployment**.
+Planning doc for LapViewer phases from local dev through cloud deploy.
 
 **Status:** Active  
-**Last updated:** 2026-07-06  
+**Last updated:** 2026-07-07  
 **Related:** [Project Overview](PROJECT_OVERVIEW.md), [Continuation](CONTINUATION.md), [Architecture](ARCHITECTURE.md)
 
 ---
 
 ## North star (long-term, not next)
 
-LapViewer should eventually become a **web app where anyone can upload races and compare their laps with others**. That requires hosted deployment, object storage, auth, and multi-tenant data rules.
+LapViewer should eventually become a **web app where anyone can upload races and compare their laps with others**. That requires hosted deployment, **object storage for originals**, auth, and multi-tenant data rules.
 
-**Nothing in the phases below required AWS until Phase 5.** Phase 1 Docker + observability can run locally. See [DEPLOYMENT.md](DEPLOYMENT.md).
+Phase 1 Docker + MinIO can run locally without AWS spend. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ---
 
@@ -35,6 +35,7 @@ LapViewer should eventually become a **web app where anyone can upload races and
 | [`sessions` table](../server/src/db/database.ts) | `userId` scoped; DELETE + flat laps API |
 | Intake markers | Done |
 | Auth / users | Done — dev account + session scoping ([USERS_V1.md](features/USERS_V1.md)) |
+| Intake model | **Migrating** — browser upload + object storage ([D-028](DECISIONS.md), [WO-unified-upload.md](work-orders/WO-unified-upload.md)) |
 | Deploy | **In progress** — see [DEPLOYMENT.md](DEPLOYMENT.md), [WO-deploy-v1.md](work-orders/WO-deploy-v1.md) |
 
 ---
@@ -46,14 +47,20 @@ flowchart TD
   P0[Phase0_IntakeMarkers]
   P1[Phase1_UsersDevAccount]
   P2[Phase2_DataRefactor]
-  P3[Phase3_AutoLapDetection]
+  P3A[Phase3A_AutoLapStarts]
+  P3C[Phase3C_ObjectStorageMedia]
+  P4A[Phase4A_UnifiedBrowserIntake]
+  P3B[Phase3B_ReferenceLapProgress]
   P4[Phase4_PolishAndPackaging]
   P5[Phase5_Deploy]
 
   P0 --> P1
   P1 --> P2
-  P2 --> P3
-  P3 --> P4
+  P2 --> P3A
+  P3A --> P3C
+  P3C --> P4A
+  P4A --> P3B
+  P4A --> P4
   P4 --> P5
 ```
 
@@ -123,7 +130,7 @@ Full wireframes and AC: [features/DATA_FORM_V2.md](features/DATA_FORM_V2.md).
 
 ## Phase 3 — Auto lap & split markers
 
-Build **after** Phase 2 so Intake and Data are stable. Two complementary specs:
+Build **after** Phase 2 so Intake and Data are stable. Three complementary sub-phases:
 
 ### 3A — Assisted lap starts (MVP, in progress)
 
@@ -134,6 +141,15 @@ Spike-validated ROI + template-bank detection on Intake. User seeds a start anch
 
 **Done when:** User can auto-detect lap starts on a calibrated track, review proposals, and confirm markers into the template bank.
 
+### 3C — Object-storage media pipeline (active)
+
+ffmpeg lap/split detection and reference builds must work when session originals live in S3/MinIO, not only on local disk paths.
+
+- Work order: [work-orders/WO-unified-upload.md](work-orders/WO-unified-upload.md) WO-U1
+- Resolver: `resolveSessionMediaInput()` materializes S3 objects to `DATA_DIR/cache/{sessionId}/original.mp4` for ffmpeg
+
+**Done when:** Auto-detect laps works on a browser-uploaded session in Docker (MinIO) and production (S3).
+
 ### 3B — Reference-lap track progress (long-term)
 
 Semi-automatic lap **and split** timing via a reusable **track profile**: one reference lap defines normalized track progress (`0.0 → 1.0`); new videos are matched to that map; laps = progress wraparound; splits = progress crossings.
@@ -142,7 +158,7 @@ Semi-automatic lap **and split** timing via a reusable **track profile**: one re
 - Spike gate: [work-orders/WO-gopro-progress-spike.md](work-orders/WO-gopro-progress-spike.md) — **passed GO** on `GX010012` (2026-07-06); M2-LV may proceed
 - Decisions: D-019–D-024 in [DECISIONS.md](DECISIONS.md)
 
-**Relationship:** 3A delivers immediate value on Intake with the existing marker model. 3B is the architecture for accurate split deltas and cross-session comparison when a reference lap exists. **Default sequencing:** finish AD-5 first; run progress spike in parallel if capacity. Converge when reference-lap matching passes the spike go-gate.
+**Relationship:** 3A delivers immediate value on Intake with the existing marker model. 3C unblocks containers. 3B assumes object storage from the start. **Default sequencing:** finish 3A review → 3C → 4A → 3B.
 
 ---
 
@@ -153,20 +169,28 @@ Before any deploy:
 - Real login UI (non-dev) for `npm start` testing
 - Export lap data (JSON/CSV) — see [OPEN_QUESTIONS.md §7.1](OPEN_QUESTIONS.md)
 - `npm run build && npm start` polish
-- Optional Docker Compose ([ARCHITECTURE.md](ARCHITECTURE.md) Mode C)
+- **Docker Compose as primary parity path** — MinIO + browser upload ([ARCHITECTURE.md](ARCHITECTURE.md) Mode C)
+
+### 4A — Unified browser intake (active)
+
+One Intake UX everywhere: browser file picker → presigned PUT → object storage.
+
+- Decision: [D-028](DECISIONS.md)
+- Work order: [work-orders/WO-unified-upload.md](work-orders/WO-unified-upload.md) WO-U2..U3
+
+**Done when:** Same upload flow in `npm run dev`, `docker compose up`, and ECS.
 
 ---
 
-## Phase 5 — Deploy (deferred)
+## Phase 5 — Deploy (active)
 
-Reopen hosting work only after:
+S3 presigned upload and ECS scaffold are implemented ([WO-deploy-v1.md](work-orders/WO-deploy-v1.md)). Remaining:
 
-- Intake + Compare proven on real footage
-- User model + session scoping in place
-- Data form refactor shipped
+- Unified local object storage (MinIO) + processing pipeline (Phase 3C/4A)
+- First `terraform apply` + ECR push
 - Real auth tested locally without dev seed
 
-Future topics: AWS, S3 uploads, Cognito, cross-user compare, leagues. Not scheduled.
+Future topics: Cognito, cross-user compare, leagues.
 
 ---
 
@@ -185,10 +209,9 @@ Decide before implementation of each phase:
 
 ## Explicitly not in scope now
 
-- AWS / EC2 / S3 / Cognito
-- Video upload pipeline
 - Cross-user compare / leagues
 - Production signup (designed in Phase 4, not before)
+- GoPro multi-file segment grouping (deferred)
 
 ---
 
@@ -201,5 +224,6 @@ Decide before implementation of each phase:
 | [features/DATA_FORM_V2.md](features/DATA_FORM_V2.md) | Phase 2 detail |
 | [features/AUTO_LAP_DETECTION_V1.md](features/AUTO_LAP_DETECTION_V1.md) | Phase 3A — assisted lap starts |
 | [features/GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md) | Phase 3B — reference-lap progress (F8); spike WO |
-| [DECISIONS.md](DECISIONS.md) | Accepted choices (add D-0XX for dev account when Phase 1 starts) |
+| [work-orders/WO-unified-upload.md](work-orders/WO-unified-upload.md) | Phase 3C + 4A — object storage intake |
+| [DECISIONS.md](DECISIONS.md) | Accepted choices |
 | [CONTINUATION.md](CONTINUATION.md) | Current implementation status |

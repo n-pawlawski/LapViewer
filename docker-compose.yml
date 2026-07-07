@@ -3,14 +3,40 @@
 # Runs alongside npm run dev (localhost:5173 + localhost:3000).
 # Open http://deltaview.docker:3090 — add hosts entry via config/docker-hosts.snippet
 #
-# Video library: set VIDEO_HOST_PATH in repo-root .env (see config/docker.env.example).
-# Docker Compose reads .env automatically for ${VIDEO_HOST_PATH} substitution.
+# Object storage: MinIO (S3-compatible) with browser upload via presigned PUT.
 services:
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 minioadmin minioadmin 2>/dev/null; do sleep 1; done;
+      mc mb local/lapviewer-videos --ignore-existing;
+      exit 0;
+      "
+
   lapviewer:
     build:
       context: .
       args:
         GIT_SHA: local-docker
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
     ports:
       - "3090:3000"
     env_file:
@@ -21,15 +47,20 @@ services:
       NODE_ENV: production
       PORT: 3000
       DATA_DIR: /data
-      STORAGE_BACKEND: local_path
-      VIDEO_LIBRARY_ROOT: /videos
+      STORAGE_BACKEND: s3
+      S3_BUCKET: lapviewer-videos
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_ENDPOINT_URL: http://minio:9000
+      S3_PUBLIC_ENDPOINT: http://127.0.0.1:9000
+      S3_FORCE_PATH_STYLE: "true"
       SESSION_SECRET: local-docker-change-me
       CLIENT_ORIGIN: http://deltaview.docker:3090
       LAPVIEWER_DEV_USER: "1"
       GIT_SHA: local-docker
     volumes:
       - lapviewer-data:/data
-      - ${VIDEO_HOST_PATH:-E:/Racing Videos}:/videos:ro
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -39,3 +70,4 @@ services:
 
 volumes:
   lapviewer-data:
+  minio-data:

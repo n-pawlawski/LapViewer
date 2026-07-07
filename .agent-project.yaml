@@ -14,6 +14,7 @@ paths:
 
   readme: README.md
   project_overview: docs/PROJECT_OVERVIEW.md
+  roadmap: docs/ROADMAP.md
   documentation_system: docs/DOCUMENTATION_SYSTEM.md
   decisions: docs/DECISIONS.md
   features: docs/FEATURES.md

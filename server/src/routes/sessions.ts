@@ -1,17 +1,15 @@
 import { Router } from "express";
 import {
-  createSession,
   deleteSession,
   getSessionById,
-  getSessionSourcePath,
   getSessionVideoTarget,
   insertMarker,
   listAllLaps,
   listSessions,
   updateSession,
 } from "../services/sessions.js";
-import type { CreateMarkerBody, CreateSessionBody, UpdateSessionBody } from "../types.js";
-import { streamS3Object } from "../services/objectStorage.js";
+import type { CreateMarkerBody, UpdateSessionBody } from "../types.js";
+import { streamStoredObject } from "../services/objectStorage.js";
 import { streamVideoFile } from "../video.js";
 import { scheduleSplitBankUpsert } from "../services/splitBankSync.js";
 
@@ -68,27 +66,10 @@ sessionsRouter.get("/:id", (req, res) => {
   res.json(session);
 });
 
-sessionsRouter.post("/", (req, res) => {
-  const body = req.body as CreateSessionBody;
-  if (!body?.sourcePath || typeof body.sourcePath !== "string") {
-    res.status(400).json({ error: "sourcePath is required" });
-    return;
-  }
-
-  try {
-    const session = createSession(body, req.userId!);
-    res.status(201).json(session);
-  } catch (err) {
-    const error = err as Error & { code?: string; sessionId?: string };
-    if (error.code === "DUPLICATE_PATH") {
-      res.status(409).json({
-        error: error.message,
-        sessionId: error.sessionId,
-      });
-      return;
-    }
-    throw err;
-  }
+sessionsRouter.post("/", (_req, res) => {
+  res.status(410).json({
+    error: "Path registration is deprecated. Upload a video file via POST /api/sessions/upload instead.",
+  });
 });
 
 sessionsRouter.patch("/:id", (req, res) => {
@@ -130,7 +111,7 @@ videoRouter.get("/:sessionId", (req, res) => {
     return;
   }
   if (target.kind === "s3") {
-    void streamS3Object(target.objectKey, req, res);
+    void streamStoredObject(target.objectKey, req, res);
     return;
   }
   streamVideoFile(target.path, req, res);

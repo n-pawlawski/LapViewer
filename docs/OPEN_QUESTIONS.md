@@ -166,13 +166,15 @@ Shorter lap finishes before longer ones:
 
 ### 4.2 Should videos stay on disk where they already are?
 
-- [ ] Copy into app-managed storage on upload
-- [x] Register path only (no copy — app references existing files)
+**Superseded by [D-028](DECISIONS.md) (2026-07-07):** New sessions upload to object storage. Legacy path-only answer below applies to existing `local_path` rows only.
+
+- [x] ~~Register path only~~ → **Browser upload to S3/MinIO for new sessions**
+- [ ] Copy into app-managed storage on upload (rejected — use object store directly)
 - [ ] Hybrid
 
-**Your answer:**
+**Original answer (legacy sessions):**
 
-Yes. Videos stay on the existing drive. The database stores file paths pointing into that library — not the video data itself. Import/register a file by path; moving or renaming files outside the app may require re-linking (behavior TBD).
+Videos on the existing drive remain valid for `local_path` sessions. New sessions store originals in object storage; the database holds `objectKey`, not a host path.
 
 ### 4.3 Internet required?
 

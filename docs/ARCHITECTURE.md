@@ -124,33 +124,26 @@ LapViewer/
 
 ## Local native vs Docker
 
-**Recommendation: run locally (native Node) as the default.** Add optional Docker later if you want a one-command packaged run — not required for v1.
+**Recommendation:** Use **Docker Compose (Mode C)** for production-parity testing (MinIO + browser upload). Use **native Node (Mode A)** for day-to-day UI iteration with MinIO sidecar.
 
-### Why local native fits this project
+### Why browser upload + object storage
 
-| Factor | Local native | Docker |
-|--------|--------------|--------|
-| **Video drive access** | Backend reads `D:\…` paths directly via config | Must bind-mount Windows drives into container; path mapping is extra friction |
-| **Large file streaming** | Direct filesystem read, Range requests | Works with bind mounts, but setup is more fiddly on Windows |
-| **ffmpeg** | Use [ffmpeg installed on Windows](https://ffmpeg.org) (or winget/choco); backend shells out | Need ffmpeg in image; GPU passthrough not needed for proxy encode |
-| **Dev iteration** | `npm run dev`, hot reload, easy debugging | Rebuild image on dependency changes |
-| **Single-user PC app** | Natural fit | More useful for deploy-to-server or team reproducibility |
-| **Offline use** | Fully offline after Node + ffmpeg installed | Offline once image is built |
+| Factor | Path registration (legacy) | Browser upload + S3/MinIO |
+|--------|---------------------------|----------------------------|
+| **Containers** | File picker fails in Docker; volume mounts awkward | Same flow in Docker and ECS |
+| **ffmpeg processing** | Direct filesystem read | Materialize from object store to cache |
+| **Multi-user SaaS** | Not viable on ECS | Presigned PUT + Range GET ([D-026](DECISIONS.md)) |
+| **Dev parity** | Different UX per environment | One Intake flow everywhere ([D-028](DECISIONS.md)) |
 
-### When Docker *would* make sense
-
-- You move the app to a **home server / NAS** later.
-- You want **identical environment** across machines without installing Node/ffmpeg manually.
-- You prefer **one command** (`docker compose up`) and accept volume mount config for your video drive.
-
-### Suggested approach (hybrid, pragmatic)
+### Suggested approach
 
 ```
-Phase 1–N (build & daily use):  local native — npm run dev / npm start
-Optional later:                 docker-compose.yml for packaged local or NAS deploy
+Daily UI work:     npm run dev + MinIO sidecar (docker compose up minio minio-init -d)
+Parity testing:    docker compose up --build
+Production:        ECS + AWS S3
 ```
 
-You are not wrong to choose Docker if you already use it for everything — it is just **not the best default** for a Windows desktop app that must read arbitrary paths on `D:` and shell out to ffmpeg.
+Legacy `local_path` sessions remain supported for existing data.
 
 ---
 
@@ -176,36 +169,20 @@ npm start
 - Node serves built React app + API on `http://localhost:3000`
 - Same machine, no container.
 
-### Mode C — Docker (optional, side-by-side with Mode A)
+### Mode C — Docker (production parity)
 
 ```bash
-npm run docker:hosts   # once, elevated — adds lapviewer.docker → 127.0.0.1
+npm run docker:hosts   # once, elevated — adds deltaview.docker → 127.0.0.1
 docker compose up --build
 ```
 
 - Browser: `http://deltaview.docker:3090` (port **3090** avoids conflict with dev API on **3000**)
-- Container runs Node + bundled ffmpeg + built client.
-- **Volumes required:**
-  - `./data` → app data (SQLite, cache)
-  - `D:/RacingFootage:/videos:ro` → your library (example)
-- Env: `VIDEO_LIBRARY_ROOT=/videos`
+- Container runs Node + bundled ffmpeg + built client + MinIO (S3-compatible)
+- **Volumes:** `lapviewer-data:/data` (SQLite, cache); `minio-data` (object storage)
+- Env: `STORAGE_BACKEND=s3`, `S3_BUCKET=lapviewer-videos`, `AWS_ENDPOINT_URL=http://minio:9000`
+- Browser upload uses `S3_PUBLIC_ENDPOINT=http://127.0.0.1:9000` for presigned PUT URLs
 
-Persistence depends on those mounts. If `./data:/app/data` is omitted, the SQLite DB can disappear when the container is recreated.
-
-Example with your current library style:
-
-```yaml
-services:
-  lapviewer:
-    volumes:
-      - ./data:/app/data
-      - "E:/Racing Videos:/videos:ro"
-    environment:
-      DATA_DIR: /app/data
-      VIDEO_LIBRARY_ROOT: /videos
-```
-
-Document this in `docker-compose.yml` when/if you choose Mode C.
+Persistence depends on named volumes. If `lapviewer-data` is omitted, the SQLite DB can disappear when the container is recreated.
 
 ---
 

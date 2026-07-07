@@ -17,7 +17,8 @@ import {
   updateDetectionJobProgress,
 } from "../services/detectionJobs.js";
 import { renderFramePng, runDetection, extractRoiGrayFromVideo } from "../services/lapDetection.js";
-import { getSessionById, getSessionSourcePath } from "../services/sessions.js";
+import { resolveSessionMediaPath } from "../services/sessionMedia.js";
+import { getSessionById } from "../services/sessions.js";
 import { getTrackById, getTrackByName } from "../services/tracks.js";
 import type { AddDetectionBankEntryBody, DetectionRoi, UpdateDetectionProfileBody } from "../types.js";
 
@@ -107,12 +108,6 @@ sessionDetectionRouter.post("/:id/detect-laps", (req, res) => {
     return;
   }
 
-  const sourcePath = getSessionSourcePath(session.id, req.userId!);
-  if (!sourcePath) {
-    res.status(404).json({ error: "Session video not found" });
-    return;
-  }
-
   const bank = listDetectionBankEntries(profile.id);
   const finalMarkerTime = lastLapStartAfterAnchor(session.markers, anchorTime);
   const endTime =
@@ -124,6 +119,12 @@ sessionDetectionRouter.post("/:id/detect-laps", (req, res) => {
   void (async () => {
     markDetectionJobRunning(job.jobId);
     try {
+      const sourcePath = await resolveSessionMediaPath(session.id, req.userId!);
+      if (!sourcePath) {
+        failDetectionJob(job.jobId, "Session video not found");
+        return;
+      }
+
       const result = await runDetection({
         videoPath: sourcePath,
         sessionId: session.id,
@@ -160,7 +161,7 @@ sessionDetectionRouter.get("/:id/frame", async (req, res) => {
     return;
   }
 
-  const sourcePath = getSessionSourcePath(session.id, req.userId!);
+  const sourcePath = await resolveSessionMediaPath(session.id, req.userId!);
   if (!sourcePath) {
     res.status(404).json({ error: "Session video not found" });
     return;
@@ -269,7 +270,7 @@ trackDetectionRouter.post("/:trackId/detection-profile/bank", async (req, res) =
         res.status(404).json({ error: "Source session not found" });
         return;
       }
-      const sourcePath = getSessionSourcePath(body.sourceSessionId, req.userId!);
+      const sourcePath = await resolveSessionMediaPath(body.sourceSessionId, req.userId!);
       if (!sourcePath) {
         res.status(404).json({ error: "Source session video not found" });
         return;

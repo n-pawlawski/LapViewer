@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { VIDEO_LIBRARY_ROOT } from "../config.js";
 import { resolveLocalVideoPath } from "../paths.js";
 import { getDb } from "../db/database.js";
-import { headS3Object, sessionObjectKey } from "./objectStorage.js";
+import { headObject, sessionObjectKey } from "./objectStorage.js";
 import { bestLapTimeMs, computeLaps } from "../services/laps.js";
 import {
   assertTimeInsideLap,
@@ -748,7 +748,7 @@ export async function completeS3UploadSession(
     throw Object.assign(new Error("Session is not an S3 upload"), { code: "NOT_FOUND" });
   }
 
-  const head = await headS3Object(row.objectKey);
+  const head = await headObject(row.objectKey);
   if (!head.exists) {
     throw Object.assign(new Error("Upload not found in object storage"), { code: "UPLOAD_MISSING" });
   }

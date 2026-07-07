@@ -842,9 +842,42 @@ SQLite is fine for local single-user dev. Multi-tenant SaaS on ECS needs a share
 
 ---
 
+### D-028 - Browser upload + object storage as sole intake for new sessions
+
+**Status:** Accepted  
+**Date:** 2026-07-07  
+**Owner:** Shared  
+**Related docs:** `docs/INTAKE_FLOW.md`, `docs/DEPLOYMENT.md`, `docs/work-orders/WO-unified-upload.md`, `server/src/services/sessionMedia.ts`
+
+### Context
+
+Path-based intake ([D-002](DECISIONS.md)) breaks in containers: Docker cannot use the Windows file picker, and ECS has no user drive to mount. Production S3 upload ([D-026](DECISIONS.md)) worked for playback but blocked ffmpeg processing until objects are materialized locally.
+
+### Decision
+
+- **New sessions:** browser file picker → presigned PUT → object storage (`storageKind=s3`, `objectKey`).
+- **All environments** use `STORAGE_BACKEND=s3` with the same API; local/Docker use MinIO (`AWS_ENDPOINT_URL`), production uses AWS S3.
+- **Legacy** `local_path` sessions remain readable and processable; `POST /api/sessions` path registration is rejected when S3 is enabled.
+- ffmpeg jobs resolve media via `resolveSessionMediaInput()` (lazy cache at `DATA_DIR/cache/{sessionId}/original.mp4`).
+
+### Consequences
+
+- Intake UI is upload-only for new sessions.
+- Docker Compose includes MinIO; `VIDEO_LIBRARY_ROOT` bind mount is no longer required for intake.
+- Phase 3B reference-lap work assumes object storage.
+
+### Alternatives considered
+
+- Keep path intake for native Windows dev — rejected (three intake modes, container parity gap).
+- ffmpeg over HTTP Range without materialization — deferred (materialize first for reliability).
+
+---
+
 ## Superseded decisions
 
-No superseded decisions yet.
+| ID | Superseded by | Note |
+|----|---------------|------|
+| D-002 (path-only intake for new sessions) | D-028 | Path registration deprecated for new sessions; legacy rows supported |
 
 ---
 

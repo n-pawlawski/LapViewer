@@ -13,7 +13,7 @@ import {
   updateReferenceBuildJobProgress,
 } from "../services/referenceBuildJobs.js";
 import { getTrackById } from "../services/tracks.js";
-import { getSessionSourcePath } from "../services/sessions.js";
+import { resolveSessionMediaPath } from "../services/sessionMedia.js";
 import { buildReferencePoints } from "../services/trackProgressVision.js";
 import type { SaveReferenceProfileBody } from "../types.js";
 
@@ -71,18 +71,21 @@ trackReferenceRouter.post("/:trackId/reference-profile/build", (req, res) => {
     return;
   }
 
-  const sourcePath = getSessionSourcePath(profile.referenceSessionId, req.userId!);
-  if (!sourcePath) {
-    res.status(404).json({ error: "Reference session video not found" });
-    return;
-  }
-
   const job = createReferenceBuildJob(track.id);
   res.status(202).json({ jobId: job.jobId });
 
   void (async () => {
     markReferenceBuildJobRunning(job.jobId);
     try {
+      const sourcePath = await resolveSessionMediaPath(
+        profile.referenceSessionId,
+        req.userId!,
+      );
+      if (!sourcePath) {
+        failReferenceBuildJob(job.jobId, "Reference session video not found");
+        return;
+      }
+
       const result = await buildReferencePoints(profile, sourcePath, {
         onProgress: (p) => updateReferenceBuildJobProgress(job.jobId, p),
         isCancelled: () => getReferenceBuildJobInternal(job.jobId)?.cancelled === true,

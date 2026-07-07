@@ -17,19 +17,29 @@ Promotion: merge `dev` → `master` when ready to deploy ([D-025](DECISIONS.md))
 
 ---
 
-## Local Docker (Phase 1 parity)
+## Local Docker (production parity)
 
-Reproduces production code paths without AWS spend:
+Reproduces production code paths without AWS spend. Includes **MinIO** (S3-compatible) for browser upload.
 
 ```bash
-# Add 127.0.0.1 lapviewer.docker to hosts (see config/docker-hosts.snippet)
+# Add 127.0.0.1 deltaview.docker to hosts (see config/docker-hosts.snippet)
 npm run docker:hosts   # Windows, elevated
 docker compose up --build
 ```
 
-Open [http://deltaview.docker:3090](http://deltaview.docker:3090) (Docker uses port **3090** so `npm run dev` can keep **3000**). Health: [http://lapviewer.docker:3090/api/ops/status](http://lapviewer.docker:3090/api/ops/status)
+Open [http://deltaview.docker:3090](http://deltaview.docker:3090) (Docker uses port **3090** so `npm run dev` can keep **3000**). Health: [http://deltaview.docker:3090/api/ops/status](http://deltaview.docker:3090/api/ops/status)
 
-Environment defaults in `docker-compose.yml` use `DEPLOY_ENV=local-docker`, SQLite in `/data`, and dev user seed enabled.
+MinIO console: [http://localhost:9001](http://localhost:9001) (`minioadmin` / `minioadmin`).
+
+Environment defaults in `docker-compose.yml`: `STORAGE_BACKEND=s3`, SQLite in `/data`, MinIO bucket `lapviewer-videos`, dev user seed enabled.
+
+### Native dev with MinIO
+
+```bash
+docker compose up minio minio-init -d
+cp config/.env.example .env   # STORAGE_BACKEND=s3, AWS_ENDPOINT_URL=http://127.0.0.1:9000
+npm run dev
+```
 
 ---
 
@@ -37,12 +47,15 @@ Environment defaults in `docker-compose.yml` use `DEPLOY_ENV=local-docker`, SQLi
 
 Copy [`config/.env.example`](../config/.env.example) to `.env` at repo root.
 
-| Variable | Local | Production |
-|----------|-------|------------|
-| `DEPLOY_ENV` | `development` | `production` |
-| `STORAGE_BACKEND` | `local_path` | `s3` |
+| Variable | Local / Docker | Production |
+|----------|----------------|------------|
+| `DEPLOY_ENV` | `development` / `local-docker` | `production` |
+| `STORAGE_BACKEND` | `s3` (MinIO) | `s3` (AWS) |
+| `AWS_ENDPOINT_URL` | `http://127.0.0.1:9000` or `http://minio:9000` | omit |
+| `S3_PUBLIC_ENDPOINT` | `http://127.0.0.1:9000` (browser PUT) | omit |
+| `S3_FORCE_PATH_STYLE` | `true` (MinIO) | `false` |
 | `DATABASE_URL` | omit (SQLite) | RDS Postgres URL |
-| `S3_BUCKET` | — | from Terraform output |
+| `S3_BUCKET` | `lapviewer-videos` | from Terraform output |
 | `SESSION_SECRET` | dev default | Secrets Manager |
 | `CLIENT_ORIGIN` | `http://localhost:5173` | public app URL |
 | `GIT_SHA` | `local` | CI injects commit SHA |
@@ -51,8 +64,8 @@ Copy [`config/.env.example`](../config/.env.example) to `.env` at repo root.
 
 ## Storage modes
 
-- **Local dev:** Windows path picker + `VIDEO_LIBRARY_ROOT` ([D-002](DECISIONS.md))
-- **Production:** S3 presigned upload ([D-026](DECISIONS.md)); originals at `users/{userId}/sessions/{sessionId}/{fileName}`
+- **All environments (new sessions):** S3 presigned upload ([D-028](DECISIONS.md), [D-026](DECISIONS.md)); MinIO locally, AWS in production
+- **Legacy:** `local_path` sessions remain playable; path registration disabled when `STORAGE_BACKEND=s3`
 
 ---
 

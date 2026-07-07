@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { getDb } from "../db/database.js";
 import { extractFullFrameGrayFromVideo } from "./lapDetection.js";
-import { getSessionById, getSessionSourcePath } from "./sessions.js";
+import { getSessionById } from "./sessions.js";
+import { resolveSessionMediaPath } from "./sessionMedia.js";
 import { getTrackById, getTrackByName } from "./tracks.js";
 import { findLapForSplitTime } from "./splits.js";
 import type { SplitBankSummaryDto } from "../types.js";
@@ -114,7 +115,7 @@ export async function upsertSplitBankEntryForMarker(
   const lapStart = lapStartForSplitTime(row.sessionId, row.timeSeconds, userId);
   if (lapStart == null) return;
 
-  const sourcePath = getSessionSourcePath(row.sessionId, userId);
+  const sourcePath = await resolveSessionMediaPath(row.sessionId, userId);
   if (!sourcePath) return;
 
   const frameGray = await extractFullFrameGrayFromVideo(sourcePath, row.timeSeconds);

@@ -74,14 +74,14 @@ Lap marking stays **outside** the register-only steps in [Intake Flow](INTAKE_FL
 
 ### Step 2 — Select file(s)
 
-User picks one or more videos from the library drive.
+User picks one GoPro video via the **browser file picker** on the Intake form.
 
 | Mode | v1? | Notes |
 |------|-----|-------|
 | **Single file** | Yes | One race → one session |
+| **Browser upload** | Yes | Presigned PUT to S3/MinIO ([D-028](DECISIONS.md)) |
+| **Path registration** | Legacy only | Deprecated when `STORAGE_BACKEND=s3` |
 | **Multi-file same session** | TBD | GoPro splits; may need “merge logically” as one session with multiple paths |
-| **Browse from configured root** | Yes | File picker scoped to `VIDEO_LIBRARY_ROOT` |
-| **Scan folder / recent files** | Nice-to-have | List newest `.MP4` on drive |
 
 **TBD:** Do you ever need **one session = multiple GoPro files** (split recording)? If yes, intake must support grouping.
 
@@ -159,13 +159,17 @@ Same as Phase B on the Intake form — not a separate route unless we split UX l
 
 ---
 
-## Intake vs “upload”
+## Intake vs path registration
 
-| Upload model (rejected) | Intake model (chosen) |
-|-------------------------|-------------------------|
-| Copy bytes into app storage | Register path on existing drive |
-| Progress bar, long wait | Near-instant register after probe |
-| App owns file layout | You organize drive; app references |
+**Updated 2026-07-07 ([D-028](DECISIONS.md)):** New sessions use **browser upload** to object storage (MinIO locally, S3 in production). Path registration is deprecated for new sessions; legacy `local_path` rows remain supported.
+
+| Path model (legacy) | Upload model (current) |
+|---------------------|------------------------|
+| Register path on existing drive | Browser file picker → presigned PUT |
+| Windows file picker / typed path | Progress bar during upload |
+| `VIDEO_LIBRARY_ROOT` bind mount | Object key in S3/MinIO bucket |
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) and [WO-unified-upload.md](work-orders/WO-unified-upload.md).
 
 ---
 

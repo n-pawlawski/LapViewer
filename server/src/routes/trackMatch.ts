@@ -20,7 +20,8 @@ import {
   updateTrackMatchJobProgress,
 } from "../services/trackMatchJobs.js";
 import { getReferenceProfileByTrackId } from "../services/referenceProfiles.js";
-import { getSessionById, getSessionSourcePath, insertMarker } from "../services/sessions.js";
+import { getSessionById, insertMarker } from "../services/sessions.js";
+import { resolveSessionMediaPath } from "../services/sessionMedia.js";
 import { getTrackById } from "../services/tracks.js";
 import {
   buildReferencePoints,
@@ -138,12 +139,6 @@ sessionTrackMatchRouter.post("/:id/match-track", (req, res) => {
     return;
   }
 
-  const sourcePath = getSessionSourcePath(session.id, req.userId!);
-  if (!sourcePath) {
-    res.status(404).json({ error: "Session video not found" });
-    return;
-  }
-
   const lapStartTimes = session.markers
     .filter((marker) => marker.kind === "lapStart")
     .map((marker) => marker.timeSeconds)
@@ -164,6 +159,12 @@ sessionTrackMatchRouter.post("/:id/match-track", (req, res) => {
   void (async () => {
     markTrackMatchJobRunning(job.jobId);
     try {
+      const sourcePath = await resolveSessionMediaPath(session.id, req.userId!);
+      if (!sourcePath) {
+        failTrackMatchJob(job.jobId, "Session video not found");
+        return;
+      }
+
       const refPoints = loadReferencePoints(profile.id);
       const result = await runTrackMatch(profile, sourcePath, scanStart, scanEnd, refPoints, {
         onProgress: (p) => updateTrackMatchJobProgress(job.jobId, p),

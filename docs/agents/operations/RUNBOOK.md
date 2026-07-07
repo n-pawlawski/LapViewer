@@ -32,14 +32,23 @@ When `ok` is false, inspect the failing sub-check before restarting tasks.
 
 ## Upload failures
 
-**Symptoms:** Intake stuck on upload; `uploadStatus` pending; 400 on complete-upload.
+**Symptoms:** Intake stuck on upload; `uploadStatus` pending; 400 on complete-upload; "Upload is not configured" on Intake.
 
 | Check | Command / location |
 |-------|-------------------|
 | S3 enabled | `/api/ops/status` → `storageBackend: s3`, `s3Configured: true` |
-| Object exists | S3 console → `users/{userId}/sessions/{id}/` |
-| Presigned PUT | Client network tab — 403 → clock skew or wrong Content-Type |
+| MinIO running (local) | `docker compose ps minio`; console http://localhost:9001 |
+| Bucket exists | MinIO: `lapviewer-videos`; AWS: Terraform output `s3_bucket_name` |
+| Browser PUT URL | Presigned URL must use `S3_PUBLIC_ENDPOINT` (e.g. `http://127.0.0.1:9000`), not internal `minio:9000` |
+| Object exists | S3/MinIO → `users/{userId}/sessions/{id}/` |
+| Presigned PUT | Client network tab — 403 → clock skew, wrong Content-Type, or CORS on MinIO |
 | Complete called too early | Wait for PUT 200 before `POST .../complete-upload` |
+
+**Local dev:** Start MinIO before `npm run dev`:
+
+```bash
+docker compose up minio minio-init -d
+```
 
 **Logs:** CloudWatch filter `"msg":"request"` and path `/complete-upload`.
 

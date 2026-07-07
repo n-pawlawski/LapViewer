@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  createSession,
   fetchSession,
   updateSession,
   type SessionDetail,
@@ -10,8 +9,8 @@ import {
   fetchStorageConfig,
   requestUploadUrl,
   uploadFileToPresignedUrl,
+  uploadSessionFile,
 } from "../api/upload";
-import { pickVideoFile } from "../api/system";
 import { fetchTracks, fetchTrack, type Track, type TrackSplit } from "../api/tracks";
 import { AppShell } from "../components/AppShell";
 import { IntakeMarkingPanel } from "../components/IntakeMarkingPanel";
@@ -27,7 +26,6 @@ export function IntakePage() {
   const isEditMode = Boolean(sessionId);
 
   const [sessionDetail, setSessionDetail] = useState<SessionDetail | null>(null);
-  const [sourcePath, setSourcePath] = useState("");
   const [title, setTitle] = useState("");
   const [selectedTrackId, setSelectedTrackId] = useState(TRACK_PLACEHOLDER);
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -35,17 +33,15 @@ export function IntakePage() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [browsingVideo, setBrowsingVideo] = useState(false);
   const [loading, setLoading] = useState(isEditMode);
   const [metadataOpen, setMetadataOpen] = useState(!isEditMode);
   const [trackSplits, setTrackSplits] = useState<TrackSplit[]>([]);
-  const [s3UploadEnabled, setS3UploadEnabled] = useState(false);
+  const [uploadMode, setUploadMode] = useState<"direct" | "presigned">("direct");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const applySessionToForm = useCallback((session: SessionDetail, trackList: Track[]) => {
     setSessionDetail(session);
-    setSourcePath(session.sourcePath);
     setTitle(session.title);
     setRecordedAt(session.date ?? "");
     setNotes(session.notes ?? "");
@@ -63,11 +59,16 @@ export function IntakePage() {
       try {
         const [trackList, storageConfig] = await Promise.all([
           fetchTracks(),
-          fetchStorageConfig().catch(() => ({ storageBackend: "local_path" as const, s3UploadEnabled: false })),
+          fetchStorageConfig().catch(() => ({
+            storageBackend: "local_objects" as const,
+            uploadEnabled: true,
+            uploadMode: "direct" as const,
+            s3UploadEnabled: true,
+          })),
         ]);
         if (cancelled) return;
         setTracks(trackList);
-        setS3UploadEnabled(storageConfig.s3UploadEnabled);
+        setUploadMode(storageConfig.uploadMode ?? "direct");
 
         if (sessionId) {
           const session = await fetchSession(sessionId);
@@ -77,7 +78,6 @@ export function IntakePage() {
           setMetadataOpen(false);
         } else {
           setSessionDetail(null);
-          setSourcePath("");
           setTitle("");
           setSelectedTrackId(TRACK_PLACEHOLDER);
           setRecordedAt("");
@@ -130,41 +130,18 @@ export function IntakePage() {
     [applySessionToForm, tracks],
   );
 
-  async function handleBrowseVideo() {
-    setError(null);
-    setBrowsingVideo(true);
-    try {
-      const trimmedPath = sourcePath.trim();
-      const initialDir =
-        trimmedPath && /[\\/]/.test(trimmedPath)
-          ? trimmedPath.replace(/[\\/][^\\/]+$/, "")
-          : undefined;
-
-      const picked = await pickVideoFile({
-        trackId: selectedTrackId || undefined,
-        initialDir,
-      });
-      if (picked) {
-        setSourcePath(picked);
-        if (!title.trim()) {
-          const fileName = picked.split(/[\\/]/).pop() ?? "";
-          const baseName = fileName.replace(/\.[^.]+$/, "");
-          if (baseName) setTitle(baseName);
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not open file picker");
-    } finally {
-      setBrowsingVideo(false);
-    }
-  }
-
   async function handleMetadataSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!uploadFile) {
+      setError("Choose a video file to upload.");
+      return;
+    }
+
     setSaving(true);
 
-    const payload = {
+    const metadata = {
       title: title.trim() || undefined,
       trackName: selectedTrack?.name ?? null,
       recordedAt: recordedAt || null,
@@ -173,16 +150,13 @@ export function IntakePage() {
 
     try {
       if (isEditMode && sessionId) {
-        const session = await updateSession(sessionId, payload);
+        const session = await updateSession(sessionId, metadata);
         applySessionToForm(session, tracks);
         setMetadataOpen(false);
-      } else if (s3UploadEnabled && uploadFile) {
+      } else if (uploadMode === "presigned") {
         const { sessionId: newId, uploadUrl } = await requestUploadUrl({
           fileName: uploadFile.name,
-          title: title.trim() || undefined,
-          trackName: selectedTrack?.name ?? null,
-          recordedAt: recordedAt || null,
-          notes: notes.trim() || null,
+          ...metadata,
           contentType: uploadFile.type || "video/mp4",
         });
         setUploadProgress(0);
@@ -193,15 +167,12 @@ export function IntakePage() {
         navigate(`/intake?session=${newId}`);
         applySessionToForm(session, tracks);
       } else {
-        const session = await createSession({
-          sourcePath: sourcePath.trim(),
-          title: title.trim() || undefined,
-          trackName: selectedTrack?.name,
-          recordedAt: recordedAt || undefined,
-          notes: notes.trim() || undefined,
-        });
+        setUploadProgress(0);
+        const session = await uploadSessionFile(uploadFile, metadata, setUploadProgress);
+        setUploadProgress(null);
         setSelectedSessionId(session.id);
         navigate(`/intake?session=${session.id}`);
+        applySessionToForm(session, tracks);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -314,60 +285,32 @@ export function IntakePage() {
           <>
             <h1>Register session</h1>
             <p className="intake-lead">
-              {s3UploadEnabled
-                ? "Upload a GoPro video file, then mark laps."
-                : "Add a video by its full path on your library drive, then mark laps."}
+              Choose a GoPro video file and upload it, then mark laps.
             </p>
 
             <form className="intake-form" onSubmit={handleMetadataSubmit}>
-              {s3UploadEnabled ? (
-                <label className="intake-field">
-                  <span>Video file</span>
-                  <input
-                    type="file"
-                    accept="video/*,.mp4,.MP4,.mov,.MOV"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] ?? null;
-                      setUploadFile(file);
-                      if (file && !title.trim()) {
-                        const baseName = file.name.replace(/\.[^.]+$/, "");
-                        if (baseName) setTitle(baseName);
-                      }
-                    }}
-                    required
-                  />
-                  {uploadProgress !== null && (
-                    <span className="field-hint">Uploading… {uploadProgress}%</span>
-                  )}
-                  <span className="field-hint">
-                    Large GoPro files upload directly to cloud storage.
-                  </span>
-                </label>
-              ) : (
-                <label className="intake-field">
-                  <span>Video path</span>
-                  <div className="field-with-action">
-                    <input
-                      type="text"
-                      value={sourcePath}
-                      onChange={(e) => setSourcePath(e.target.value)}
-                      placeholder="E:\Racing Videos\...\GX010012.MP4"
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={handleBrowseVideo}
-                      disabled={browsingVideo || saving}
-                    >
-                      {browsingVideo ? "…" : "Browse"}
-                    </button>
-                  </div>
-                  <span className="field-hint">
-                    Opens Windows Explorer on this PC via the local server.
-                  </span>
-                </label>
-              )}
+              <label className="intake-field">
+                <span>Video file</span>
+                <input
+                  type="file"
+                  accept="video/*,.mp4,.MP4,.mov,.MOV"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    setUploadFile(file);
+                    if (file && !title.trim()) {
+                      const baseName = file.name.replace(/\.[^.]+$/, "");
+                      if (baseName) setTitle(baseName);
+                    }
+                  }}
+                  required
+                />
+                {uploadProgress !== null && (
+                  <span className="field-hint">Uploading… {uploadProgress}%</span>
+                )}
+                <span className="field-hint">
+                  Large GoPro files are uploaded through the app — no extra storage setup required.
+                </span>
+              </label>
 
               <label className="intake-field">
                 <span>Title</span>
@@ -427,7 +370,11 @@ export function IntakePage() {
               {error && <p className="data-status data-status--error">{error}</p>}
 
               <div className="intake-actions">
-                <button type="submit" className="btn btn-primary" disabled={saving || (s3UploadEnabled && !uploadFile)}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={saving || !uploadFile}
+                >
                   {saving
                     ? uploadProgress !== null
                       ? `Uploading… ${uploadProgress}%`

@@ -1,17 +1,91 @@
 import { Router } from "express";
 import { randomUUID } from "node:crypto";
+import fs from "node:fs";
 import path from "node:path";
+import { sessionVideoUpload } from "../middleware/upload.js";
 import {
   completeS3UploadSession,
   createS3UploadSession,
 } from "../services/sessions.js";
-import { createUploadPresignedUrl, isS3StorageEnabled } from "../services/objectStorage.js";
+import {
+  createUploadPresignedUrl,
+  isS3StorageEnabled,
+  isUploadEnabled,
+  putObjectFromFile,
+  storageBackendLabel,
+  uploadMode,
+} from "../services/objectStorage.js";
 
 export const uploadRouter = Router();
 
+uploadRouter.get("/storage-config", (_req, res) => {
+  const mode = uploadMode();
+  res.json({
+    storageBackend: storageBackendLabel(),
+    uploadEnabled: isUploadEnabled(),
+    uploadMode: mode,
+    /** @deprecated use uploadEnabled */
+    s3UploadEnabled: isUploadEnabled(),
+  });
+});
+
+/** Direct upload — file goes through the app server (works without MinIO sidecar or presigned URLs). */
+uploadRouter.post(
+  "/upload",
+  sessionVideoUpload.single("file"),
+  async (req, res) => {
+    const file = req.file;
+    if (!file) {
+      res.status(400).json({ error: "file is required (multipart field name: file)" });
+      return;
+    }
+
+    const body = req.body as {
+      title?: string;
+      trackName?: string;
+      recordedAt?: string | null;
+      notes?: string | null;
+    };
+
+    const sessionId = randomUUID();
+    const fileName = path.basename(file.originalname);
+
+    try {
+      const session = createS3UploadSession(
+        {
+          sessionId,
+          fileName,
+          title: body.title,
+          trackName: body.trackName ?? null,
+          recordedAt: body.recordedAt ?? null,
+          notes: body.notes ?? null,
+        },
+        req.userId!,
+      );
+
+      await putObjectFromFile({
+        objectKey: session.objectKey!,
+        filePath: file.path,
+        contentType: file.mimetype || "video/mp4",
+      });
+
+      const completed = await completeS3UploadSession(sessionId, req.userId!);
+      res.status(201).json(completed);
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Upload failed",
+      });
+    } finally {
+      fs.unlink(file.path, () => {});
+    }
+  },
+);
+
 uploadRouter.post("/upload-url", async (req, res) => {
   if (!isS3StorageEnabled()) {
-    res.status(503).json({ error: "S3 upload is not enabled on this server" });
+    res.status(503).json({
+      error: "Presigned upload requires S3. Use POST /api/sessions/upload instead.",
+    });
     return;
   }
 
@@ -64,7 +138,9 @@ uploadRouter.post("/upload-url", async (req, res) => {
 
 uploadRouter.post("/:id/complete-upload", async (req, res) => {
   if (!isS3StorageEnabled()) {
-    res.status(503).json({ error: "S3 upload is not enabled on this server" });
+    res.status(503).json({
+      error: "Presigned upload requires S3. Use POST /api/sessions/upload instead.",
+    });
     return;
   }
 
@@ -83,11 +159,4 @@ uploadRouter.post("/:id/complete-upload", async (req, res) => {
     }
     res.status(500).json({ error: error.message ?? "Upload completion failed" });
   }
-});
-
-uploadRouter.get("/storage-config", (_req, res) => {
-  res.json({
-    storageBackend: isS3StorageEnabled() ? "s3" : "local_path",
-    s3UploadEnabled: isS3StorageEnabled(),
-  });
 });

@@ -15,7 +15,8 @@ import {
   trackHasBankDataForSplitIndices,
 } from "../services/splitBank.js";
 import { missingSplitIndicesForLap } from "../services/splitDetectionMath.js";
-import { getSessionById, getSessionSourcePath } from "../services/sessions.js";
+import { getSessionById } from "../services/sessions.js";
+import { resolveSessionMediaPath } from "../services/sessionMedia.js";
 import { getTrackById, getTrackByName } from "../services/tracks.js";
 import type { StartSplitDetectionBody, SplitDetectionProposalDto } from "../types.js";
 
@@ -124,18 +125,18 @@ sessionSplitDetectionRouter.post("/:id/detect-splits", (req, res) => {
     return;
   }
 
-  const sourcePath = getSessionSourcePath(session.id, req.userId!);
-  if (!sourcePath) {
-    res.status(404).json({ error: "Session video not found" });
-    return;
-  }
-
   const job = createSplitDetectionJob(session.id, lapNumber!);
   res.status(202).json({ jobId: job.jobId });
 
   void (async () => {
     markSplitDetectionJobRunning(job.jobId);
     try {
+      const sourcePath = await resolveSessionMediaPath(session.id, req.userId!);
+      if (!sourcePath) {
+        failSplitDetectionJob(job.jobId, "Session video not found");
+        return;
+      }
+
       const result = await runSplitDetection({
         videoPath: sourcePath,
         sessionId: session.id,

@@ -25,10 +25,14 @@ The current hardcoded playback spike does **not** meet this yet. Phase A of the 
 
 | Data | Location | Persistent? | Notes |
 |------|----------|-------------|-------|
-| Original GoPro videos | `VIDEO_LIBRARY_ROOT`, e.g. `E:\Racing Videos` | Yes | User-owned footage; app references paths only |
-| SQLite database | `DATA_DIR/lapviewer.db` | Yes | Source of truth for sessions and markers |
+| Original GoPro videos | S3 / MinIO bucket (`users/{userId}/sessions/...`) | Yes | System of record for new sessions ([D-028](DECISIONS.md)) |
+| Legacy originals | `VIDEO_LIBRARY_ROOT` (path pointer) | Yes | `storageKind=local_path` only |
+| SQLite database | `DATA_DIR/lapviewer.db` | Yes | Local dev default |
+| Postgres | RDS (`DATABASE_URL`) | Yes | Production ([D-027](DECISIONS.md)) |
+| Materialized originals | `DATA_DIR/cache/{sessionId}/original.mp4` | Rebuildable | Lazy download from S3 for ffmpeg |
 | Scrub proxies | `DATA_DIR/cache/{sessionId}/scrub.mp4` | Yes, but rebuildable | Can be deleted and regenerated |
 | Thumbnails | `DATA_DIR/cache/{sessionId}/thumbnail.jpg` | Yes, but rebuildable | Optional |
+| MinIO data | Docker volume `minio-data` | Yes | Local object storage |
 | Runtime logs/temp | `DATA_DIR/logs` or OS temp | Not critical | Safe to rotate/delete |
 
 `DATA_DIR` must never point inside `node_modules`, a build output folder, or an unmounted Docker container filesystem.
@@ -47,7 +51,7 @@ Why:
 - works both native and Docker
 - avoids running a separate database service
 
-We do **not** need Postgres unless the project becomes multi-user, cloud-hosted, or accessed concurrently by many clients.
+We do **not** need Postgres for local single-user dev. Production SaaS uses RDS Postgres via `DATABASE_URL` ([D-027](DECISIONS.md)).
 
 ---
 

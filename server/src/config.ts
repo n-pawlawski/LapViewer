@@ -27,6 +27,14 @@ export function storageBackend(): StorageBackend {
 export const AWS_REGION = process.env.AWS_REGION ?? "us-east-1";
 export const S3_BUCKET = process.env.S3_BUCKET ?? "";
 
+/** S3 API endpoint (MinIO locally). Omit for AWS default. */
+export const AWS_ENDPOINT_URL = process.env.AWS_ENDPOINT_URL ?? "";
+
+/** Browser-reachable endpoint for presigned PUT URLs. Defaults to AWS_ENDPOINT_URL. */
+export const S3_PUBLIC_ENDPOINT = process.env.S3_PUBLIC_ENDPOINT ?? AWS_ENDPOINT_URL;
+
+export const S3_FORCE_PATH_STYLE = process.env.S3_FORCE_PATH_STYLE === "true";
+
 export const DATABASE_URL = process.env.DATABASE_URL ?? "";
 
 export type DeployEnv = "production" | "staging" | "development" | "local-docker";

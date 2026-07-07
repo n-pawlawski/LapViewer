@@ -26,10 +26,10 @@ The tracking model for added videos is documented in [Video Library](VIDEO_LIBRA
 
 **Acceptance criteria:**
 - User starts intake from the library (“Add session”).
-- User selects a single GoPro video file from the library drive (file picker scoped to configured root).
-- User can enter session metadata (title defaulting to filename; date, track, notes optional — exact required fields TBD).
-- App validates path, probes duration/codec, blocks duplicate paths.
-- App registers the file path in the database — **no copy** of the video file.
+- User selects a single GoPro video via **browser file picker**.
+- Upload shows progress; file goes to object storage via presigned PUT ([D-028](DECISIONS.md)).
+- User can enter session metadata (title defaulting to filename; date, track, notes optional).
+- App validates upload completion (HEAD object), blocks incomplete uploads.
 - On success, session appears in the library and is playable.
 
 ### F1.2 Video library list

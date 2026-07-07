@@ -8,12 +8,9 @@ Related: [Intake Flow](INTAKE_FLOW.md), [UI Forms](UI_FORMS.md), [Architecture](
 
 ## Purpose
 
-The video library is the app's inventory of known footage. It does **not** own or copy the original GoPro files. Instead, it tracks:
+The video library is the app's inventory of known footage. Original GoPro files live in **object storage** (S3 or MinIO); the database stores object keys, metadata, markers, and pointers to derived cache files.
 
-- where each video lives on disk
-- metadata used to identify and organize it
-- derived assets such as scrub proxies and thumbnails
-- lap markers and computed laps tied to that video
+Legacy sessions may still reference paths on a local drive (`storageKind=local_path`).
 
 This lets the Data form show every video that has been added and lets the user select which video/session to open, edit, or compare.
 
@@ -24,11 +21,11 @@ This lets the Data form show every video that has been added and lets the user s
 Use one registered video as one **session** for v1.
 
 ```text
-Video file on drive
-    -> Session row in SQLite
+GoPro file (object storage)
+    -> Session row in SQLite/Postgres
         -> Marker rows
             -> Computed laps
-        -> Derived cache files
+        -> Derived cache files (DATA_DIR/cache/{sessionId}/)
 ```
 
 ### Session record
@@ -39,9 +36,12 @@ Draft SQLite shape:
 |-------|------|---------|
 | `id` | text | Stable app-generated ID |
 | `title` | text | User-facing name; defaults to filename |
-| `sourcePath` | text | Absolute path to original GoPro file |
-| `sourceRoot` | text | Config root used when registered, e.g. `E:\Racing Videos` |
-| `relativePath` | text | Path relative to `sourceRoot`; keeps DB portable between native/Docker |
+| `sourcePath` | text | Legacy absolute path; `s3://{objectKey}` for S3 sessions |
+| `sourceRoot` | text | Legacy config root, e.g. `E:\Racing Videos`; `s3` for uploads |
+| `relativePath` | text | Legacy path relative to `sourceRoot` |
+| `storageKind` | text | `s3` (default for new) or `local_path` (legacy) |
+| `objectKey` | text/null | S3 object key, e.g. `users/{userId}/sessions/{id}/{fileName}` |
+| `uploadStatus` | text/null | `pending` \| `complete` for S3 sessions |
 | `fileName` | text | Original filename, e.g. `GX010012.MP4` |
 | `fileSizeBytes` | integer | Size at registration time |
 | `fileModifiedAt` | datetime | File modified timestamp at registration |

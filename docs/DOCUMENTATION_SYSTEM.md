@@ -55,7 +55,7 @@ Each concern should have one primary home.
 | Concern | Source of truth | Notes |
 |---------|-----------------|-------|
 | Feature list and acceptance criteria | `FEATURES.md` | Split into focused feature specs when a section grows too large |
-| Product roadmap (pre-deploy phases) | `docs/ROADMAP.md` | Phase order; links to feature specs; deploy deferred |
+| Product roadmap (pre-deploy phases) | `docs/ROADMAP.md` | Phase order; object-storage intake; deploy active |
 | View & compare v1 (active build) | `docs/features/VIEW_COMPARE_V1.md` | VC-1–VC-5 phases; mock-first per **D-017** |
 | Users & dev account v1 | `docs/features/USERS_V1.md` | Roadmap Phase 1; dev seed pattern |
 | Data form v2 refactor | `docs/features/DATA_FORM_V2.md` | Roadmap Phase 2; layout + organization |
