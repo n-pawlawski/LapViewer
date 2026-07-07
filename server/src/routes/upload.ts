@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { sessionVideoUpload } from "../middleware/upload.js";
+import { assertValidMp4Upload } from "../utils/videoFileValidation.js";
 import {
   completeS3UploadSession,
   createS3UploadSession,
@@ -30,13 +31,27 @@ uploadRouter.get("/storage-config", (_req, res) => {
 });
 
 /** Direct upload — file goes through the app server (works without MinIO sidecar or presigned URLs). */
-uploadRouter.post(
-  "/upload",
-  sessionVideoUpload.single("file"),
-  async (req, res) => {
+uploadRouter.post("/upload", (req, res, next) => {
+  sessionVideoUpload.single("file")(req, res, (err) => {
+    if (err) {
+      res.status(400).json({ error: err.message || "Upload rejected" });
+      return;
+    }
+    next();
+  });
+}, async (req, res) => {
     const file = req.file;
     if (!file) {
       res.status(400).json({ error: "file is required (multipart field name: file)" });
+      return;
+    }
+
+    try {
+      assertValidMp4Upload(file);
+    } catch (err) {
+      const error = err as Error & { code?: string };
+      fs.unlink(file.path, () => {});
+      res.status(400).json({ error: error.message });
       return;
     }
 
@@ -78,8 +93,7 @@ uploadRouter.post(
     } finally {
       fs.unlink(file.path, () => {});
     }
-  },
-);
+});
 
 uploadRouter.post("/upload-url", async (req, res) => {
   if (!isS3StorageEnabled()) {
@@ -100,6 +114,11 @@ uploadRouter.post("/upload-url", async (req, res) => {
 
   if (!body?.fileName || typeof body.fileName !== "string") {
     res.status(400).json({ error: "fileName is required" });
+    return;
+  }
+
+  if (!/\.mp4$/i.test(path.basename(body.fileName))) {
+    res.status(400).json({ error: "Only .MP4 files are supported" });
     return;
   }
 

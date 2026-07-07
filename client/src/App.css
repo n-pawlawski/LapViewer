@@ -1195,6 +1195,122 @@ body {
   padding: 2rem 1.25rem;
 }
 
+.intake-page--upload {
+  max-width: 640px;
+}
+
+.intake-upload-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.intake-drop-target {
+  position: relative;
+  min-height: 220px;
+  border: 2px dashed #3a4a5c;
+  border-radius: 12px;
+  background: #141b24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.intake-drop-target--active {
+  border-color: #3b82f6;
+  background: #172033;
+}
+
+.intake-drop-target--valid {
+  border-color: #22c55e;
+  border-style: solid;
+}
+
+.intake-drop-target--invalid {
+  border-color: #ef4444;
+  border-style: solid;
+}
+
+.intake-drop-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.intake-drop-empty,
+.intake-drop-file {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.intake-drop-title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #e7ecf1;
+}
+
+.intake-drop-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #7d8b9a;
+}
+
+.intake-drop-footnote {
+  text-align: center;
+}
+
+.intake-drop-file-name {
+  font-weight: 600;
+  color: #e7ecf1;
+  word-break: break-all;
+}
+
+.intake-drop-file-meta {
+  font-size: 0.85rem;
+  color: #9aa7b5;
+}
+
+.intake-drop-file-ok {
+  font-size: 0.85rem;
+  color: #86efac;
+}
+
+.intake-drop-file-error {
+  font-size: 0.85rem;
+  color: #fca5a5;
+}
+
+.intake-drop-change {
+  margin-top: 0.25rem;
+}
+
+.intake-upload-progress {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.intake-upload-progress-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  transition: width 0.15s ease;
+}
+
+.intake-upload-progress-label {
+  font-size: 0.8rem;
+  color: #9aa7b5;
+}
+
 .intake-page--workstation {
   flex: 1;
   width: 100%;

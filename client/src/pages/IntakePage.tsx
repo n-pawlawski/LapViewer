@@ -14,6 +14,8 @@ import {
 import { fetchTracks, fetchTrack, type Track, type TrackSplit } from "../api/tracks";
 import { AppShell } from "../components/AppShell";
 import { IntakeMarkingPanel } from "../components/IntakeMarkingPanel";
+import { IntakeUploadZone } from "../components/IntakeUploadZone";
+import { isValidMp4File } from "../utils/videoFileValidation";
 import { useRouter, useSearchParams } from "../lib/router";
 import { setSelectedSessionId } from "../lib/selectedSession";
 
@@ -23,7 +25,7 @@ export function IntakePage() {
   const { navigate } = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session");
-  const isEditMode = Boolean(sessionId);
+  const isMarkingMode = Boolean(sessionId);
 
   const [sessionDetail, setSessionDetail] = useState<SessionDetail | null>(null);
   const [title, setTitle] = useState("");
@@ -33,8 +35,8 @@ export function IntakePage() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(isEditMode);
-  const [metadataOpen, setMetadataOpen] = useState(!isEditMode);
+  const [loading, setLoading] = useState(isMarkingMode);
+  const [metadataOpen, setMetadataOpen] = useState(false);
   const [trackSplits, setTrackSplits] = useState<TrackSplit[]>([]);
   const [uploadMode, setUploadMode] = useState<"direct" | "presigned">("direct");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -57,32 +59,24 @@ export function IntakePage() {
       setError(null);
 
       try {
-        const [trackList, storageConfig] = await Promise.all([
-          fetchTracks(),
-          fetchStorageConfig().catch(() => ({
+        if (sessionId) {
+          const [trackList, session] = await Promise.all([
+            fetchTracks(),
+            fetchSession(sessionId),
+          ]);
+          if (cancelled) return;
+          setTracks(trackList);
+          setSelectedSessionId(sessionId);
+          applySessionToForm(session, trackList);
+        } else {
+          const storageConfig = await fetchStorageConfig().catch(() => ({
             storageBackend: "local_objects" as const,
             uploadEnabled: true,
             uploadMode: "direct" as const,
             s3UploadEnabled: true,
-          })),
-        ]);
-        if (cancelled) return;
-        setTracks(trackList);
-        setUploadMode(storageConfig.uploadMode ?? "direct");
-
-        if (sessionId) {
-          const session = await fetchSession(sessionId);
+          }));
           if (cancelled) return;
-          setSelectedSessionId(sessionId);
-          applySessionToForm(session, trackList);
-          setMetadataOpen(false);
-        } else {
-          setSessionDetail(null);
-          setTitle("");
-          setSelectedTrackId(TRACK_PLACEHOLDER);
-          setRecordedAt("");
-          setNotes("");
-          setMetadataOpen(true);
+          setUploadMode(storageConfig.uploadMode ?? "direct");
         }
       } catch (err) {
         if (!cancelled) {
@@ -133,15 +127,9 @@ export function IntakePage() {
   async function handleMetadataSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-
-    if (!uploadFile) {
-      setError("Choose a video file to upload.");
-      return;
-    }
-
     setSaving(true);
 
-    const metadata = {
+    const payload = {
       title: title.trim() || undefined,
       trackName: selectedTrack?.name ?? null,
       recordedAt: recordedAt || null,
@@ -149,30 +137,10 @@ export function IntakePage() {
     };
 
     try {
-      if (isEditMode && sessionId) {
-        const session = await updateSession(sessionId, metadata);
+      if (sessionId) {
+        const session = await updateSession(sessionId, payload);
         applySessionToForm(session, tracks);
         setMetadataOpen(false);
-      } else if (uploadMode === "presigned") {
-        const { sessionId: newId, uploadUrl } = await requestUploadUrl({
-          fileName: uploadFile.name,
-          ...metadata,
-          contentType: uploadFile.type || "video/mp4",
-        });
-        setUploadProgress(0);
-        await uploadFileToPresignedUrl(uploadUrl, uploadFile, setUploadProgress);
-        const session = await completeUpload(newId);
-        setUploadProgress(null);
-        setSelectedSessionId(newId);
-        navigate(`/intake?session=${newId}`);
-        applySessionToForm(session, tracks);
-      } else {
-        setUploadProgress(0);
-        const session = await uploadSessionFile(uploadFile, metadata, setUploadProgress);
-        setUploadProgress(null);
-        setSelectedSessionId(session.id);
-        navigate(`/intake?session=${session.id}`);
-        applySessionToForm(session, tracks);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -180,6 +148,51 @@ export function IntakePage() {
       setSaving(false);
     }
   }
+
+  async function handleUpload() {
+    setError(null);
+
+    if (!uploadFile || !isValidMp4File(uploadFile)) {
+      setError("Choose a valid MP4 file before uploading.");
+      return;
+    }
+
+    setSaving(true);
+    setUploadProgress(0);
+
+    const titleFromFile = uploadFile.name.replace(/\.[^.]+$/i, "");
+    const metadata = {
+      title: titleFromFile || undefined,
+    };
+
+    try {
+      if (uploadMode === "presigned") {
+        const { sessionId: newId, uploadUrl } = await requestUploadUrl({
+          fileName: uploadFile.name,
+          ...metadata,
+          contentType: uploadFile.type || "video/mp4",
+        });
+        await uploadFileToPresignedUrl(uploadUrl, uploadFile, setUploadProgress);
+        const session = await completeUpload(newId);
+        setUploadProgress(null);
+        setSelectedSessionId(newId);
+        navigate(`/intake?session=${newId}`);
+        applySessionToForm(session, tracks);
+      } else {
+        const session = await uploadSessionFile(uploadFile, metadata, setUploadProgress);
+        setUploadProgress(null);
+        setSelectedSessionId(session.id);
+        navigate(`/intake?session=${session.id}`);
+      }
+    } catch (err) {
+      setUploadProgress(null);
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const canUpload = uploadFile !== null && isValidMp4File(uploadFile) && !saving;
 
   if (loading) {
     return (
@@ -191,14 +204,14 @@ export function IntakePage() {
     );
   }
 
-  const pageClass = isEditMode
+  const pageClass = isMarkingMode
     ? "intake-page intake-page--workstation"
-    : "intake-page";
+    : "intake-page intake-page--upload";
 
   return (
-    <AppShell layout={isEditMode ? "intake-workstation" : "default"}>
+    <AppShell layout={isMarkingMode ? "intake-workstation" : "default"}>
       <div className={pageClass}>
-        {isEditMode && sessionDetail && sessionId ? (
+        {isMarkingMode && sessionDetail && sessionId ? (
           <>
             <details
               className="intake-metadata-details"
@@ -283,113 +296,49 @@ export function IntakePage() {
           </>
         ) : (
           <>
-            <h1>Register session</h1>
+            <h1>Add session</h1>
             <p className="intake-lead">
-              Choose a GoPro video file and upload it, then mark laps.
+              Drop a GoPro MP4 here or browse for a file, then upload when ready.
             </p>
 
-            <form className="intake-form" onSubmit={handleMetadataSubmit}>
-              <label className="intake-field">
-                <span>Video file</span>
-                <input
-                  type="file"
-                  accept="video/*,.mp4,.MP4,.mov,.MOV"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
-                    setUploadFile(file);
-                    if (file && !title.trim()) {
-                      const baseName = file.name.replace(/\.[^.]+$/, "");
-                      if (baseName) setTitle(baseName);
-                    }
-                  }}
-                  required
+            <IntakeUploadZone
+              file={uploadFile}
+              disabled={saving}
+              onFileChange={setUploadFile}
+            />
+
+            {uploadProgress !== null && (
+              <div className="intake-upload-progress" aria-live="polite">
+                <div
+                  className="intake-upload-progress-bar"
+                  style={{ width: `${uploadProgress}%` }}
                 />
-                {uploadProgress !== null && (
-                  <span className="field-hint">Uploading… {uploadProgress}%</span>
-                )}
-                <span className="field-hint">
-                  Large GoPro files are uploaded through the app — no extra storage setup required.
+                <span className="intake-upload-progress-label">
+                  Uploading… {uploadProgress}%
                 </span>
-              </label>
-
-              <label className="intake-field">
-                <span>Title</span>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Defaults to filename"
-                />
-              </label>
-
-              <div className="intake-field">
-                <span>Track</span>
-                <div className="field-with-action">
-                  <select
-                    className="intake-select"
-                    value={selectedTrackId}
-                    onChange={(e) => setSelectedTrackId(e.target.value)}
-                    disabled={saving}
-                  >
-                    <option value={TRACK_PLACEHOLDER}>------ select track ------</option>
-                    {tracks.map((track) => (
-                      <option key={track.id} value={track.id}>
-                        {track.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => navigate("/tracks")}
-                    disabled={saving}
-                  >
-                    Manage tracks
-                  </button>
-                </div>
               </div>
+            )}
 
-              <label className="intake-field">
-                <span>Date</span>
-                <input
-                  type="date"
-                  value={recordedAt}
-                  onChange={(e) => setRecordedAt(e.target.value)}
-                />
-              </label>
+            {error && <p className="data-status data-status--error">{error}</p>}
 
-              <label className="intake-field">
-                <span>Notes</span>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                />
-              </label>
-
-              {error && <p className="data-status data-status--error">{error}</p>}
-
-              <div className="intake-actions">
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={saving || !uploadFile}
-                >
-                  {saving
-                    ? uploadProgress !== null
-                      ? `Uploading… ${uploadProgress}%`
-                      : "Registering…"
-                    : "Register & mark laps"}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => navigate("/")}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+            <div className="intake-actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={!canUpload}
+                onClick={() => void handleUpload()}
+              >
+                {saving ? `Uploading… ${uploadProgress ?? 0}%` : "Upload"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => navigate("/")}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+            </div>
           </>
         )}
       </div>
