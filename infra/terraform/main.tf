@@ -249,7 +249,7 @@ resource "aws_secretsmanager_secret_version" "db" {
   count     = var.create_rds ? 1 : 0
   secret_id = aws_secretsmanager_secret.db[0].id
   secret_string = format(
-    "postgres://%s:%s@%s:5432/deltaview",
+    "postgres://%s:%s@%s:5432/deltaview?sslmode=require",
     aws_db_instance.main[0].username,
     random_password.db[0].result,
     aws_db_instance.main[0].address,
@@ -300,6 +300,22 @@ resource "aws_iam_role" "ecs_task_execution" {
 resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
   role       = aws_iam_role.ecs_task_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+resource "aws_iam_role_policy" "ecs_task_execution_secrets" {
+  name = "${local.name_prefix}-ecs-exec-secrets"
+  role = aws_iam_role.ecs_task_execution.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["secretsmanager:GetSecretValue"]
+      Resource = concat(
+        [aws_secretsmanager_secret.session.arn],
+        var.create_rds ? [aws_secretsmanager_secret.db[0].arn] : []
+      )
+    }]
+  })
 }
 
 resource "aws_iam_role" "ecs_task" {

@@ -88,8 +88,20 @@ export class PostgresDbClient implements DbClient {
   }
 }
 
+function poolConfigFor(connectionString: string): pg.PoolConfig {
+  const sslRequired = /[?&]sslmode=(?!disable(?:&|$))/i.test(connectionString);
+  const normalized = sslRequired
+    ? connectionString.replace(/([?&])sslmode=[^&]*/i, "").replace(/\?&/, "?").replace(/[?&]$/, "")
+    : connectionString;
+  return {
+    connectionString: normalized,
+    max: 10,
+    ...(sslRequired ? { ssl: { rejectUnauthorized: false } } : {}),
+  };
+}
+
 export async function createPostgresClient(connectionString: string): Promise<PostgresDbClient> {
-  const pool = new pg.Pool({ connectionString, max: 10 });
+  const pool = new pg.Pool(poolConfigFor(connectionString));
   const schema = fs.readFileSync(schemaPath, "utf8");
   await pool.query(schema);
   return new PostgresDbClient(pool);
