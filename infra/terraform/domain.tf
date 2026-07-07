@@ -1,4 +1,4 @@
-# Custom domain + HTTPS (requires Route 53 hosted zone for domain_name — register deltaview.app first)
+# Custom domain + HTTPS (requires Route 53 hosted zone for domain_name — register deltaview.info first)
 
 data "aws_route53_zone" "main" {
   count        = var.enable_custom_domain ? 1 : 0

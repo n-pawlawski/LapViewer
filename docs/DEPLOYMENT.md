@@ -58,9 +58,9 @@ Copy [`config/.env.example`](../config/.env.example) to `.env` at repo root.
 
 ## AWS deploy (Phase 4–5)
 
-**DeltaView production:** [DELTAVIEW_AWS_SETUP.md](DELTAVIEW_AWS_SETUP.md) — `deltaview.app`, us-east-1, HTTPS.
+**DeltaView production:** [DELTAVIEW_AWS_SETUP.md](DELTAVIEW_AWS_SETUP.md) — `deltaview.info`, us-east-1, HTTPS.
 
-1. Register **deltaview.app** in Route 53
+1. Register **deltaview.info** in Route 53
 2. `cd infra/terraform && terraform apply`
 3. Configure GitHub secrets/variables per [infra/README.md](../infra/README.md)
 4. Run **Deploy** workflow on `master`

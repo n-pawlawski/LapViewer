@@ -5,7 +5,7 @@ variable "project_name" {
 
 variable "domain_name" {
   type        = string
-  default     = "deltaview.app"
+  default     = "deltaview.info"
   description = "Public site domain (Route 53 hosted zone must exist before apply)"
 }
 

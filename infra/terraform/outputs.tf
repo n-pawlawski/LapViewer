@@ -1,6 +1,6 @@
 output "app_url" {
   value       = local.app_url
-  description = "Public app URL (https://deltaview.app when custom domain is enabled)"
+  description = "Public app URL (https://deltaview.info when custom domain is enabled)"
 }
 
 output "domain_name" {

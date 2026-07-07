@@ -1,6 +1,6 @@
 # DeltaView AWS infrastructure (Terraform)
 
-Starter stack for **https://deltaview.app** in **us-east-1**: ECS Fargate, ALB + HTTPS (ACM), Route 53, RDS Postgres, S3, ECR, Secrets Manager, CloudWatch.
+Starter stack for **https://deltaview.info** in **us-east-1**: ECS Fargate, ALB + HTTPS (ACM), Route 53, RDS Postgres, S3, ECR, Secrets Manager, CloudWatch.
 
 **Full walkthrough:** [DELTAVIEW_AWS_SETUP.md](../docs/DELTAVIEW_AWS_SETUP.md)
 
@@ -8,7 +8,7 @@ Starter stack for **https://deltaview.app** in **us-east-1**: ECS Fargate, ALB +
 
 - AWS CLI configured (`us-east-1`)
 - Terraform >= 1.5
-- **deltaview.app registered in Route 53** (hosted zone must exist before `enable_custom_domain = true`)
+- **deltaview.info registered in Route 53** (hosted zone must exist before `enable_custom_domain = true`)
 
 ## Apply
 
@@ -24,7 +24,7 @@ terraform apply tfplan
 
 | Output | Use |
 |--------|-----|
-| `app_url` | **https://deltaview.app** |
+| `app_url` | **https://deltaview.info** |
 | `ecr_repository_url` | Docker push target |
 | `ecs_cluster_name` | GitHub `ECS_CLUSTER` (`deltaview`) |
 | `ecs_service_name` | GitHub `ECS_SERVICE` (`deltaview-api`) |
@@ -41,7 +41,7 @@ terraform apply tfplan
 | `ECS_CLUSTER` | `deltaview` |
 | `ECS_SERVICE` | `deltaview-api` |
 | `ECR_REPOSITORY` | `deltaview` |
-| `APP_URL` | `https://deltaview.app` |
+| `APP_URL` | `https://deltaview.info` |
 
 ## Cost notes
 

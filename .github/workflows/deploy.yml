@@ -56,7 +56,7 @@ jobs:
 
       - name: Smoke test health
         env:
-          APP_URL: ${{ vars.APP_URL || 'https://deltaview.app' }}
+          APP_URL: ${{ vars.APP_URL || 'https://deltaview.info' }}
         run: |
           if [ -z "$APP_URL" ]; then
             echo "APP_URL not set — skipping smoke test"

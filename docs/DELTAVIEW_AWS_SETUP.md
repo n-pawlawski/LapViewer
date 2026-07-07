@@ -1,6 +1,6 @@
-# DeltaView — AWS setup (deltaview.app, us-east-1)
+# DeltaView — AWS setup (deltaview.info, us-east-1)
 
-Step-by-step for a **new AWS account** to get **https://deltaview.app** live.
+Step-by-step for a **new AWS account** to get **https://deltaview.info** live.
 
 Repo folder is still `LapViewer`; the product name is **DeltaView**.
 
@@ -10,16 +10,16 @@ Repo folder is still `LapViewer`; the product name is **DeltaView**.
 
 ```mermaid
 flowchart LR
-  A[Register deltaview.app] --> B[terraform apply]
+  A[Register deltaview.info] --> B[terraform apply]
   B --> C[GitHub AWS secrets]
   C --> D[Deploy workflow]
-  D --> E[https://deltaview.app]
+  D --> E[https://deltaview.info]
 ```
 
 | Step | Time | Cost |
 |------|------|------|
 | 1. Secure AWS + IAM user | 15 min | $0 |
-| 2. Register **deltaview.app** | 10 min | ~$14/year |
+| 2. Register **deltaview.info** | 10 min | ~$14/year |
 | 3. `terraform apply` | 15 min | ~$50–120/mo infra |
 | 4. GitHub secrets + deploy | 10 min | $0 |
 | 5. Test site | 5 min | $0 |
@@ -51,22 +51,22 @@ Install [Terraform](https://developer.hashicorp.com/terraform/install) 1.5+.
 
 ---
 
-## Step 2 — Register deltaview.app (before Terraform)
+## Step 2 — Register deltaview.info (before Terraform)
 
-Terraform expects a **Route 53 hosted zone** for `deltaview.app`.
+Terraform expects a **Route 53 hosted zone** for `deltaview.info`.
 
 1. AWS Console → **Route 53** → **Register domains**
-2. Search **`deltaview.app`**
+2. Search **`deltaview.info`**
 3. Complete registration (contact info + payment)
 4. Wait until status is **Registered** (often minutes; can take up to a day)
 
 Route 53 creates a hosted zone automatically. Verify:
 
 ```powershell
-aws route53 list-hosted-zones-by-name --dns-name deltaview.app
+aws route53 list-hosted-zones-by-name --dns-name deltaview.info
 ```
 
-You should see a hosted zone for `deltaview.app`.
+You should see a hosted zone for `deltaview.info`.
 
 ---
 
@@ -76,7 +76,7 @@ You should see a hosted zone for `deltaview.app`.
 cd c:\Users\RecoveryAdmin\repos\LapViewer\infra\terraform
 
 copy terraform.tfvars.example terraform.tfvars
-# Edit if needed — defaults are deltaview.app + us-east-1
+# Edit if needed — defaults are deltaview.info + us-east-1
 
 terraform init
 terraform plan
@@ -88,14 +88,14 @@ Defaults in `terraform.tfvars.example`:
 | Setting | Value |
 |---------|--------|
 | `project_name` | `deltaview` |
-| `domain_name` | `deltaview.app` |
+| `domain_name` | `deltaview.info` |
 | `aws_region` | `us-east-1` |
 | `enable_custom_domain` | `true` (ACM + HTTPS + Route 53 → ALB) |
 
 **What Terraform creates:**
 
 - VPC, ECS Fargate, ALB (HTTP→HTTPS redirect)
-- ACM certificate for `deltaview.app` + `*.deltaview.app`
+- ACM certificate for `deltaview.info` + `*.deltaview.info`
 - Route 53 A records → ALB
 - RDS Postgres, S3, ECR, Secrets Manager, CloudWatch
 
@@ -108,7 +108,7 @@ terraform output ecs_service_name
 terraform output ecr_repository_url
 ```
 
-Expected `app_url`: **`https://deltaview.app`**
+Expected `app_url`: **`https://deltaview.info`**
 
 ### If domain is not registered yet
 
@@ -141,7 +141,7 @@ Repo: https://github.com/n-pawlawski/LapViewer → **Settings → Secrets and va
 | `ECS_CLUSTER` | `deltaview` (or `terraform output ecs_cluster_name`) |
 | `ECS_SERVICE` | `deltaview-api` (or `terraform output ecs_service_name`) |
 | `ECR_REPOSITORY` | `deltaview` |
-| `APP_URL` | `https://deltaview.app` |
+| `APP_URL` | `https://deltaview.info` |
 
 ---
 
@@ -158,14 +158,14 @@ The workflow builds Docker, pushes to ECR, and updates ECS. First deploy may tak
 ## Step 6 — Verify
 
 ```powershell
-curl https://deltaview.app/api/ops/status
+curl https://deltaview.info/api/ops/status
 ```
 
 Expect JSON with `"ok": true`, `"deployEnv": "production"`, `"devUserMode": false`.
 
 In the browser:
 
-1. Open **https://deltaview.app**
+1. Open **https://deltaview.info**
 2. **Register** a new account (no `root/root` in production)
 3. **Intake** → upload a video file (S3 upload path)
 4. Mark laps and play back
@@ -179,7 +179,7 @@ In the browser:
 | `terraform apply` fails on hosted zone | Domain not registered yet — complete Step 2 |
 | ACM validation stuck | Route 53 validation CNAME records (Terraform creates them) |
 | 502 from ALB | ECS task not healthy — CloudWatch log group `/ecs/deltaview` |
-| CORS / login fails | `CLIENT_ORIGIN` on ECS task = `https://deltaview.app` (set by Terraform) |
+| CORS / login fails | `CLIENT_ORIGIN` on ECS task = `https://deltaview.info` (set by Terraform) |
 | Deploy workflow fails | GitHub secrets + ECR repo name `deltaview` |
 
 See [agents/operations/RUNBOOK.md](../agents/operations/RUNBOOK.md).

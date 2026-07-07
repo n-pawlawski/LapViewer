@@ -1,5 +1,5 @@
 project_name         = "deltaview"
-domain_name          = "deltaview.app"
+domain_name          = "deltaview.info"
 aws_region           = "us-east-1"
 enable_custom_domain = true
 create_www_alias     = true
