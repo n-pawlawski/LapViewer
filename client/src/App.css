@@ -1760,6 +1760,20 @@ body {
   margin: 0.75rem 0 1rem;
 }
 
+.compare-split-delta-table-wrap--embedded {
+  margin: 0;
+}
+
+.comparison-chart-empty-msg {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.comparison-chart .compare-delta-hint {
+  margin: 0;
+}
+
 .compare-split-delta-title {
   margin: 0 0 0.5rem;
   font-size: 0.95rem;
@@ -2086,6 +2100,72 @@ body {
 .intake-detection-list-confidence {
   font-size: 0.8rem;
   color: #94a3b8;
+}
+
+.intake-detection-lap-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid #2a3544;
+  border-bottom: 1px solid #2a3544;
+}
+
+.intake-detection-lap-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.intake-detection-lap-picker-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #c5d0db;
+}
+
+.intake-detection-lap-picker-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.intake-detection-lap-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 9rem;
+  overflow-y: auto;
+}
+
+.intake-detection-lap-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: #e7ecf1;
+  cursor: pointer;
+}
+
+.intake-detection-lap-option input {
+  margin-top: 0.15rem;
+}
+
+.intake-detection-lap-option-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.intake-detection-lap-option-missing {
+  font-size: 0.75rem;
+  color: #7d8b9a;
+}
+
+.intake-detection-suggest-selected {
+  align-self: flex-start;
 }
 
 .intake-detection-idle-hint,

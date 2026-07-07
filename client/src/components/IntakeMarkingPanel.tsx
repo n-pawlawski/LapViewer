@@ -37,7 +37,11 @@ import {
 import { formatLapTime, formatVideoTime, parseVideoTime } from "../utils/time";
 import { MARKER_SNAP_SECONDS, nearestWithinThreshold } from "../utils/markers";
 import { DEFAULT_VIDEO_FPS, frameStepSeconds } from "../utils/video";
-import { missingSplitIndicesForLap } from "../utils/splitDetection";
+import {
+  bankCoversMissingSplits,
+  lapsWithSuggestibleMissingSplits,
+  missingSplitIndicesForLap,
+} from "../utils/splitDetection";
 import {
   clampTimeToWindow,
   computeIntakeViewWindow,
@@ -106,6 +110,11 @@ export function IntakeMarkingPanel({
   const [splitProposals, setSplitProposals] = useState<LocalSplitProposal[]>([]);
   const [splitReviewIndex, setSplitReviewIndex] = useState(0);
   const [splitDetecting, setSplitDetecting] = useState(false);
+  const [splitDetectBatchLabel, setSplitDetectBatchLabel] = useState<string | null>(null);
+  const [selectedSuggestLaps, setSelectedSuggestLaps] = useState<number[]>([]);
+  const splitDetectQueueRef = useRef<number[]>([]);
+  const splitBatchTotalRef = useRef(0);
+  const splitBatchCompletedRef = useRef(0);
   const [viewMode, setViewMode] = useState<IntakeViewMode>("full-race");
   const [lapScope, setLapScope] = useState<IntakeLapScope>("all");
   const durationPersisted = useRef(durationSeconds != null);
@@ -151,8 +160,55 @@ export function IntakeMarkingPanel({
 
   const bankCoversMissing = useMemo(() => {
     if (!splitBankSummary || missingSplitIndices.length === 0) return false;
-    return missingSplitIndices.every((idx) => (splitBankSummary.bySplitIndex[idx] ?? 0) > 0);
+    return bankCoversMissingSplits(missingSplitIndices, splitBankSummary.bySplitIndex);
   }, [splitBankSummary, missingSplitIndices]);
+
+  const lapsWithMissing = useMemo(
+    () =>
+      lapsWithSuggestibleMissingSplits({
+        laps,
+        splitsByLap: splitMap,
+        trackSplits,
+        medianOffsetBySplitIndex: splitBankSummary?.medianOffsetBySplitIndex,
+        bySplitIndex: splitBankSummary?.bySplitIndex,
+      }),
+    [laps, splitMap, trackSplits, splitBankSummary],
+  );
+
+  const visibleSelectedSuggestLaps = useMemo(
+    () =>
+      selectedSuggestLaps.filter((lapNumber) =>
+        lapsWithMissing.some((entry) => entry.lapNumber === lapNumber),
+      ),
+    [selectedSuggestLaps, lapsWithMissing],
+  );
+
+  const canSuggestSelectedLaps =
+    trackId != null &&
+    trackSplits.length > 0 &&
+    visibleSelectedSuggestLaps.length > 0 &&
+    !splitDetecting &&
+    splitBankSummary != null &&
+    splitBankSummary.totalEntries > 0;
+
+  const suggestSelectedDisabledReason = useMemo(() => {
+    if (!trackId) return "Assign a track to this session.";
+    if (trackSplits.length === 0) return "Configure splits on the Tracks page.";
+    if (lapsWithMissing.length === 0) {
+      return "No laps have missing splits that can be suggested.";
+    }
+    if (visibleSelectedSuggestLaps.length === 0) return "Select at least one lap above.";
+    if (!splitBankSummary || splitBankSummary.totalEntries === 0) {
+      return "No reference images yet — mark splits manually on any lap first.";
+    }
+    return null;
+  }, [
+    trackId,
+    trackSplits.length,
+    lapsWithMissing.length,
+    visibleSelectedSuggestLaps.length,
+    splitBankSummary,
+  ]);
 
   const suggestDisabledReason = useMemo(() => {
     if (!trackId) return "Assign a track to this session.";
@@ -197,6 +253,14 @@ export function IntakeMarkingPanel({
     void refreshSplitBankSummary();
   }, [refreshSplitBankSummary, splits.length]);
 
+  useEffect(() => {
+    const stillMissing = new Set(lapsWithMissing.map((entry) => entry.lapNumber));
+    setSelectedSuggestLaps((prev) => {
+      const next = prev.filter((lapNumber) => stillMissing.has(lapNumber));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [lapsWithMissing]);
+
   const selectSplitProposalIndex = useCallback(
     (index: number) => {
       setSplitReviewIndex(Math.max(0, Math.min(splitProposals.length - 1, index)));
@@ -218,7 +282,7 @@ export function IntakeMarkingPanel({
   }, [splitReviewIndex]);
 
   const acceptCurrentSplitProposal = useCallback(async () => {
-    if (selectedLapNumber == null || splitProposals.length === 0) return;
+    if (splitProposals.length === 0) return;
     const proposal = splitProposals[Math.min(splitReviewIndex, splitProposals.length - 1)];
     if (!proposal) return;
 
@@ -226,7 +290,7 @@ export function IntakeMarkingPanel({
     setSaveState("saving");
     setSaveError(null);
     try {
-      const result = await createSplit(sessionId, selectedLapNumber, proposal.splitIndex, time);
+      const result = await createSplit(sessionId, proposal.lapNumber, proposal.splitIndex, time);
       onSessionUpdated(result.session);
       rejectCurrentSplitProposal();
       await refreshSplitBankSummary();
@@ -236,7 +300,6 @@ export function IntakeMarkingPanel({
       setSaveError(err instanceof Error ? err.message : "Accept failed");
     }
   }, [
-    selectedLapNumber,
     splitProposals,
     splitReviewIndex,
     sessionId,
@@ -245,26 +308,66 @@ export function IntakeMarkingPanel({
     refreshSplitBankSummary,
   ]);
 
+  const beginSplitDetection = useCallback(
+    async (lapNumbers: number[]) => {
+      if (lapNumbers.length === 0 || !trackId) return;
+
+      setSplitDetectError(null);
+      setSplitProposals([]);
+      setSplitDetectStatus("queued");
+      setSplitDetectProgress(0);
+      setSplitDetecting(true);
+      setSidePanelTab("suggest");
+
+      const [firstLap, ...rest] = lapNumbers;
+      splitDetectQueueRef.current = rest;
+      splitBatchTotalRef.current = lapNumbers.length;
+      splitBatchCompletedRef.current = 0;
+      setSplitDetectBatchLabel(
+        lapNumbers.length > 1 ? `Lap ${firstLap} (1 of ${lapNumbers.length})` : null,
+      );
+
+      try {
+        const { jobId } = await startSplitDetection(sessionId, firstLap!);
+        setSplitJobId(jobId);
+        setSplitDetectStatus("running");
+      } catch (err) {
+        splitDetectQueueRef.current = [];
+        splitBatchTotalRef.current = 0;
+        splitBatchCompletedRef.current = 0;
+        setSplitDetectBatchLabel(null);
+        setSplitDetecting(false);
+        setSplitDetectStatus("error");
+        setSplitDetectError(err instanceof Error ? err.message : "Could not start split detection");
+      }
+    },
+    [trackId, sessionId],
+  );
+
   const handleStartSplitDetection = useCallback(async () => {
-    if (selectedLapNumber == null || !trackId) return;
+    if (selectedLapNumber == null) return;
+    await beginSplitDetection([selectedLapNumber]);
+  }, [selectedLapNumber, beginSplitDetection]);
 
-    setSplitDetectError(null);
-    setSplitProposals([]);
-    setSplitDetectStatus("queued");
-    setSplitDetectProgress(0);
-    setSplitDetecting(true);
-    setSidePanelTab("suggest");
+  const handleSuggestSelectedLaps = useCallback(async () => {
+    await beginSplitDetection(visibleSelectedSuggestLaps);
+  }, [visibleSelectedSuggestLaps, beginSplitDetection]);
 
-    try {
-      const { jobId } = await startSplitDetection(sessionId, selectedLapNumber);
-      setSplitJobId(jobId);
-      setSplitDetectStatus("running");
-    } catch (err) {
-      setSplitDetecting(false);
-      setSplitDetectStatus("error");
-      setSplitDetectError(err instanceof Error ? err.message : "Could not start split detection");
-    }
-  }, [selectedLapNumber, trackId, sessionId]);
+  const toggleSuggestLap = useCallback((lapNumber: number) => {
+    setSelectedSuggestLaps((prev) =>
+      prev.includes(lapNumber)
+        ? prev.filter((n) => n !== lapNumber)
+        : [...prev, lapNumber].sort((a, b) => a - b),
+    );
+  }, []);
+
+  const selectAllSuggestLaps = useCallback(() => {
+    setSelectedSuggestLaps(lapsWithMissing.map((entry) => entry.lapNumber));
+  }, [lapsWithMissing]);
+
+  const clearSuggestLaps = useCallback(() => {
+    setSelectedSuggestLaps([]);
+  }, []);
 
   const handleCancelSplitDetection = useCallback(async () => {
     if (!splitJobId) return;
@@ -273,6 +376,10 @@ export function IntakeMarkingPanel({
     } catch {
       // Job may already be finished.
     }
+    splitDetectQueueRef.current = [];
+    splitBatchTotalRef.current = 0;
+    splitBatchCompletedRef.current = 0;
+    setSplitDetectBatchLabel(null);
     setSplitJobId(null);
     setSplitDetecting(false);
     setSplitDetectStatus("cancelled");
@@ -421,42 +528,106 @@ export function IntakeMarkingPanel({
     if (!splitJobId) return;
     let cancelled = false;
 
+    async function startNextLap(lapNumber: number) {
+      const { jobId } = await startSplitDetection(sessionId, lapNumber);
+      if (cancelled) return;
+      setSplitJobId(jobId);
+      setSplitDetectStatus("running");
+    }
+
     async function poll() {
       try {
         const job = await fetchSplitDetectionJob(splitJobId!);
         if (cancelled) return;
+
+        const batchTotal = splitBatchTotalRef.current;
+        const batchDone = splitBatchCompletedRef.current;
         setSplitDetectStatus(job.status);
-        setSplitDetectProgress(job.progress);
-        if (job.proposals?.length) {
-          setSplitProposals(
-            job.proposals.map((p) => ({
-              id: p.id,
-              splitIndex: p.splitIndex,
-              label: p.label,
-              time: p.timeSeconds,
-              score: p.score,
-              confidence: p.confidence,
-            })),
-          );
-        }
+        setSplitDetectProgress(
+          batchTotal > 1 ? (batchDone + job.progress) / batchTotal : job.progress,
+        );
+
+        const mapProposals = (lapNumber: number): LocalSplitProposal[] =>
+          (job.proposals ?? []).map((p) => ({
+            id: p.id,
+            lapNumber,
+            splitIndex: p.splitIndex,
+            label: p.label,
+            time: p.timeSeconds,
+            score: p.score,
+            confidence: p.confidence,
+          }));
+
         if (job.status === "done") {
+          const mapped = mapProposals(job.lapNumber);
+          if (mapped.length > 0) {
+            setSplitProposals((prev) =>
+              batchTotal > 1 ? [...prev, ...mapped] : mapped,
+            );
+          }
+
+          splitBatchCompletedRef.current = batchDone + 1;
+          const queue = splitDetectQueueRef.current;
+
+          if (queue.length > 0) {
+            const nextLap = queue[0]!;
+            splitDetectQueueRef.current = queue.slice(1);
+            setSplitDetectBatchLabel(
+              `Lap ${nextLap} (${splitBatchCompletedRef.current + 1} of ${batchTotal})`,
+            );
+            setSplitDetectProgress(splitBatchCompletedRef.current / batchTotal);
+            try {
+              await startNextLap(nextLap);
+            } catch (err) {
+              if (cancelled) return;
+              splitDetectQueueRef.current = [];
+              splitBatchTotalRef.current = 0;
+              splitBatchCompletedRef.current = 0;
+              setSplitDetectBatchLabel(null);
+              setSplitDetecting(false);
+              setSplitJobId(null);
+              setSplitDetectStatus("error");
+              setSplitDetectError(
+                err instanceof Error ? err.message : "Could not start next lap scan",
+              );
+            }
+            return;
+          }
+
           setSplitDetecting(false);
           setSplitJobId(null);
+          setSplitDetectBatchLabel(null);
+          splitDetectQueueRef.current = [];
+          splitBatchTotalRef.current = 0;
+          splitBatchCompletedRef.current = 0;
           setSidePanelTab("suggest");
           setSplitReviewIndex(0);
-          if (job.proposals?.[0]) seekAndSync(job.proposals[0].timeSeconds);
         }
+
         if (job.status === "error") {
+          splitDetectQueueRef.current = [];
+          splitBatchTotalRef.current = 0;
+          splitBatchCompletedRef.current = 0;
+          setSplitDetectBatchLabel(null);
           setSplitDetecting(false);
           setSplitJobId(null);
           setSplitDetectError(job.error ?? "Split detection failed");
         }
+
         if (job.status === "cancelled") {
+          splitDetectQueueRef.current = [];
+          splitBatchTotalRef.current = 0;
+          splitBatchCompletedRef.current = 0;
+          setSplitDetectBatchLabel(null);
           setSplitDetecting(false);
           setSplitJobId(null);
         }
       } catch (err) {
         if (cancelled) return;
+        splitDetectQueueRef.current = [];
+        splitBatchTotalRef.current = 0;
+        splitBatchCompletedRef.current = 0;
+        setSplitDetectBatchLabel(null);
         setSplitDetecting(false);
         setSplitJobId(null);
         setSplitDetectStatus("error");
@@ -470,7 +641,7 @@ export function IntakeMarkingPanel({
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [splitJobId, seekAndSync]);
+  }, [splitJobId, seekAndSync, sessionId]);
 
   useEffect(() => {
     if (splitProposals.length === 0) return;
@@ -482,8 +653,17 @@ export function IntakeMarkingPanel({
   useEffect(() => {
     if (!splitReviewActive) return;
     const proposal = splitProposals[splitReviewIndex];
-    if (proposal) seekAndSync(proposal.time);
-  }, [splitReviewIndex, splitReviewActive, splitProposals, seekAndSync]);
+    if (!proposal) return;
+    seekAndSync(proposal.time);
+    const marker = markers[proposal.lapNumber - 1];
+    if (marker) {
+      lastSyncedLapRef.current = proposal.lapNumber;
+      setSelectedMarkerId(marker.id);
+      setSelectedLapNumber(proposal.lapNumber);
+      setSelectedSplitId(null);
+      setSelectedSplitIndex(proposal.splitIndex);
+    }
+  }, [splitReviewIndex, splitReviewActive, splitProposals, seekAndSync, markers]);
 
   const togglePlay = useCallback(() => {
     const video = videoRef.current;
@@ -1182,10 +1362,19 @@ export function IntakeMarkingPanel({
                 bankSummary={splitBankSummary}
                 missingSplitIndices={missingSplitIndices}
                 selectedLapNumber={selectedLapNumber}
+                lapsWithMissing={lapsWithMissing}
+                selectedSuggestLaps={visibleSelectedSuggestLaps}
+                batchLabel={splitDetectBatchLabel}
                 detecting={splitDetecting}
                 canSuggest={canSuggestSplits}
+                canSuggestSelected={canSuggestSelectedLaps}
                 suggestDisabledReason={suggestDisabledReason}
+                suggestSelectedDisabledReason={suggestSelectedDisabledReason}
                 error={splitDetectError}
+                onToggleSuggestLap={toggleSuggestLap}
+                onSelectAllSuggestLaps={selectAllSuggestLaps}
+                onClearSuggestLaps={clearSuggestLaps}
+                onSuggestSelected={() => void handleSuggestSelectedLaps()}
                 onSelectIndex={selectSplitProposalIndex}
                 onAccept={() => void acceptCurrentSplitProposal()}
                 onReject={rejectCurrentSplitProposal}

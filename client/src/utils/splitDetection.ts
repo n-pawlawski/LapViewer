@@ -24,3 +24,51 @@ export function missingSplitIndicesForLap(
   }
   return missing;
 }
+
+export interface LapMissingSplits {
+  lapNumber: number;
+  missingSplitIndices: number[];
+}
+
+export function bankCoversMissingSplits(
+  missingSplitIndices: number[],
+  bySplitIndex: Record<number, number> | undefined,
+): boolean {
+  if (missingSplitIndices.length === 0 || !bySplitIndex) return false;
+  return missingSplitIndices.every((idx) => (bySplitIndex[idx] ?? 0) > 0);
+}
+
+export function lapsWithSuggestibleMissingSplits(input: {
+  laps: Array<{ lapNumber: number; startSeconds: number }>;
+  splitsByLap: Map<number, Array<{ splitIndex: number; timeSeconds: number }>>;
+  trackSplits: Array<{ splitIndex: number }>;
+  medianOffsetBySplitIndex: Record<number, number> | undefined;
+  bySplitIndex: Record<number, number> | undefined;
+}): LapMissingSplits[] {
+  const { laps, splitsByLap, trackSplits, medianOffsetBySplitIndex, bySplitIndex } = input;
+  const result: LapMissingSplits[] = [];
+
+  for (const lap of laps) {
+    const lapSplits = splitsByLap.get(lap.lapNumber) ?? [];
+    const missingSplitIndices =
+      medianOffsetBySplitIndex && Object.keys(medianOffsetBySplitIndex).length > 0
+        ? missingSplitIndicesForLap(
+            lap.startSeconds,
+            lapSplits,
+            trackSplits,
+            medianOffsetBySplitIndex,
+          )
+        : trackSplits
+            .map((ts) => ts.splitIndex)
+            .filter((splitIndex) => !lapSplits.some((s) => s.splitIndex === splitIndex));
+
+    if (
+      missingSplitIndices.length > 0 &&
+      bankCoversMissingSplits(missingSplitIndices, bySplitIndex)
+    ) {
+      result.push({ lapNumber: lap.lapNumber, missingSplitIndices });
+    }
+  }
+
+  return result;
+}
