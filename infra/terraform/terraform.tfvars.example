@@ -1,0 +1,8 @@
+project_name         = "deltaview"
+domain_name          = "deltaview.app"
+aws_region           = "us-east-1"
+enable_custom_domain = true
+create_www_alias     = true
+
+# Set false for a first boot without domain (HTTP ALB URL only):
+# enable_custom_domain = false

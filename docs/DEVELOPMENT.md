@@ -40,7 +40,7 @@ Open [http://localhost:5173](http://localhost:5173) after `npm run dev`.
 | Mode | URL | API |
 |------|-----|-----|
 | **Dev** (hot reload) | [http://localhost:5173](http://localhost:5173) | `localhost:3000` |
-| **Docker** (prod parity) | [http://lapviewer.docker:3090](http://lapviewer.docker:3090) | same host (built client) |
+| **Docker** (prod parity) | [http://deltaview.docker:3090](http://deltaview.docker:3090) | same host (built client) |
 
 Docker uses port **3090** so it does not conflict with the dev server on **3000** (or other stacks on 3080).
 
@@ -53,7 +53,7 @@ npm run docker:hosts
 Or add manually to `C:\Windows\System32\drivers\etc\hosts` (see `config/docker-hosts.snippet`):
 
 ```text
-127.0.0.1 lapviewer.docker
+127.0.0.1 deltaview.docker
 ```
 
 Then start Docker (separate terminal from `npm run dev`):
@@ -71,7 +71,7 @@ copy config\docker.env.example .env
 
 Sessions store a `relativePath` under the library root, so the same database resolves correctly in native dev (`E:\...`) and Docker (`/videos/...`).
 
-Health: [http://lapviewer.docker:3090/api/ops/status](http://lapviewer.docker:3090/api/ops/status)
+Health: [http://deltaview.docker:3090/api/ops/status](http://deltaview.docker:3090/api/ops/status)
 
 ### Auth and dev account
 

@@ -235,8 +235,8 @@ resource "aws_db_instance" "main" {
   engine_version         = var.postgres_engine_version
   instance_class         = var.db_instance_class
   allocated_storage      = 20
-  db_name                = "lapviewer"
-  username               = "lapviewer"
+  db_name                = "deltaview"
+  username               = "deltaview"
   password               = random_password.db[0].result
   db_subnet_group_name   = aws_db_subnet_group.main.name
   vpc_security_group_ids = [aws_security_group.rds.id]
@@ -249,7 +249,7 @@ resource "aws_secretsmanager_secret_version" "db" {
   count     = var.create_rds ? 1 : 0
   secret_id = aws_secretsmanager_secret.db[0].id
   secret_string = format(
-    "postgres://%s:%s@%s:5432/lapviewer",
+    "postgres://%s:%s@%s:5432/deltaview",
     aws_db_instance.main[0].username,
     random_password.db[0].result,
     aws_db_instance.main[0].address,
@@ -360,17 +360,6 @@ resource "aws_lb_target_group" "app" {
   tags = local.common_tags
 }
 
-resource "aws_lb_listener" "http" {
-  load_balancer_arn = aws_lb.main.arn
-  port              = 80
-  protocol          = "HTTP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.app.arn
-  }
-}
-
 resource "aws_ecs_task_definition" "app" {
   family                   = var.project_name
   requires_compatibilities = ["FARGATE"]
@@ -381,7 +370,7 @@ resource "aws_ecs_task_definition" "app" {
   task_role_arn            = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([{
-    name  = "lapviewer"
+    name  = var.project_name
     image = "${aws_ecr_repository.app.repository_url}:latest"
     portMappings = [{ containerPort = var.app_port, hostPort = var.app_port, protocol = "tcp" }]
     environment = [
@@ -391,7 +380,8 @@ resource "aws_ecs_task_definition" "app" {
       { name = "STORAGE_BACKEND", value = "s3" },
       { name = "S3_BUCKET", value = aws_s3_bucket.videos.bucket },
       { name = "AWS_REGION", value = var.aws_region },
-      { name = "DATA_DIR", value = "/tmp/lapviewer" },
+      { name = "DATA_DIR", value = "/tmp/${var.project_name}" },
+      { name = "CLIENT_ORIGIN", value = local.app_url },
     ]
     secrets = concat(
       [{ name = "SESSION_SECRET", valueFrom = aws_secretsmanager_secret.session.arn }],
@@ -424,10 +414,12 @@ resource "aws_ecs_service" "app" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.app.arn
-    container_name   = "lapviewer"
+    container_name   = var.project_name
     container_port   = var.app_port
   }
 
-  depends_on = [aws_lb_listener.http]
+  depends_on = [
+    aws_lb_target_group.app,
+  ]
   tags       = local.common_tags
 }

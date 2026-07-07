@@ -1,52 +1,53 @@
-# LapViewer AWS infrastructure (Terraform)
+# DeltaView AWS infrastructure (Terraform)
 
-Starter stack for public SaaS v1: ECS Fargate, ALB, RDS Postgres, S3, ECR, Secrets Manager, CloudWatch.
+Starter stack for **https://deltaview.app** in **us-east-1**: ECS Fargate, ALB + HTTPS (ACM), Route 53, RDS Postgres, S3, ECR, Secrets Manager, CloudWatch.
+
+**Full walkthrough:** [DELTAVIEW_AWS_SETUP.md](../docs/DELTAVIEW_AWS_SETUP.md)
 
 ## Prerequisites
 
-- AWS CLI configured
+- AWS CLI configured (`us-east-1`)
 - Terraform >= 1.5
-- Domain optional (ALB serves HTTP on port 80 initially; add ACM + HTTPS listener later)
+- **deltaview.app registered in Route 53** (hosted zone must exist before `enable_custom_domain = true`)
 
 ## Apply
 
 ```bash
 cd infra/terraform
+copy terraform.tfvars.example terraform.tfvars   # Windows
 terraform init
 terraform plan -out=tfplan
 terraform apply tfplan
 ```
 
-## Outputs (for CI/CD and agents)
-
-After apply, note:
+## Outputs
 
 | Output | Use |
 |--------|-----|
+| `app_url` | **https://deltaview.app** |
 | `ecr_repository_url` | Docker push target |
-| `ecs_cluster_name` | GitHub `ECS_CLUSTER` variable |
-| `ecs_service_name` | GitHub `ECS_SERVICE` variable |
-| `alb_dns_name` | Smoke test URL (`http://<dns>/api/ops/status`) |
-| `s3_bucket_name` | Already injected into task env |
-| `cloudwatch_log_group` | Log Insights queries |
+| `ecs_cluster_name` | GitHub `ECS_CLUSTER` (`deltaview`) |
+| `ecs_service_name` | GitHub `ECS_SERVICE` (`deltaview-api`) |
+| `alb_dns_name` | Raw ALB hostname (fallback) |
+| `s3_bucket_name` | Video originals bucket |
+| `cloudwatch_log_group` | `/ecs/deltaview` |
 
-## GitHub Actions secrets/variables
+## GitHub Actions
 
-Set in repo settings after first `terraform apply`:
-
-| Name | Source |
+| Name | Value |
 |------|--------|
-| `AWS_ACCESS_KEY_ID` | IAM user or OIDC |
-| `AWS_SECRET_ACCESS_KEY` | IAM user (skip with OIDC) |
-| `AWS_REGION` | e.g. `us-east-1` |
-| `ECR_REPOSITORY` | `lapviewer` (default) |
-| `ECS_CLUSTER` | terraform output `ecs_cluster_name` |
-| `ECS_SERVICE` | terraform output `ecs_service_name` |
-| `APP_URL` | `http://<alb_dns_name>` for post-deploy smoke |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | IAM deploy user |
+| `AWS_REGION` | `us-east-1` |
+| `ECS_CLUSTER` | `deltaview` |
+| `ECS_SERVICE` | `deltaview-api` |
+| `ECR_REPOSITORY` | `deltaview` |
+| `APP_URL` | `https://deltaview.app` |
 
 ## Cost notes
 
-Default: 1× Fargate task (1 vCPU / 2 GB), db.t4g.micro, NAT gateway (~$32/mo). Disable NAT for dev-only experiments (`enable_nat_gateway = false`) if tasks run in public subnets.
+Default: 1× Fargate (1 vCPU / 2 GB), db.t4g.micro, NAT gateway (~$32/mo) + domain ~$14/yr.
+
+Set `enable_custom_domain = false` in `terraform.tfvars` for HTTP-only ALB testing before domain registration.
 
 ## Destroy
 
@@ -54,4 +55,4 @@ Default: 1× Fargate task (1 vCPU / 2 GB), db.t4g.micro, NAT gateway (~$32/mo). 
 terraform destroy
 ```
 
-Set `allow_destroy = true` if ECR repository has images blocking delete.
+Set `allow_destroy = true` if ECR has images blocking delete.

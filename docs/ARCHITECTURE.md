@@ -183,7 +183,7 @@ npm run docker:hosts   # once, elevated — adds lapviewer.docker → 127.0.0.1
 docker compose up --build
 ```
 
-- Browser: `http://lapviewer.docker:3090` (port **3090** avoids conflict with dev API on **3000**)
+- Browser: `http://deltaview.docker:3090` (port **3090** avoids conflict with dev API on **3000**)
 - Container runs Node + bundled ffmpeg + built client.
 - **Volumes required:**
   - `./data` → app data (SQLite, cache)

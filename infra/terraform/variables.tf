@@ -1,6 +1,23 @@
 variable "project_name" {
   type    = string
-  default = "lapviewer"
+  default = "deltaview"
+}
+
+variable "domain_name" {
+  type        = string
+  default     = "deltaview.app"
+  description = "Public site domain (Route 53 hosted zone must exist before apply)"
+}
+
+variable "enable_custom_domain" {
+  type        = bool
+  default     = true
+  description = "ACM cert, HTTPS listener, and Route 53 alias for domain_name"
+}
+
+variable "create_www_alias" {
+  type    = bool
+  default = true
 }
 
 variable "environment" {

@@ -27,7 +27,7 @@ npm run docker:hosts   # Windows, elevated
 docker compose up --build
 ```
 
-Open [http://lapviewer.docker:3090](http://lapviewer.docker:3090) (Docker uses port **3090** so `npm run dev` can keep **3000**). Health: [http://lapviewer.docker:3090/api/ops/status](http://lapviewer.docker:3090/api/ops/status)
+Open [http://deltaview.docker:3090](http://deltaview.docker:3090) (Docker uses port **3090** so `npm run dev` can keep **3000**). Health: [http://lapviewer.docker:3090/api/ops/status](http://lapviewer.docker:3090/api/ops/status)
 
 Environment defaults in `docker-compose.yml` use `DEPLOY_ENV=local-docker`, SQLite in `/data`, and dev user seed enabled.
 
@@ -58,10 +58,12 @@ Copy [`config/.env.example`](../config/.env.example) to `.env` at repo root.
 
 ## AWS deploy (Phase 4–5)
 
-1. `cd infra/terraform && terraform init && terraform apply`
-2. Push Docker image to ECR (or let GitHub Actions deploy workflow run on `master`)
+**DeltaView production:** [DELTAVIEW_AWS_SETUP.md](DELTAVIEW_AWS_SETUP.md) — `deltaview.app`, us-east-1, HTTPS.
+
+1. Register **deltaview.app** in Route 53
+2. `cd infra/terraform && terraform apply`
 3. Configure GitHub secrets/variables per [infra/README.md](../infra/README.md)
-4. Merge to `master` → CI builds, pushes, updates ECS, smoke-tests `/api/ops/status`
+4. Run **Deploy** workflow on `master`
 
 ---
 

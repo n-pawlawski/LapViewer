@@ -1,6 +1,8 @@
-# LapViewer
+# DeltaView — LapViewer repo
 
-A personal web application for uploading racing footage, marking lap boundaries, tracking lap times, and comparing laps across one or more sessions.
+**DeltaView** is a web app for racing footage: register GoPro videos, mark lap boundaries, compare laps across sessions.
+
+Public site target: **https://deltaview.app** (see [DELTAVIEW_AWS_SETUP.md](docs/DELTAVIEW_AWS_SETUP.md)).
 
 ## What this project does
 

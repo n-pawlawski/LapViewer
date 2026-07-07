@@ -55,7 +55,7 @@ export function DataPage() {
 
   function handleDeleteFromStrip() {
     if (!detail) return;
-    if (!window.confirm(`Remove "${detail.title}" from LapViewer? Lap markers will be deleted.`)) {
+    if (!window.confirm(`Remove "${detail.title}" from DeltaView? Lap markers will be deleted.`)) {
       return;
     }
     void deleteSession(detail.id)

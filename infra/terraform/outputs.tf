@@ -1,3 +1,12 @@
+output "app_url" {
+  value       = local.app_url
+  description = "Public app URL (https://deltaview.app when custom domain is enabled)"
+}
+
+output "domain_name" {
+  value = var.enable_custom_domain ? var.domain_name : null
+}
+
 output "ecr_repository_url" {
   value = aws_ecr_repository.app.repository_url
 }

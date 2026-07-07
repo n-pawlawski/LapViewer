@@ -37,7 +37,7 @@ export function AuthGate() {
   return (
     <div className="auth-gate">
       <div className="auth-gate-card">
-        <h1 className="auth-gate-title">LapViewer</h1>
+        <h1 className="auth-gate-title">DeltaView</h1>
         <p className="auth-gate-text">Sign in or create an account to continue.</p>
 
         <div className="auth-gate-tabs">

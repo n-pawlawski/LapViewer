@@ -40,7 +40,7 @@ export function AppShell({
   return (
     <div className={`app ${layout !== "default" ? `app--${layout}` : ""}`}>      <header className="app-header">
         <div className="app-header-left">
-          <span className="app-brand">LapViewer</span>
+          <span className="app-brand">DeltaView</span>
           <nav className="app-nav">
             <button
               type="button"
