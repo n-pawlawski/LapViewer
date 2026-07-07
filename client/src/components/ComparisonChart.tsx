@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { CompareSplitDeltaTable } from "./CompareSplitDeltaTable";
 import {
   buildComparisonChartData,
   formatChartDelta,
@@ -26,12 +27,20 @@ const COLOR_TEXT = "#9aa7b5";
 const COLOR_TIE = "#6b7a8c";
 const COLOR_PLAYHEAD = "#e7ecf1";
 
-type ChartMode = "bars" | "line" | "timeline";
+type ChartMode = "bars" | "line" | "timeline" | "table";
 const MODE_STORAGE_KEY = "lapviewer-compare-chart-mode";
+const CHART_MODES = ["bars", "line", "timeline", "table"] as const;
 
 function loadMode(): ChartMode {
   const raw = typeof localStorage !== "undefined" ? localStorage.getItem(MODE_STORAGE_KEY) : null;
-  return raw === "line" || raw === "timeline" ? raw : "bars";
+  return raw === "line" || raw === "timeline" || raw === "table" ? raw : "bars";
+}
+
+function modeLabel(mode: ChartMode): string {
+  if (mode === "bars") return "Bars";
+  if (mode === "line") return "Line";
+  if (mode === "timeline") return "Timeline";
+  return "Deltas";
 }
 
 interface ComparisonChartProps {
@@ -50,6 +59,7 @@ const MODE_HINTS: Record<ChartMode, string> = {
   bars: "Per-sector delta — bar height = time won/lost, colored by the faster lap",
   line: "Cumulative delta — each stretch is colored by the faster lap in that sector",
   timeline: "Proportional sector timeline — brighter segment = faster lap",
+  table: "Sector times and deltas from lap start — same data as the bar chart, in table form",
 };
 
 export function ComparisonChart({
@@ -101,6 +111,9 @@ export function ComparisonChart({
     [panes, windows],
   );
 
+  const hasChartData = data != null && data.sectors.length > 0;
+  const chart = data;
+
   const lap1Color = lapColors[0];
   const lap2Color = lapColors[1];
 
@@ -147,27 +160,17 @@ export function ComparisonChart({
     return points;
   }, [data, duration]);
 
-  if (!data || data.sectors.length === 0) {
-    return (
-      <div className="comparison-chart comparison-chart--empty" ref={containerRef}>
-        <p>Chart unavailable — sync point missing on one or both laps.</p>
-      </div>
-    );
-  }
-
-  const chart = data;
-
-  const maxAbsBar = Math.max(...chart.sectors.map((s) => Math.abs(s.deltaSeconds)), 0.03);
-  const maxAbsCumulative = Math.max(
-    ...cumulativePoints.map((p) => Math.abs(p.cumulative)),
-    0.03,
-  );
+  const maxAbsBar = hasChartData
+    ? Math.max(...chart!.sectors.map((s) => Math.abs(s.deltaSeconds)), 0.03)
+    : 0.03;
+  const maxAbsCumulative = hasChartData
+    ? Math.max(...cumulativePoints.map((p) => Math.abs(p.cumulative)), 0.03)
+    : 0.03;
   const maxAbsDelta = mode === "line" ? maxAbsCumulative : maxAbsBar;
   const yDelta = (value: number) => baseline + (value / maxAbsDelta) * barHalf;
 
-  // Playhead x depends on mode axis (equal sectors for bars, real time otherwise).
   let playheadX: number | null = null;
-  if (mode === "bars") {
+  if (hasChartData && mode === "bars") {
     if (currentSectorIndex >= 0) {
       const seg = refSegments[currentSectorIndex];
       const frac =
@@ -176,7 +179,7 @@ export function ComparisonChart({
           : 0;
       playheadX = MARGIN.left + (currentSectorIndex + frac) * colWidth;
     }
-  } else {
+  } else if (hasChartData) {
     playheadX = xTime(comparisonTime);
   }
 
@@ -185,6 +188,7 @@ export function ComparisonChart({
   const strip1Top = stripsTop + STRIP_HEIGHT + STRIP_GAP;
 
   function handleClick(clientX: number) {
+    if (!hasChartData) return;
     const svg = svgRef.current;
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
@@ -207,6 +211,7 @@ export function ComparisonChart({
   }
 
   function renderBars() {
+    if (!chart) return null;
     return (
       <g>
         {currentSectorIndex >= 0 && (
@@ -224,7 +229,7 @@ export function ComparisonChart({
           const cx = colX + colWidth / 2;
           const barW = Math.min(colWidth * 0.5, 42);
           const tipOffset = (sector.deltaSeconds / maxAbsDelta) * barHalf;
-          const faster = sector.deltaSeconds < 0; // lap 2 faster → bar up
+          const faster = sector.deltaSeconds < 0;
           const tipY = baseline + tipOffset;
           const rectY = faster ? tipY : baseline;
           const rectH = Math.max(1, Math.abs(tipOffset));
@@ -275,6 +280,7 @@ export function ComparisonChart({
   }
 
   function renderLine() {
+    if (!chart) return null;
     return (
       <g>
         {chart.splitGuides.map((guide) => {
@@ -360,7 +366,7 @@ export function ComparisonChart({
     y: number,
     color: string,
   ) {
-    if (!series) return null;
+    if (!series || !chart) return null;
     return (
       <g>
         {series.segments.map((segment, i) => {
@@ -401,6 +407,7 @@ export function ComparisonChart({
   }
 
   function renderTimeline() {
+    if (!chart) return null;
     return (
       <g>
         {chart.splitGuides.map((guide) => {
@@ -448,58 +455,67 @@ export function ComparisonChart({
   const showTimeAxis = mode !== "bars";
 
   return (
-    <div className="comparison-chart" ref={containerRef}>
+    <div
+      className={`comparison-chart${!hasChartData && mode !== "table" ? " comparison-chart--empty" : ""}`}
+      ref={containerRef}
+    >
       <div className="comparison-chart-header">
         <h3 className="comparison-chart-title">Lap comparison</h3>
         <div className="comparison-chart-header-right">
           <div className="comparison-chart-legend">
-            <span className="comparison-chart-legend-item">
-              <span className="comparison-chart-swatch" style={{ background: lap1Color }} />
-              <span className="comparison-chart-legend-lap">L1</span>
-              {chart.panes[0]?.label}
-              <span className="comparison-chart-lap-time">
-                {chart.panes[0] ? formatLapTime(chart.panes[0].lapTimeMs) : "—"}
-              </span>
-            </span>
-            <span className="comparison-chart-legend-item">
-              <span className="comparison-chart-swatch" style={{ background: lap2Color }} />
-              <span className="comparison-chart-legend-lap">L2</span>
-              {chart.panes[1]?.label}
-              <span className="comparison-chart-lap-time">
-                {chart.panes[1] ? formatLapTime(chart.panes[1].lapTimeMs) : "—"}
-              </span>
-            </span>
-            <span className="comparison-chart-legend-delta">
-              Overall:{" "}
-              <strong style={{ color: winnerColor(chart.cumulativeFinishDelta < 0 ? 1 : 0) }}>
-                {formatChartDelta(chart.cumulativeFinishDelta)}s
-              </strong>
-            </span>
+            {hasChartData && chart && (
+              <>
+                <span className="comparison-chart-legend-item">
+                  <span className="comparison-chart-swatch" style={{ background: lap1Color }} />
+                  <span className="comparison-chart-legend-lap">L1</span>
+                  {chart.panes[0]?.label}
+                  <span className="comparison-chart-lap-time">
+                    {chart.panes[0] ? formatLapTime(chart.panes[0].lapTimeMs) : "—"}
+                  </span>
+                </span>
+                <span className="comparison-chart-legend-item">
+                  <span className="comparison-chart-swatch" style={{ background: lap2Color }} />
+                  <span className="comparison-chart-legend-lap">L2</span>
+                  {chart.panes[1]?.label}
+                  <span className="comparison-chart-lap-time">
+                    {chart.panes[1] ? formatLapTime(chart.panes[1].lapTimeMs) : "—"}
+                  </span>
+                </span>
+                <span className="comparison-chart-legend-delta">
+                  Overall:{" "}
+                  <strong style={{ color: winnerColor(chart.cumulativeFinishDelta < 0 ? 1 : 0) }}>
+                    {formatChartDelta(chart.cumulativeFinishDelta)}s
+                  </strong>
+                </span>
+              </>
+            )}
           </div>
           <div className="comparison-chart-mode-toggle" role="group" aria-label="Chart mode">
-            {(["bars", "line", "timeline"] as const).map((m) => (
+            {CHART_MODES.map((m) => (
               <button
                 key={m}
                 type="button"
                 className={`comparison-chart-mode-btn ${mode === m ? "is-active" : ""}`}
                 onClick={() => selectMode(m)}
               >
-                {m === "bars" ? "Bars" : m === "line" ? "Line" : "Timeline"}
+                {modeLabel(m)}
               </button>
             ))}
           </div>
-          <button
-            type="button"
-            className={`comparison-chart-colors-btn ${colorsOpen ? "is-active" : ""}`}
-            onClick={() => setColorsOpen((v) => !v)}
-            title="Edit lap colors"
-          >
-            Colors
-          </button>
+          {mode !== "table" && (
+            <button
+              type="button"
+              className={`comparison-chart-colors-btn ${colorsOpen ? "is-active" : ""}`}
+              onClick={() => setColorsOpen((v) => !v)}
+              title="Edit lap colors"
+            >
+              Colors
+            </button>
+          )}
         </div>
       </div>
 
-      {colorsOpen && (
+      {colorsOpen && mode !== "table" && (
         <div className="comparison-chart-colors-panel">
           {[0, 1, 2, 3].map((i) => (
             <label key={i} className="comparison-chart-color-field">
@@ -519,93 +535,101 @@ export function ComparisonChart({
         <span>{MODE_HINTS[mode]}</span>
       </div>
 
-      <svg
-        ref={svgRef}
-        className="comparison-chart-svg"
-        viewBox={`0 0 ${chartWidth} ${height}`}
-        preserveAspectRatio="xMinYMin meet"
-        role="img"
-        aria-label="Lap comparison chart"
-        onClick={(e) => handleClick(e.clientX)}
-      >
-        {mode !== "timeline" && (
-          <>
+      {mode === "table" ? (
+        <CompareSplitDeltaTable paneA={panes[0]} paneB={panes[1]} embedded />
+      ) : !hasChartData ? (
+        <p className="comparison-chart-empty-msg">
+          Chart unavailable — sync point missing on one or both laps.
+        </p>
+      ) : (
+        <svg
+          ref={svgRef}
+          className="comparison-chart-svg"
+          viewBox={`0 0 ${chartWidth} ${height}`}
+          preserveAspectRatio="xMinYMin meet"
+          role="img"
+          aria-label="Lap comparison chart"
+          onClick={(e) => handleClick(e.clientX)}
+        >
+          {mode !== "timeline" && (
+            <>
+              <line
+                x1={MARGIN.left}
+                y1={baseline}
+                x2={plotEnd}
+                y2={baseline}
+                stroke={COLOR_GRID}
+              />
+              <text
+                x={MARGIN.left - 6}
+                y={baseline + 4}
+                textAnchor="end"
+                fill={COLOR_TEXT}
+                className="comparison-chart-axis-label"
+              >
+                0
+              </text>
+              <text
+                x={MARGIN.left - 6}
+                y={plotTop + 9}
+                textAnchor="end"
+                fill={lap2Color}
+                className="comparison-chart-axis-label"
+              >
+                {maxAbsDelta.toFixed(2)}
+              </text>
+              <text
+                x={MARGIN.left - 6}
+                y={plotBottom - 1}
+                textAnchor="end"
+                fill={lap1Color}
+                className="comparison-chart-axis-label"
+              >
+                {maxAbsDelta.toFixed(2)}
+              </text>
+            </>
+          )}
+
+          {mode === "bars" && renderBars()}
+          {mode === "line" && renderLine()}
+          {mode === "timeline" && renderTimeline()}
+
+          {playheadX != null && (
             <line
-              x1={MARGIN.left}
-              y1={baseline}
-              x2={plotEnd}
-              y2={baseline}
-              stroke={COLOR_GRID}
+              x1={playheadX}
+              y1={plotTop - 2}
+              x2={playheadX}
+              y2={plotBottom + 2}
+              stroke={COLOR_PLAYHEAD}
+              strokeWidth={2}
+              pointerEvents="none"
             />
-            <text
-              x={MARGIN.left - 6}
-              y={baseline + 4}
-              textAnchor="end"
-              fill={COLOR_TEXT}
-              className="comparison-chart-axis-label"
-            >
-              0
-            </text>
-            <text
-              x={MARGIN.left - 6}
-              y={plotTop + 9}
-              textAnchor="end"
-              fill={lap2Color}
-              className="comparison-chart-axis-label"
-            >
-              {maxAbsDelta.toFixed(2)}
-            </text>
-            <text
-              x={MARGIN.left - 6}
-              y={plotBottom - 1}
-              textAnchor="end"
-              fill={lap1Color}
-              className="comparison-chart-axis-label"
-            >
-              {maxAbsDelta.toFixed(2)}
-            </text>
-          </>
-        )}
+          )}
 
-        {mode === "bars" && renderBars()}
-        {mode === "line" && renderLine()}
-        {mode === "timeline" && renderTimeline()}
-
-        {playheadX != null && (
-          <line
-            x1={playheadX}
-            y1={plotTop - 2}
-            x2={playheadX}
-            y2={plotBottom + 2}
-            stroke={COLOR_PLAYHEAD}
-            strokeWidth={2}
-            pointerEvents="none"
-          />
-        )}
-
-        {showTimeAxis && (
-          <>
-            <line x1={MARGIN.left} y1={axisTop} x2={plotEnd} y2={axisTop} stroke={COLOR_GRID} />
-            {[0, 0.5, 1].map((tick) => {
-              const t = tick * duration;
-              const x = xTime(t);
-              return (
-                <g key={tick}>
-                  <line x1={x} y1={axisTop} x2={x} y2={axisTop + 4} stroke={COLOR_GRID} />
-                  <text
-                    x={x}
-                    y={axisTop + 14}
-                    textAnchor="middle"
-                    className="comparison-chart-axis-label"
-                  >
-                    {formatComparisonTime(t)}
-                  </text>
-                </g>
-              );
-            })}
-          </>
-        )}
-      </svg>
+          {showTimeAxis && (
+            <>
+              <line x1={MARGIN.left} y1={axisTop} x2={plotEnd} y2={axisTop} stroke={COLOR_GRID} />
+              {[0, 0.5, 1].map((tick) => {
+                const t = tick * duration;
+                const x = xTime(t);
+                return (
+                  <g key={tick}>
+                    <line x1={x} y1={axisTop} x2={x} y2={axisTop + 4} stroke={COLOR_GRID} />
+                    <text
+                      x={x}
+                      y={axisTop + 14}
+                      textAnchor="middle"
+                      className="comparison-chart-axis-label"
+                    >
+                      {formatComparisonTime(t)}
+                    </text>
+                  </g>
+                );
+              })}
+            </>
+          )}
+        </svg>
+      )}
     </div>
   );
 }

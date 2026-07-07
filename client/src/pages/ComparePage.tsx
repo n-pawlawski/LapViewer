@@ -9,7 +9,6 @@ import {
   CompareVisualsLoading,
   ComparisonTransport,
 } from "../components/ComparisonView";
-import { CompareSplitDeltaTable } from "../components/CompareSplitDeltaTable";
 import { ComparisonChart } from "../components/ComparisonChart";
 import { useComparisonPlayback } from "../hooks/useComparisonPlayback";
 import { useLapColors } from "../hooks/useLapColors";
@@ -278,7 +277,6 @@ function CompareView({
             </label>
           )}
         </div>
-        <CompareSplitDeltaTable paneA={panes[0]} paneB={panes[1]} />
         <div className={`compare-visuals${contentLoading ? " compare-visuals--loading" : ""}`}>
           <ComparisonChart
             panes={panes}

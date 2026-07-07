@@ -8,9 +8,11 @@ import {
 interface CompareSplitDeltaTableProps {
   paneA: SelectedLap;
   paneB: SelectedLap;
+  /** When nested inside the comparison chart tab, omit the section title. */
+  embedded?: boolean;
 }
 
-export function CompareSplitDeltaTable({ paneA, paneB }: CompareSplitDeltaTableProps) {
+export function CompareSplitDeltaTable({ paneA, paneB, embedded }: CompareSplitDeltaTableProps) {
   const rows = buildSplitDeltaRows(paneA, paneB);
   if (rows.length === 0) {
     return (
@@ -24,8 +26,8 @@ export function CompareSplitDeltaTable({ paneA, paneB }: CompareSplitDeltaTableP
   const labelB = `Lap ${paneB.lap.lapNumber} (${paneB.session.title || paneB.session.sourcePath.split(/[/\\]/).pop()})`;
 
   return (
-    <div className="compare-split-delta-table-wrap">
-      <h2 className="compare-split-delta-title">Sector deltas (from lap start)</h2>
+    <div className={`compare-split-delta-table-wrap${embedded ? " compare-split-delta-table-wrap--embedded" : ""}`}>
+      {!embedded && <h2 className="compare-split-delta-title">Sector deltas (from lap start)</h2>}
       <table className="compare-split-delta-table">
         <thead>
           <tr>
