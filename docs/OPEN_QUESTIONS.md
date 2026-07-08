@@ -19,7 +19,7 @@ Copy answers inline under each question, or tell me in chat and I'll update this
 
 **Now:** Local-first on your Windows PC ([D-001](DECISIONS.md)).
 
-**Aspiration:** Web app where anyone uploads races and compares with others — see [ROADMAP.md](ROADMAP.md). Deploy deferred; accounts and Data refactor come first.
+**Aspiration:** Web app where anyone uploads races and compares with others — see [ROADMAP.md](ROADMAP.md). Upload pipeline, accounts, Data refactor, and session-level public sharing ([PUBLIC_SESSIONS_V1.md](features/PUBLIC_SESSIONS_V1.md)) are done; production deploy is in progress.
 
 ### 1.2 How many sessions / total storage?
 
@@ -162,7 +162,7 @@ Shorter lap finishes before longer ones:
 
 **Now:** React + Node monorepo on this PC ([D-001](DECISIONS.md)). Native mode; SQLite in `DATA_DIR`.
 
-**Later:** Hosted web app on AWS (or similar) for multi-user upload and compare — **explicitly deferred**. See [ROADMAP.md](ROADMAP.md). Finish Intake, users, and Data refactor first.
+**Later:** Hosted web app on AWS for multi-user upload and compare — **in progress** ([DEPLOYMENT.md](DEPLOYMENT.md), [WO-deploy-v1.md](work-orders/WO-deploy-v1.md)). Intake, users, Data refactor, and public session sharing are done.
 
 ### 4.2 Should videos stay on disk where they already are?
 

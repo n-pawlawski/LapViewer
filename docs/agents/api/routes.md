@@ -15,16 +15,19 @@
 | POST | `/api/auth/register` | — | — | **410** — use Google sign-in |
 | POST | `/api/auth/login` | Dev password login | — | **403** in production; `root`/`root` in dev |
 | POST | `/api/auth/logout` | Clear session | — | |
-| GET | `/api/sessions` | List sessions | cookie | Scoped to `userId` |
-| POST | `/api/sessions` | Create session | cookie | |
-| GET | `/api/sessions/:id` | Session detail | cookie | 404 if not owned |
-| PATCH | `/api/sessions/:id` | Update session | cookie | |
+| GET | `/api/sessions` | List sessions | cookie | Scoped to owner `userId`; includes `isPublic` |
+| GET | `/api/sessions/public` | List other users' public sessions | cookie | S3 + complete upload only |
+| POST | `/api/sessions` | Create session | cookie | **410** — use upload flow |
+| GET | `/api/sessions/:id` | Session detail | cookie | Owner or public viewer |
+| PATCH | `/api/sessions/:id` | Update session | cookie | Owner only; `{ isPublic }` for sharing |
 | GET | `/api/sessions/:id/markers` | Lap markers | cookie | |
 | POST | `/api/sessions/:id/markers` | Add marker | cookie | |
 | POST | `/api/sessions/:id/detect-laps` | Start detection job | cookie | |
 | GET | `/api/sessions/:id/frame` | Frame PNG | cookie | |
 | PATCH | `/api/markers/:id` | Update marker | cookie | |
 | DELETE | `/api/markers/:id` | Delete marker | cookie | |
+| GET | `/api/laps` | Flat lap list | cookie | Owner's sessions only |
+| GET | `/api/laps/public` | Flat laps from public sessions | cookie | Excludes ignored laps |
 | GET | `/api/tracks` | List tracks | cookie | Per-user |
 | POST | `/api/tracks` | Create track | cookie | |
 | GET | `/api/tracks/:id` | Track detail | cookie | |
@@ -48,7 +51,7 @@
 | DELETE | `/api/detect-laps/:jobId` | Cancel job | cookie | |
 | POST | `/api/system/pick-video-file` | Native file picker | cookie | |
 | POST | `/api/system/pick-folder` | Native folder picker | cookie | |
-| GET | `/api/video/:sessionId` | Stream session video | cookie | |
+| GET | `/api/video/:sessionId` | Stream session video | cookie | Owner or public S3 session |
 
 ## Conventions
 

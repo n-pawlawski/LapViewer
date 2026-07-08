@@ -54,6 +54,7 @@ Draft SQLite shape:
 | `width` / `height` | integer/null | From probe |
 | `frameRate` | real/null | From probe |
 | `status` | text | See status lifecycle below |
+| `isPublic` | integer | `0`/`1` — owner-controlled; when `1` and S3 upload complete, other accounts may read ([PUBLIC_SESSIONS_V1.md](features/PUBLIC_SESSIONS_V1.md)) |
 | `createdAt` | datetime | First registered in LapViewer |
 | `updatedAt` | datetime | Last metadata or status update |
 
@@ -66,6 +67,7 @@ Draft SQLite shape:
 | `timeSeconds` | real | Position on the video timeline |
 | `kind` | text | `lapStart` for v1; later `sessionStart`, `pitIn`, `sector` |
 | `label` | text/null | Optional display label |
+| `ignored` | integer | When set on a lap-start marker, lap is excluded from counts, compare, and public shared views |
 | `createdAt` | datetime | Created timestamp |
 | `updatedAt` | datetime | Last edit timestamp |
 

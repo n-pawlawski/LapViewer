@@ -6,7 +6,7 @@ LapViewer is a **personal racing footage analysis tool**. It turns raw onboard o
 
 The primary user today is **you**: a driver reviewing your own sessions to understand pace, consistency, and where time is gained or lost lap-to-lap.
 
-**Long-term:** a hosted web app where drivers upload races and compare laps with others. See [Roadmap](ROADMAP.md) — deployment is deferred until core local features are solid.
+**Long-term:** a hosted web app where drivers upload races and compare laps with others. See [Roadmap](ROADMAP.md) — core local workflow, upload pipeline, accounts, and session-level sharing are in place; production deploy is in progress.
 
 ## Problem
 
@@ -67,14 +67,19 @@ These do not block the current local-first build:
 - Mobile-native apps
 - Telemetry overlay (speed, throttle, GPS trace) unless added later
 - Video editing (cutting, transcoding beyond what storage requires)
-- **Cloud deploy, upload pipeline, cross-user compare** — phased later; see [Roadmap](ROADMAP.md)
+- Leagues, anonymous share links, or org-style ACLs beyond session-level public toggle
 
-## Planned after v1 (see Roadmap)
+## Delivered & in progress (see Roadmap)
 
-- User accounts (dev account locally first, then real auth)
-- Data form refactor (toolbar, organization, optional all-laps view)
-- Assisted lap detection — [AUTO_LAP_DETECTION_V1.md](features/AUTO_LAP_DETECTION_V1.md)
-- Hosted multi-user web app (upload + compare with others)
+| Area | Status |
+|------|--------|
+| User accounts + Google OAuth | Done — [USERS_V1.md](features/USERS_V1.md) |
+| Data form refactor | Done — [DATA_FORM_V2.md](features/DATA_FORM_V2.md) |
+| Browser upload + object storage | Done — [D-028](DECISIONS.md) |
+| Public session sharing + cross-account compare | Done — [PUBLIC_SESSIONS_V1.md](features/PUBLIC_SESSIONS_V1.md) |
+| Assisted lap detection | In progress — [AUTO_LAP_DETECTION_V1.md](features/AUTO_LAP_DETECTION_V1.md) |
+| Reference-lap progress (3B) | Spike GO; M2-LV next — [GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md) |
+| Hosted AWS deploy | In progress — [DEPLOYMENT.md](DEPLOYMENT.md) |
 
 ## Glossary
 

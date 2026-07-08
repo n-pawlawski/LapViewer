@@ -12,7 +12,7 @@ Read this file first, then `docs/agents/<folder>/BASE.md` for your work type.
 
 Help build LapViewer while keeping the design record, implementation, and work queue aligned.
 
-LapViewer is a local-first racing video app for registering GoPro footage by file path, marking lap boundaries, computing lap times, and comparing laps across sessions.
+LapViewer is a racing video app for uploading GoPro footage, marking lap boundaries, computing lap times, comparing laps across sessions, and sharing sessions with other accounts.
 
 ---
 
@@ -30,6 +30,7 @@ When you add, rename, or split a doc, update all three in the same change.
 | Doc system & SOT rules | `docs/DOCUMENTATION_SYSTEM.md` | documentation, architecture, review |
 | Feature list & AC | `docs/FEATURES.md` | documentation, client, api, review |
 | Users & dev account v1 | `docs/features/USERS_V1.md` | documentation, persistence, api, client |
+| Public session sharing v1 | `docs/features/PUBLIC_SESSIONS_V1.md` | documentation, persistence, api, client |
 | Data form v2 refactor | `docs/features/DATA_FORM_V2.md` | documentation, client |
 | Assisted lap detection v1 | `docs/features/AUTO_LAP_DETECTION_V1.md` | documentation, architecture, api, persistence, client |
 | Reference-lap lap & split detection | `docs/features/GOPRO_LAP_SPLIT_DETECTION.md` | documentation, architecture, api, persistence, client |
@@ -41,7 +42,7 @@ When you add, rename, or split a doc, update all three in the same change.
 | Technical trade-offs | `docs/TECHNICAL_APPROACH.md` | architecture |
 | SQLite, `DATA_DIR`, cache | `docs/PERSISTENCE.md` | persistence, api |
 | Video library model | `docs/VIDEO_LIBRARY.md` | persistence, api, client |
-| Decisions | `docs/DECISIONS.md` | All (D-004 dev branch, D-005 Vitest, D-006 theme, D-012 git, D-013 typed WO) |
+| Decisions | `docs/DECISIONS.md` | All (D-004 dev branch, D-005 Vitest, D-006 theme, D-012 git, D-013 typed WO, D-028 upload, D-030 public sessions) |
 | Open questions | `docs/OPEN_QUESTIONS.md` | documentation, architecture |
 | Process hygiene | `docs/PROCESS_HYGIENE.md` | All implementers, maintenance |
 | Local dev | `docs/DEVELOPMENT.md` | All implementers, maintenance |

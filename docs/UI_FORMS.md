@@ -46,7 +46,8 @@ The Data form owns the main **Videos / Sessions** section. It reads from the [Vi
 
 ### What the user does here
 
-- Browse registered sessions (races/videos).
+- Browse registered sessions (races/videos) — **My sessions** or **Public sessions** tabs.
+- Make an uploaded session **public** so other accounts can view laps and compare.
 - See lap lists per session — times, best lap, lap count.
 - Search, filter, or sort (by date, track, title — fields TBD).
 - Organize sessions (rename, notes, tags, delete — scope TBD).

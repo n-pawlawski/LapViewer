@@ -6,10 +6,11 @@ Public site target: **https://deltaview.info** (see [DELTAVIEW_AWS_SETUP.md](doc
 
 ## What this project does
 
-1. **Import** — Register race videos from your library drive (path in DB, no copy).
+1. **Import** — Upload GoPro videos via browser to object storage (S3 / MinIO).
 2. **Review** — Scrub through footage with a standard video player experience.
 3. **Mark laps** — Place markers on the timeline where each lap begins (and optionally ends) to derive lap times.
 4. **Compare** — Browse lap times across sessions and play selected laps side-by-side or in a grid (e.g. 2×2).
+5. **Share** — Make uploaded sessions public so other accounts can view laps and compare ([PUBLIC_SESSIONS_V1.md](docs/features/PUBLIC_SESSIONS_V1.md)).
 
 ## Documentation
 
@@ -17,7 +18,7 @@ Public site target: **https://deltaview.info** (see [DELTAVIEW_AWS_SETUP.md](doc
 | Document                                               | Purpose                                                                               |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------- |
 | [Project Overview](docs/PROJECT_OVERVIEW.md)           | Vision, users, core workflow, and success criteria                                    |
-| [Roadmap](docs/ROADMAP.md)                             | Pre-deploy phases: Intake, users, Data refactor, then hosting (deferred)              |
+| [Roadmap](docs/ROADMAP.md)                             | Pre-deploy phases: Intake, users, Data, auto-lap, sharing, deploy |
 | [Documentation System](docs/DOCUMENTATION_SYSTEM.md)   | Scalable map for product, architecture, testing, communication, and agent docs        |
 | [Feature Lifecycle](docs/FEATURE_LIFECYCLE.md)         | Gates for feature readiness, implementation, verification, traceability, and done     |
 | [Decisions](docs/DECISIONS.md)                         | Project decision log for architecture, product, testing, and workflow choices         |
@@ -42,7 +43,7 @@ Public site target: **https://deltaview.info** (see [DELTAVIEW_AWS_SETUP.md](doc
 
 ## Status
 
-**Phase:** Design complete for core UX; **code is still a video playback spike** (no lap browser or compare UI yet).
+**Phase:** Core lap workflow (Intake, Data, Compare) implemented locally; object-storage upload, Google OAuth, and public session sharing on `dev`. **Active:** auto lap detection (3A), reference-lap progress (3B), AWS deploy (5).
 
 **Re-entering the project?** Read [Where we are & how to continue](docs/CONTINUATION.md).
 
@@ -63,7 +64,7 @@ npm run check
 
 See [Development Guide](docs/DEVELOPMENT.md) and [Process Hygiene](docs/PROCESS_HYGIENE.md).
 
-Open **[http://localhost:5173](http://localhost:5173)** — click **Start** to play the hardcoded demo clip (`GX010012.MP4` from `E:\Racing Videos\2-19 racing league`).
+Open **[http://localhost:5173](http://localhost:5173)** — sign in with dev credentials (`root` / `root`) or Google when configured. Upload a session from **Intake**, mark laps, compare on **Data** / **Compare**.
 
 API health check: [http://localhost:3000/api/health](http://localhost:3000/api/health)
 

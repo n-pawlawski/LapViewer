@@ -17,7 +17,9 @@ Add a **user model** and **session ownership** so LapViewer can grow toward mult
 - AWS Cognito or other hosted auth brokers
 - Email/password registration in production
 - Email verification, password reset
-- Cross-user lap compare or leagues
+- Leagues or anonymous public URLs
+
+**Note:** Cross-account lap viewing and compare shipped later as [PUBLIC_SESSIONS_V1.md](PUBLIC_SESSIONS_V1.md) (Phase 4B, D-030) — session-level `isPublic`, not Phase 1 scope.
 
 ---
 

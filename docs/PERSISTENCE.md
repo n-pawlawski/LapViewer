@@ -17,7 +17,7 @@ The app is not considered usable until these survive restart:
 - proxy job status
 - scrub proxy/cache files when generated
 
-The current hardcoded playback spike does **not** meet this yet. Phase A of the catalog MVP must add the SQLite database before we treat intake as real.
+SQLite/Postgres persistence, session ownership, and object-storage uploads are implemented. Schema detail is in the sections below and [VIDEO_LIBRARY.md](VIDEO_LIBRARY.md).
 
 ---
 
@@ -77,10 +77,14 @@ Persists every video added to LapViewer.
 | Column | Purpose |
 |--------|---------|
 | `id` | Stable session ID |
-| `userId` | Owner (`users.id`) — all queries filter by this |
+| `userId` | Owner (`users.id`) — owner queries filter by this; public reads use `isPublic` |
 | `title` | Display name |
-| `sourcePath` | Absolute path to original video in native mode, or container path in Docker mode |
-| `sourceRoot` | Root used when registered |
+| `sourcePath` | `s3://{objectKey}` for uploads; legacy absolute path for `local_path` rows |
+| `sourceRoot` | `s3` for uploads; legacy config root for path-based rows |
+| `storageKind` | `s3` (default for new) or `local_path` (legacy) |
+| `objectKey` | S3 object key for uploaded originals |
+| `uploadStatus` | `pending` \| `complete` for S3 sessions |
+| `isPublic` | `0`/`1` — when `1` and S3 upload complete, other authenticated users may read ([D-030](DECISIONS.md)) |
 | `fileName` | Original filename |
 | `fileSizeBytes` | Used for duplicate/missing/relink checks |
 | `fileModifiedAt` | Used for identification and sorting |
@@ -105,6 +109,7 @@ Persists lap markers.
 | `timeSeconds` | Marker position |
 | `kind` | `lapStart` for v1 |
 | `label` | Optional |
+| `ignored` | When `1` on a lap-start marker, lap is excluded from counts, compare, and **public shared payloads** |
 | `createdAt`, `updatedAt` | Audit timestamps |
 
 ### Optional later: `settings`

@@ -30,12 +30,13 @@ Phase 1 Docker + MinIO can run locally without AWS spend. See [DEPLOYMENT.md](DE
 
 | Area | State |
 |------|-------|
-| Data + Compare | Working with SQLite; Data v2 toolbar, filters, all-laps tab, compare dock |
+| Data + Compare | Working — Data v2 toolbar, filters, all-laps tab, compare dock |
 | [`DataPage.tsx`](../client/src/pages/DataPage.tsx) | Refactored — see [DATA_FORM_V2.md](features/DATA_FORM_V2.md) |
-| [`sessions` table](../server/src/db/database.ts) | `userId` scoped; DELETE + flat laps API |
+| [`sessions` table](../server/src/db/database.ts) | `userId` scoped; `isPublic` for sharing ([D-030](DECISIONS.md)) |
 | Intake markers | Done |
-| Auth / users | Done — dev account + session scoping ([USERS_V1.md](features/USERS_V1.md)) |
-| Intake model | **Migrating** — browser upload + object storage ([D-028](DECISIONS.md), [WO-unified-upload.md](work-orders/WO-unified-upload.md)) |
+| Auth / users | Done — dev account, Google OAuth, session scoping ([USERS_V1.md](features/USERS_V1.md), [D-029](DECISIONS.md)) |
+| Intake model | **Done** — browser upload + object storage ([D-028](DECISIONS.md), [WO-unified-upload.md](work-orders/WO-unified-upload.md)) |
+| Public sessions | **Done** — owner toggle, public browse, cross-account compare ([PUBLIC_SESSIONS_V1.md](features/PUBLIC_SESSIONS_V1.md), [D-030](DECISIONS.md)) |
 | Deploy | **In progress** — see [DEPLOYMENT.md](DEPLOYMENT.md), [WO-deploy-v1.md](work-orders/WO-deploy-v1.md) |
 
 ---
@@ -51,6 +52,7 @@ flowchart TD
   P3C[Phase3C_ObjectStorageMedia]
   P4A[Phase4A_UnifiedBrowserIntake]
   P3B[Phase3B_ReferenceLapProgress]
+  P4B[Phase4B_PublicSessions]
   P4[Phase4_PolishAndPackaging]
   P5[Phase5_Deploy]
 
@@ -60,7 +62,8 @@ flowchart TD
   P3A --> P3C
   P3C --> P4A
   P4A --> P3B
-  P4A --> P4
+  P4A --> P4B
+  P4B --> P4
   P4 --> P5
 ```
 
@@ -70,7 +73,7 @@ flowchart TD
 | **1** | Users & dev account | [features/USERS_V1.md](features/USERS_V1.md) |
 | **2** | Data screen refactor | [features/DATA_FORM_V2.md](features/DATA_FORM_V2.md) — **Done** |
 | **3** | Auto lap & split markers | [features/AUTO_LAP_DETECTION_V1.md](features/AUTO_LAP_DETECTION_V1.md), [features/GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md) |
-| **4** | Polish & local packaging | [ARCHITECTURE.md](ARCHITECTURE.md), [DEVELOPMENT.md](DEVELOPMENT.md) |
+| **4** | Polish, sharing & local packaging | [features/PUBLIC_SESSIONS_V1.md](features/PUBLIC_SESSIONS_V1.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DEVELOPMENT.md](DEVELOPMENT.md) |
 | **5** | Deploy (AWS SaaS) | [DEPLOYMENT.md](DEPLOYMENT.md), [WO-deploy-v1.md](work-orders/WO-deploy-v1.md) — **Active** |
 
 Work orders (`WO-*`) are created when each phase moves to **Ready** per [FEATURE_LIFECYCLE.md](FEATURE_LIFECYCLE.md).
@@ -141,14 +144,14 @@ Spike-validated ROI + template-bank detection on Intake. User seeds a start anch
 
 **Done when:** User can auto-detect lap starts on a calibrated track, review proposals, and confirm markers into the template bank.
 
-### 3C — Object-storage media pipeline (active)
+### 3C — Object-storage media pipeline (done)
 
-ffmpeg lap/split detection and reference builds must work when session originals live in S3/MinIO, not only on local disk paths.
+ffmpeg lap/split detection and reference builds work when session originals live in S3/MinIO, not only on local disk paths.
 
 - Work order: [work-orders/WO-unified-upload.md](work-orders/WO-unified-upload.md) WO-U1
 - Resolver: `resolveSessionMediaInput()` materializes S3 objects to `DATA_DIR/cache/{sessionId}/original.mp4` for ffmpeg
 
-**Done when:** Auto-detect laps works on a browser-uploaded session in Docker (MinIO) and production (S3).
+**Done when:** Auto-detect laps works on a browser-uploaded session in Docker (MinIO) and production (S3). **Met.**
 
 ### 3B — Reference-lap track progress (long-term)
 
@@ -171,14 +174,24 @@ Before any deploy:
 - `npm run build && npm start` polish
 - **Docker Compose as primary parity path** — MinIO + browser upload ([ARCHITECTURE.md](ARCHITECTURE.md) Mode C)
 
-### 4A — Unified browser intake (active)
+### 4A — Unified browser intake (done)
 
 One Intake UX everywhere: browser file picker → presigned PUT → object storage.
 
 - Decision: [D-028](DECISIONS.md)
 - Work order: [work-orders/WO-unified-upload.md](work-orders/WO-unified-upload.md) WO-U2..U3
 
-**Done when:** Same upload flow in `npm run dev`, `docker compose up`, and ECS.
+**Done when:** Same upload flow in `npm run dev`, `docker compose up`, and ECS. **Met.**
+
+### 4B — Public sessions (done)
+
+Authenticated users can make uploaded (S3) sessions public; other accounts browse laps, stream video, and compare. Ignored intake laps are excluded from shared payloads.
+
+- Spec: [features/PUBLIC_SESSIONS_V1.md](features/PUBLIC_SESSIONS_V1.md)
+- Decision: [D-030](DECISIONS.md)
+- Work order: [work-orders/WO-public-sessions.md](work-orders/WO-public-sessions.md)
+
+**Done when:** Owner toggles public → another account sees session in Public tab and can compare. **Met.**
 
 ---
 
@@ -186,13 +199,12 @@ One Intake UX everywhere: browser file picker → presigned PUT → object stora
 
 S3 presigned upload and ECS scaffold are implemented ([WO-deploy-v1.md](work-orders/WO-deploy-v1.md)). Remaining:
 
-- Unified local object storage (MinIO) + processing pipeline (Phase 3C/4A)
-- First `terraform apply` + ECR push
-- Real auth tested locally without dev seed
+- First `terraform apply` + ECR push + production smoke
+- Hosted deploy verified with Google OAuth (no dev seed)
 
-Future topics: Cognito, cross-user compare, leagues.
+**Partially delivered:** object-storage intake (3C/4A), Google OAuth (D-029), public session sharing (4B / D-030).
 
----
+Future topics: Cognito (optional), leagues, anonymous share links.
 
 ## Open choices
 
@@ -209,8 +221,8 @@ Decide before implementation of each phase:
 
 ## Explicitly not in scope now
 
-- Cross-user compare / leagues
-- Production signup (designed in Phase 4, not before)
+- Leagues / org-style sharing beyond session-level public toggle
+- Anonymous or unauthenticated public URLs
 - GoPro multi-file segment grouping (deferred)
 
 ---
@@ -221,9 +233,11 @@ Decide before implementation of each phase:
 |-----|------|
 | This file | Phase order and scope boundaries |
 | [features/USERS_V1.md](features/USERS_V1.md) | Phase 1 detail |
+| [features/PUBLIC_SESSIONS_V1.md](features/PUBLIC_SESSIONS_V1.md) | Phase 4B — public session sharing |
 | [features/DATA_FORM_V2.md](features/DATA_FORM_V2.md) | Phase 2 detail |
 | [features/AUTO_LAP_DETECTION_V1.md](features/AUTO_LAP_DETECTION_V1.md) | Phase 3A — assisted lap starts |
 | [features/GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md) | Phase 3B — reference-lap progress (F8); spike WO |
 | [work-orders/WO-unified-upload.md](work-orders/WO-unified-upload.md) | Phase 3C + 4A — object storage intake |
+| [work-orders/WO-public-sessions.md](work-orders/WO-public-sessions.md) | Phase 4B — public sessions |
 | [DECISIONS.md](DECISIONS.md) | Accepted choices |
 | [CONTINUATION.md](CONTINUATION.md) | Current implementation status |

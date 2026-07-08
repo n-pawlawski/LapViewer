@@ -55,9 +55,10 @@ Each concern should have one primary home.
 | Concern | Source of truth | Notes |
 |---------|-----------------|-------|
 | Feature list and acceptance criteria | `FEATURES.md` | Split into focused feature specs when a section grows too large |
-| Product roadmap (pre-deploy phases) | `docs/ROADMAP.md` | Phase order; object-storage intake; deploy active |
+| Product roadmap (pre-deploy phases) | `docs/ROADMAP.md` | Phase order; 3C/4A/4B done; deploy active |
 | View & compare v1 (active build) | `docs/features/VIEW_COMPARE_V1.md` | VC-1–VC-5 phases; mock-first per **D-017** |
 | Users & dev account v1 | `docs/features/USERS_V1.md` | Roadmap Phase 1; dev seed pattern |
+| Public session sharing v1 | `docs/features/PUBLIC_SESSIONS_V1.md` | Roadmap Phase 4B; `isPublic`, cross-account compare |
 | Data form v2 refactor | `docs/features/DATA_FORM_V2.md` | Roadmap Phase 2; layout + organization |
 | Assisted lap detection v1 | `docs/features/AUTO_LAP_DETECTION_V1.md` | F7; spike-derived; MVP AD-1–AD-4, splits AD-5; decisions resolved |
 | Reference-lap lap & split detection | `docs/features/GOPRO_LAP_SPLIT_DETECTION.md` | F8; spike passed GO; M2-LV next |
