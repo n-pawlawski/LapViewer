@@ -4,8 +4,6 @@ Shared mechanics for **discovering**, **starting**, **processing**, and **closin
 
 Every agent reads this file with their role's `BASE.md` and the project `BASE_AGENT.md`.
 
-Copy this file into the project agent workspace as `docs/agents/PICKUP.md` when adopting a pack (same as `WORK_ORDERS.md`).
-
 ---
 
 ## 1. Discover work

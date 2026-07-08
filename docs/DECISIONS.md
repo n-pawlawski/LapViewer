@@ -485,32 +485,28 @@ Treat **process hygiene** as a core project goal: git on `dev`, work queue gates
 
 ### D-016 - Separate agent-platform repo; per-project agent workspace
 
-**Status:** Accepted  
+**Status:** Superseded by D-032 (2026-07-07)  
 **Date:** 2026-05-28  
 **Owner:** User  
-**Related docs:** `docs/AGENT_PLATFORM_BLUEPRINT.md`, `.agent-project.yaml`  
+**Related docs:** `.agent-project.yaml` (LapViewer manifest only)
 
 ### Context
 
-The agent workflow should be reusable across projects. LapViewer should be the first product built with it, not the container for the generic framework.
+The agent workflow was planned as reusable across projects via a separate **agent-platform** repository and versioned packs.
 
-### Decision
+### Decision (historical)
 
-1. Create a **separate repository** for the agent platform (generic `core/` + versioned **packs** such as `default-web-app` with base `agents/*/BASE.md`).
-2. Each **project repo** keeps all project-specific docs and code, plus an **agent workspace** (LapViewer: `docs/agents/`, `docs/work-orders/`).
-3. Each project has a root **`.agent-project.yaml`** manifest (paths, pack id/version, verify commands).
-4. Platform-specific details always live **inside the project repo**; the platform repo holds only generic templates and framework docs.
-5. LapViewer is the **first consumer**; extraction of generic files into the platform repo is incremental (see blueprint migration plan).
+1. Create a **separate repository** for the agent platform (generic `core/` + versioned **packs**).
+2. Each **project repo** keeps project-specific docs plus `docs/agents/` and `docs/work-orders/`.
+3. Root **`.agent-project.yaml`** manifest for paths and verify commands.
 
 ### Consequences
 
-- Iterating the agent system does not require editing LapViewer product code.
-- New projects copy a pack into their workspace and add their own product docs.
-- Future tooling in the platform repo may scaffold work orders against other repo paths.
+Superseded — LapViewer no longer depends on or documents an external agent-platform repo ([D-032](#d-032---lapviewer-self-contained-agent-documentation)).
 
 ### Follow-up work
 
-- Create `agent-platform` GitHub repo and perform extraction per `AGENT_PLATFORM_BLUEPRINT.md`.
+- ~~Create `agent-platform` GitHub repo~~ — **not pursued** for LapViewer.
 
 ---
 
@@ -931,11 +927,73 @@ Users v1 scopes all data by `userId`. The product roadmap needs cross-account la
 
 ---
 
+### D-031 - Stored counters vs computed user stats
+
+**Status:** Accepted  
+**Date:** 2026-07-07  
+**Owner:** Shared  
+**Related docs:** `docs/features/STATS.md`, `server/src/services/stats.ts`
+
+### Context
+
+The product needs extensible per-user statistics (login count, session count, etc.) without schema churn for each new metric.
+
+### Decision
+
+1. **`stat_definitions` catalog** — new stats are rows, not new columns.
+2. **Counters** (`auth.login_count`) live in `stat_counters` and increment on discrete events.
+3. **Computed stats** (`sessions.count`, `tracks.count`) are resolved at read time from existing tables — never stored as counters.
+4. **`stats.view` permission** gates the admin stats page and `GET /api/stats`.
+
+### Consequences
+
+- No drift between stored session counts and actual `sessions` rows.
+- Agents follow `docs/features/STATS.md` to add new stats safely.
+- Login count does not increment on `/api/auth/me` refresh.
+
+### Alternatives considered
+
+- Store all stats as counters — rejected (computed values would duplicate source of truth).
+- Global/system stats scope — deferred to a later version.
+
+---
+
+### D-032 - LapViewer self-contained agent documentation
+
+**Status:** Accepted  
+**Date:** 2026-07-07  
+**Owner:** User  
+**Related docs:** `docs/agents/BASE_AGENT.md`, `docs/agents/AGENT_LAYOUT.md`, `.agent-project.yaml`
+
+### Context
+
+LapViewer had docs and manifest fields pointing at a sibling **agent-platform** repo, pack versions, and `*.template.md` adoption files. The product should not require that external project for day-to-day agent work.
+
+### Decision
+
+1. **All agent instructions live in LapViewer** — `docs/agents/`, `docs/work-orders/`, `PICKUP.md`, `WORK_ORDERS.md`.
+2. **Remove** agent-platform blueprint and platform pack references from README, BASE_AGENT, and `.agent-project.yaml`.
+3. **Remove** `*.template.md` scaffolding; keep or create LapViewer-specific auxiliary `.md` files in place (e.g. `fixtures-policy.md`, `runner-setup.md`).
+4. **Keep** `.agent-project.yaml` as a LapViewer-only manifest (paths, verify commands) — not a link to an external platform.
+
+### Consequences
+
+- Multi-agent dispatch uses only this repo's work orders and context docs.
+- No pack version upgrades or `../agent-platform` sync steps.
+- D-016 extraction plan is abandoned for LapViewer.
+
+### Alternatives considered
+
+- Continue dual-repo sync — rejected (unnecessary complexity for a single product).
+
+---
+
 ## Superseded decisions
 
 | ID | Superseded by | Note |
 |----|---------------|------|
 | D-002 (path-only intake for new sessions) | D-028 | Path registration deprecated for new sessions; legacy rows supported |
+| D-016 (agent-platform repo) | D-032 | LapViewer agent docs are self-contained; no external platform |
 
 ---
 

@@ -4,7 +4,7 @@ Default context for any agent working on **this project**.
 
 Read this file first, then `docs/agents/<folder>/BASE.md` for your work type.
 
-**Platform:** `default-web-app` @ `0.2.0` — see `.agent-project.yaml`.
+LapViewer agent docs are **self-contained** in this repo (`docs/agents/`, `docs/work-orders/`). No external agent-platform dependency ([D-032](../DECISIONS.md)).
 
 ---
 
@@ -51,8 +51,7 @@ When you add, rename, or split a doc, update all three in the same change.
 | Tooling gaps | `docs/PROCESS_TOOLING_GAPS.md` | maintenance, test-strategy |
 | Collaboration rules | `docs/WORKING_AGREEMENT.md` | Base agent, documentation |
 | Agent coordination | `docs/AGENT_WORKFLOW.md` | Base agent |
-| Platform adoption notes | `docs/AGENT_PLATFORM_BLUEPRINT.md` | maintenance, coordinators |
-| Testing strategy | `docs/TESTING_STRATEGY.md` | test-strategy, unit-test *(create when planned)* |
+| Testing strategy | `docs/TESTING_STRATEGY.md` | test-strategy, unit-test |
 | Feature implementation | `docs/work-orders/WO-*.md` | persistence, api, client, test-strategy, review |
 | Global agent queue | `docs/agents/WORK_QUEUE.md` | maintenance, unit-test, tooling |
 
@@ -69,8 +68,8 @@ When you add, rename, or split a doc, update all three in the same change.
 |------|------------|
 | `docs/agents/client/overview.md` | `client` |
 | `docs/agents/client/page-flows.md` | `client`, `browser-qa` |
-| `docs/agents/api/routes.md` | `api` *(create from template when API grows)* |
-| `docs/agents/persistence/schema-notes.md` | `persistence` *(optional)* |
+| `docs/agents/api/routes.md` | `api` |
+| `docs/agents/persistence/schema-notes.md` | `persistence` |
 | `docs/agents/test-strategy/work-order-test-review.md` | `test-strategy` |
 
 ---
@@ -94,7 +93,7 @@ When you add, rename, or split a doc, update all three in the same change.
 2. `README.md`
 3. `docs/DOCUMENTATION_SYSTEM.md`
 4. `docs/FEATURE_LIFECYCLE.md`
-5. `docs/DECISIONS.md` — at least D-004, D-005, D-012, D-013, D-015
+5. `docs/DECISIONS.md` — at least D-004, D-005, D-012, D-013, D-015, D-032
 6. `docs/agents/PICKUP.md` + `docs/agents/WORK_ORDERS.md` when executing work items
 7. `docs/agents/PROJECT_STATE.md` when running tests or verification
 
@@ -112,13 +111,36 @@ Then read rows from the **documentation map** for your work type.
 | `api` | [api/BASE.md](api/BASE.md) | ✅ PICKUP + routes (after persistence) |
 | `client` | [client/BASE.md](client/BASE.md) | ✅ PICKUP + UI (after api) |
 | `test-strategy` | [test-strategy/BASE.md](test-strategy/BASE.md) | ✅ §A plan / §B post-WO review |
-| `unit-test` | [unit-test/BASE.md](unit-test/BASE.md) | ⚠️ BASE complete; **`npm test` not installed yet** |
+| `unit-test` | [unit-test/BASE.md](unit-test/BASE.md) | ✅ PICKUP + `npm test` |
 | `browser-qa` | [browser-qa/BASE.md](browser-qa/BASE.md) | ✅ Manual/browser evidence |
 | `review` | [review/BASE.md](review/BASE.md) | ✅ AC vs build |
 | `maintenance` | [maintenance/BASE.md](maintenance/BASE.md) | ✅ Tooling / CI / runner setup |
 | `full-stack` | [implementation/BASE.md](implementation/BASE.md) | ✅ Exception path only |
 
-Pack reference: `../agent-platform/packs/default-web-app/AGENT_READINESS.md` (local sibling repo).
+---
+
+## Process tiers (right-size the ceremony)
+
+LapViewer is currently built by a **solo maintainer + AI agents**, not parallel agent
+waves. Match the process weight to the work so the docs stay a help, not overhead.
+
+**Tier 1 — always (load-bearing).** These earn their keep every session:
+
+- `docs/DECISIONS.md` — record non-obvious trade-offs here, not in chat.
+- Feature specs (`docs/features/*`, `docs/FEATURES.md`) — design + testable AC before building.
+- This doc's **documentation map** — orientation for any new session.
+- `feature/*` branch from `dev`; run `verify.check` (and `verify.test` when relevant) before done.
+
+**Tier 2 — only for genuinely multi-layer features (optional).** Use when a feature
+spans persistence + api + client and benefits from an explicit breakdown:
+
+- A work order in `docs/work-orders/WO-*.md` as a **lightweight checklist**.
+- Typed-agent dispatch, per-item `Status`/`Blocked by` state machine, session-report tables.
+
+Do **not** fake Tier 2 ceremony for small or single-layer changes. If a work order's
+per-item statuses drift from reality, reconcile the feature status and move on rather
+than back-filling every item. Multi-agent wave scheduling is preserved in
+`docs/agents/archive/` for reference but is **not** the default workflow.
 
 ---
 

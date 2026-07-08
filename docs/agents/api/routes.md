@@ -52,6 +52,12 @@
 | POST | `/api/system/pick-video-file` | Native file picker | cookie | |
 | POST | `/api/system/pick-folder` | Native folder picker | cookie | |
 | GET | `/api/video/:sessionId` | Stream session video | cookie | Owner or public S3 session |
+| GET | `/api/account` | Current user profile + permission defs | cookie | |
+| PATCH | `/api/account` | Update display name | cookie | |
+| GET | `/api/users` | List users for permission admin | cookie | `canManagePermissions` only |
+| PATCH | `/api/users/:id/permissions` | Update user permissions | cookie | `canManagePermissions` only |
+| GET | `/api/stats/me` | Current user's stats | cookie | Counter + computed bundle |
+| GET | `/api/stats` | All users' stats | cookie | Requires `stats.view` |
 
 ## Conventions
 

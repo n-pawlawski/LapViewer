@@ -2,6 +2,8 @@
 
 Each specialized agent has a **folder** under `docs/agents/`. Agents always start from that folder's **`BASE.md`**, which includes a **required checklist** and **pickup workflow** pointing at [PICKUP.md](PICKUP.md).
 
+All agent documentation lives in **this repo** — there is no external platform pack to sync ([D-031](../DECISIONS.md)).
+
 ---
 
 ## Structure
@@ -9,10 +11,10 @@ Each specialized agent has a **folder** under `docs/agents/`. Agents always star
 ```text
 docs/agents/
   BASE_AGENT.md          # project-wide (read first for any agent)
-  PICKUP.md              # discover, filter, branch, close-out (from platform core/)
+  PICKUP.md              # discover, filter, branch, close-out
   WORK_ORDERS.md
   WORK_QUEUE.md
-  PROJECT_STATE.md       # optional; copy from PROJECT_STATE.template.md
+  PROJECT_STATE.md       # test runner status, quick refs
   README.md
   TEMPLATES.md
   AGENT_LAYOUT.md        # this file
@@ -29,10 +31,11 @@ docs/agents/
   maintenance/           # Work type: maintenance
   implementation/        # Work type: full-stack (exception)
 
+  archive/               # Retired process docs kept for reference (not active workflow)
+
   <folder>/
     BASE.md              # entry point + checklist (required)
     README.md            # index of auxiliary docs
-    *.template.md        # copy to *.md in project when adopting
     …                    # optional deep context .md files
 ```
 
@@ -41,10 +44,10 @@ docs/agents/
 ## Rules
 
 1. **`BASE.md` is mandatory** — every agent folder has one; includes pickup workflow and per-item checklist.
-2. **`PICKUP.md` is mandatory** at agent workspace root — shared mechanics for all agents.
-3. **Auxiliary docs are optional** — copy from `*.template.md` in each folder; link from work orders via **Auxiliary context**.
+2. **`PICKUP.md` is mandatory** at `docs/agents/` root — shared mechanics for all agents.
+3. **Auxiliary docs are optional** — add `.md` files in the agent folder as needed; link from work orders via **Auxiliary context**.
 4. **Dispatch path** — `docs/agents/<folder>/BASE.md` (e.g. `docs/agents/client/BASE.md`).
-5. **New agent** — copy `client/` as reference; register in `WORK_ORDERS.md` and `pack.yaml` work_types.
+5. **New agent** — copy `client/` as reference; register work type in [WORK_ORDERS.md](WORK_ORDERS.md).
 
 ---
 
@@ -58,15 +61,15 @@ Agents read these in checklist step 4 (after starting the item).
 
 ---
 
-## Adoption templates
+## LapViewer auxiliary docs (examples)
 
-| Template | Copy to |
-|----------|---------|
-| `client/overview.template.md` | `client/overview.md` |
-| `client/page-flows.template.md` | `client/page-flows.md` |
-| `api/routes.template.md` | `api/routes.md` |
-| `persistence/schema-notes.template.md` | `persistence/schema-notes.md` |
-| `PROJECT_STATE.template.md` | `PROJECT_STATE.md` |
-| `templates/WORK_QUEUE.template.md` | `WORK_QUEUE.md` |
+| File | Work types |
+|------|------------|
+| [client/overview.md](client/overview.md) | `client` |
+| [client/page-flows.md](client/page-flows.md) | `client`, `browser-qa` |
+| [api/routes.md](api/routes.md) | `api` |
+| [persistence/schema-notes.md](persistence/schema-notes.md) | `persistence` |
+| [test-strategy/fixtures-policy.md](test-strategy/fixtures-policy.md) | `test-strategy`, `unit-test` |
+| [unit-test/runner-setup.md](unit-test/runner-setup.md) | `unit-test`, `maintenance` |
 
-See [pack README](../packs/default-web-app/README.md) for full copy commands.
+Add new auxiliary docs in place when a work order needs deeper context — do not maintain separate template copies.

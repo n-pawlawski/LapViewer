@@ -29,7 +29,7 @@ See [AGENT_LAYOUT.md](AGENT_LAYOUT.md) and [PICKUP.md](PICKUP.md).
 | `api` | [api/](api/) | ✅ |
 | `client` | [client/](client/) | ✅ |
 | `test-strategy` | [test-strategy/](test-strategy/) | ✅ |
-| `unit-test` | [unit-test/](unit-test/) | ⚠️ needs `npm test` |
+| `unit-test` | [unit-test/](unit-test/) | ✅ |
 | `browser-qa` | [browser-qa/](browser-qa/) | ✅ |
 | `review` | [review/](review/) | ✅ |
 | `maintenance` | [maintenance/](maintenance/) | ✅ |

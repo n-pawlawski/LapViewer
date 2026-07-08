@@ -72,8 +72,11 @@ Match existing project conventions before adding new patterns.
 
 | File | Purpose |
 |------|---------|
-| [runner-setup.md](runner-setup.md) | Runner config notes (from [runner-setup.template.md](runner-setup.template.md)) |
+| [runner-setup.md](runner-setup.md) | Runner config and commands |
 | [fixtures-policy.md](../test-strategy/fixtures-policy.md) | Shared fixture rules |
+| [context/permission-api-middleware.md](context/permission-api-middleware.md) | WO-unit-test-gate-01 |
+| [context/permission-client-guards.md](context/permission-client-guards.md) | WO-unit-test-gate-02 |
+| [context/split-workflow-hook.md](context/split-workflow-hook.md) | WO-unit-test-gate-03 |
 
 ---
 

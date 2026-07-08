@@ -55,7 +55,7 @@ Read `docs/agents/BASE_AGENT.md`, `docs/agents/WORK_ORDERS.md`, and `docs/agents
 …
 ```
 
-Copy [client/BASE.md](../packs/default-web-app/agents/client/BASE.md) as the reference implementation.
+Use [client/BASE.md](client/BASE.md) as the reference implementation when adding a new agent folder.
 
 ---
 

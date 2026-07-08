@@ -61,8 +61,8 @@ From project `BASE_AGENT.md` / `.agent-project.yaml`:
 
 | File | Purpose |
 |------|---------|
-| [overview.md](overview.md) | Stack, repo layout, dev proxy (copy from [overview.template.md](overview.template.md)) |
-| [page-flows.md](page-flows.md) | Routes, screens, API touchpoints (copy from [page-flows.template.md](page-flows.template.md)) |
+| [overview.md](overview.md) | Stack, repo layout, dev proxy |
+| [page-flows.md](page-flows.md) | Routes, screens, API touchpoints |
 
 Add feature-specific `.md` files; link from work items via **Auxiliary context**.
 

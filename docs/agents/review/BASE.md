@@ -84,7 +84,7 @@ Compare built behavior to documented intent. No scope expansion.
 
 | File | Purpose |
 |------|---------|
-| [manual-checklist.md](manual-checklist.md) | Human-only checks (from [manual-checklist.template.md](manual-checklist.template.md)) |
+| [manual-checklist.md](manual-checklist.md) | Human-only checks *(add when needed)* |
 
 ---
 

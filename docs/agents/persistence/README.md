@@ -1,10 +1,8 @@
-# Persistence agent context
+# Persistence agent — auxiliary docs
 
-**Start here:** [BASE.md](BASE.md) — includes pickup workflow and checklist.
+| File | Purpose |
+|------|---------|
+| [schema-notes.md](schema-notes.md) | Tables, keys, invariants |
+| `migrations.md` | Migration history *(add when documenting migration policy)* |
 
-## Templates
-
-| Copy to | From |
-|---------|------|
-| `schema-notes.md` | [schema-notes.template.md](schema-notes.template.md) |
-| `migrations.md` | [migrations.template.md](migrations.template.md) |
+Entry point: [BASE.md](BASE.md).

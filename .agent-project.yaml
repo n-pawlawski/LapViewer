@@ -1,10 +1,5 @@
-# LapViewer — project manifest for the agent platform.
+# LapViewer — project manifest for agents and tooling.
 # Keep paths in sync with docs/agents/BASE_AGENT.md (documentation map).
-# Platform repo (local): ../agent-platform
-
-platform_pack: default-web-app
-platform_pack_version: "0.2.0"
-platform_repo_local: ../agent-platform
 
 project_name: LapViewer
 
@@ -22,7 +17,6 @@ paths:
   feature_lifecycle: docs/FEATURE_LIFECYCLE.md
   working_agreement: docs/WORKING_AGREEMENT.md
   agent_workflow: docs/AGENT_WORKFLOW.md
-  agent_platform_blueprint: docs/AGENT_PLATFORM_BLUEPRINT.md
 
   architecture: docs/ARCHITECTURE.md
   technical_approach: docs/TECHNICAL_APPROACH.md

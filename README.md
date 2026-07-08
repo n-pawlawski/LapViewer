@@ -36,9 +36,8 @@ Public site target: **https://deltaview.info** (see [DELTAVIEW_AWS_SETUP.md](doc
 | [Working Agreement](docs/WORKING_AGREEMENT.md)         | How we collaborate — boundaries, scope, and process                                   |
 | [Agent Workflow](docs/AGENT_WORKFLOW.md)               | How documentation, implementation, review, and future automation agents coordinate    |
 | [Work Orders](docs/agents/WORK_ORDERS.md)              | Typed tasks and dispatch-by-work-type (`client`, `api`, `persistence`, …)             |
-| [Agent platform blueprint](docs/AGENT_PLATFORM_BLUEPRINT.md) | Plan to split generic agent OS into its own repo; LapViewer = first project |
 | [Agent layout](docs/agents/AGENT_LAYOUT.md)            | Per-agent folders, `BASE.md` checklists, auxiliary docs                               |
-| [Agent Contexts](docs/agents/README.md)                | Layer agents, work queue, and templates (project instance)                            |
+| [Agent Contexts](docs/agents/README.md)                | Layer agents, work queue, and templates (LapViewer instance)                        |
 
 
 ## Status

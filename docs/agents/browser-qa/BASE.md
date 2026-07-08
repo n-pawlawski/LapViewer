@@ -64,7 +64,7 @@ Produce structured evidence for the `review` agent and feature lifecycle.
 
 | File | Purpose |
 |------|---------|
-| [browser-qa-notes.md](browser-qa-notes.md) | Session notes (from [browser-qa-notes.template.md](browser-qa-notes.template.md)) |
+| [browser-qa-notes.md](browser-qa-notes.md) | Session notes *(add per QA pass)* |
 
 ---
 

@@ -30,7 +30,7 @@ Usually runs **after** `persistence` items on the same WO are `Done`.
 - [ ] **2. Work item** — Goal, acceptance criteria, **Blocked by**, **Docs to update**, WO git branch.
 - [ ] **3. Start item** — `Status: In Progress`; checkout/create WO branch ([PICKUP.md](../PICKUP.md) §3a).
 - [ ] **4. Auxiliary context** — Files on the item or in [Auxiliary context](#auxiliary-context-this-directory) below.
-- [ ] **5. API documentation** — Update architecture/API notes for new routes and contracts ([routes.template.md](routes.template.md) → `routes.md` when useful).
+- [ ] **5. API documentation** — Update [routes.md](routes.md) for new routes and contracts when useful.
 - [ ] **6. Design** — Request/response shapes match feature spec and architecture contracts; persistence layer exists or is stubbed per WO plan.
 - [ ] **7. Implement** — Server routes, services, validation only (not DB schema — see `persistence/`).
 - [ ] **8. Tests (local)** — Add/update server tests when straightforward; else queue `unit-test`.
@@ -61,8 +61,8 @@ From project `BASE_AGENT.md` / `.agent-project.yaml`:
 
 | File | Purpose |
 |------|---------|
-| [routes.md](routes.md) | Route table, methods, auth (copy from [routes.template.md](routes.template.md)) |
-| [validation.md](validation.md) | Shared validation rules (copy from [validation.template.md](validation.template.md)) |
+| [routes.md](routes.md) | Route table, methods, auth |
+| [validation.md](validation.md) | Shared validation rules *(create when needed)* |
 
 ---
 

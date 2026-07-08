@@ -1,9 +1,16 @@
 # Work order: App shell and static UI layouts
 
 **Work order ID:** WO-ui-shell  
-**Feature status:** Draft  
+**Feature status:** Done (reconciled 2026-07-08)  
 **Priority:** P0  
 **Git branch:** `feature/ui-shell`
+
+> **Status reconciliation (2026-07-08):** The app shell, dark theme, routing, and the
+> Data / Intake / Compare screens all shipped and are live in `client/src` (see
+> `App.tsx`, `AppShell.tsx`, `pages/DataPage.tsx`, `pages/IntakePage.tsx`, and the
+> compare flow). This WO predates the more holistic feature commits, so the per-item
+> `Draft` markers below were never advanced. Feature status set to **Done**; the item
+> table is kept as a historical record and is not the active source of truth.
 
 ## Source of truth
 

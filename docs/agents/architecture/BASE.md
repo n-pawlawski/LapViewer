@@ -106,9 +106,9 @@ When a work item explicitly includes a spike:
 
 | File | Purpose |
 |------|---------|
-| [integrations.md](integrations.md) | External systems, tools (from [integrations.template.md](integrations.template.md)) |
-| [deployment.md](deployment.md) | Runtime, mounts, pipelines (from [deployment.template.md](deployment.template.md)) |
-| [api-contracts.md](api-contracts.md) | Cross-layer contracts (from [api-contracts.template.md](api-contracts.template.md)) |
+| [integrations.md](integrations.md) | External systems, tools *(add when needed)* |
+| [deployment.md](deployment.md) | Runtime, mounts, pipelines *(add when needed)* |
+| [api-contracts.md](api-contracts.md) | Cross-layer contracts *(add when needed)* |
 
 ---
 

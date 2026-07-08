@@ -28,7 +28,7 @@ LapViewer docs should make it possible to:
 | Architecture | How the app is structured and run | `ARCHITECTURE.md`, `TECHNICAL_APPROACH.md` |
 | Data / persistence | What data exists, where it lives, ownership rules | `PERSISTENCE.md`, `VIDEO_LIBRARY.md` |
 | Communication | How frontend, backend, filesystem, ffmpeg, and future agents interact | `ARCHITECTURE.md`, future API docs, this doc |
-| Testing | How behavior is verified at unit, integration, browser, and manual levels | future `TESTING_STRATEGY.md`, `docs/agents/unit-test/BASE.md` |
+| Testing | How behavior is verified at unit, integration, browser, and manual levels | [TESTING_STRATEGY.md](TESTING_STRATEGY.md), `docs/agents/unit-test/BASE.md` |
 | Operations | Setup, config, local run, Docker later, backup, troubleshooting | `README.md`, `DEVELOPMENT.md`, `ARCHITECTURE.md`, `PERSISTENCE.md`, `PROCESS_TOOLING_GAPS.md` |
 | Process hygiene | Git workflow, verification, definition of done | `PROCESS_HYGIENE.md`, `FEATURE_LIFECYCLE.md`, `DECISIONS.md` |
 | Agent workflow | How specialized agents pick up context and work items | `AGENT_WORKFLOW.md`, `docs/agents/` |
@@ -78,6 +78,10 @@ Each concern should have one primary home.
 | Agent doc map (paths for agents) | `docs/agents/BASE_AGENT.md` + `.agent-project.yaml` | Must stay in sync with this file's SOT table |
 | Feature implementation tasks | `docs/work-orders/WO-*.md` | Typed work items per feature; see `docs/agents/WORK_ORDERS.md` |
 | Global agent work items | `docs/agents/WORK_QUEUE.md` | Tooling and hygiene; not primary home for feature code |
+| User stats (counters + computed) | `docs/features/STATS.md` | Catalog, API, permission `stats.view`, agent checklist |
+| Testing strategy and promotion gates | `docs/TESTING_STRATEGY.md` | `npm run check` + `npm test` before `master`; Phase 4C expansion |
+| Phase 4C work order | `docs/work-orders/WO-unit-test-gate.md` | Parallel unit-test / maintenance / browser-qa items |
+| Multi-agent dispatch (4C, archived) | `docs/agents/archive/MULTIAGENT_DISPATCH_4C.md` | Historical wave schedule; not the default workflow (see Process tiers in `BASE_AGENT.md`) |
 
 If two docs disagree, the source-of-truth doc wins and the other doc should be corrected.
 

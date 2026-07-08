@@ -61,8 +61,8 @@ From project `BASE_AGENT.md` / `.agent-project.yaml`:
 
 | File | Purpose |
 |------|---------|
-| [schema-notes.md](schema-notes.md) | Tables, keys, invariants (copy from [schema-notes.template.md](schema-notes.template.md)) |
-| [migrations.md](migrations.md) | Migration history and rules (copy from [migrations.template.md](migrations.template.md)) |
+| [schema-notes.md](schema-notes.md) | Tables, keys, invariants |
+| `migrations.md` | Migration history and rules *(add when needed)* |
 
 ---
 

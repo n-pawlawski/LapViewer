@@ -1,10 +1,8 @@
-# API agent context
+# API agent — auxiliary docs
 
-**Start here:** [BASE.md](BASE.md) — includes pickup workflow and checklist.
+| File | Purpose |
+|------|---------|
+| [routes.md](routes.md) | Express route table, auth, permissions |
+| `validation.md` | Shared validation rules *(add when patterns repeat)* |
 
-## Templates
-
-| Copy to | From |
-|---------|------|
-| `routes.md` | [routes.template.md](routes.template.md) |
-| `validation.md` | [validation.template.md](validation.template.md) |
+Entry point: [BASE.md](BASE.md).

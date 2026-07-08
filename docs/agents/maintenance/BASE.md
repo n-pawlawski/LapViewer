@@ -64,7 +64,7 @@ Implements **approved** CI/Docker/git design from `architecture/`; does not inve
 
 | File | Purpose |
 |------|---------|
-| [ci-contract.md](ci-contract.md) | What CI must run (from [ci-contract.template.md](ci-contract.template.md)) |
+| `ci-contract.md` | What CI must run *(see `.github/workflows/ci.yml`)* |
 
 ---
 

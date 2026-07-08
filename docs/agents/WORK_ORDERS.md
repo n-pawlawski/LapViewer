@@ -81,6 +81,8 @@ Use for:
 
 Feature implementation should primarily use **work orders**.
 
+**Parallel runs (archived):** Multi-agent wave scheduling is preserved in [archive/MULTIAGENT_DISPATCH_4C.md](archive/MULTIAGENT_DISPATCH_4C.md) for reference. It is **not** the default LapViewer workflow — see **Process tiers** in [BASE_AGENT.md](BASE_AGENT.md).
+
 ---
 
 ## Work item fields (required)

@@ -107,8 +107,8 @@ Do not claim manual-only behavior is unit-testable.
 | File | Purpose |
 |------|---------|
 | [work-order-test-review.md](work-order-test-review.md) | Post-WO review procedure |
-| [fixtures-policy.md](fixtures-policy.md) | Test data rules (from [fixtures-policy.template.md](fixtures-policy.template.md)) |
-| [manual-checklists.md](manual-checklists.md) | Human verification lists (from [manual-checklists.template.md](manual-checklists.template.md)) |
+| [fixtures-policy.md](fixtures-policy.md) | Test data rules |
+| `manual-checklists.md` | Human verification lists *(add when needed)* |
 
 ---
 

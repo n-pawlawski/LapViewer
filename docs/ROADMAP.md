@@ -37,6 +37,8 @@ Phase 1 Docker + MinIO can run locally without AWS spend. See [DEPLOYMENT.md](DE
 | Auth / users | Done — dev account, Google OAuth, session scoping ([USERS_V1.md](features/USERS_V1.md), [D-029](DECISIONS.md)) |
 | Intake model | **Done** — browser upload + object storage ([D-028](DECISIONS.md), [WO-unified-upload.md](work-orders/WO-unified-upload.md)) |
 | Public sessions | **Done** — owner toggle, public browse, cross-account compare ([PUBLIC_SESSIONS_V1.md](features/PUBLIC_SESSIONS_V1.md), [D-030](DECISIONS.md)) |
+| Permission guards | **In progress** — route redirects, API middleware, header nav visibility |
+| Unit test gate (4C) | **Planned** — see [TESTING_STRATEGY.md](TESTING_STRATEGY.md) |
 | Deploy | **In progress** — see [DEPLOYMENT.md](DEPLOYMENT.md), [WO-deploy-v1.md](work-orders/WO-deploy-v1.md) |
 
 ---
@@ -53,6 +55,7 @@ flowchart TD
   P4A[Phase4A_UnifiedBrowserIntake]
   P3B[Phase3B_ReferenceLapProgress]
   P4B[Phase4B_PublicSessions]
+  P4C[Phase4C_UnitTestGate]
   P4[Phase4_PolishAndPackaging]
   P5[Phase5_Deploy]
 
@@ -63,7 +66,8 @@ flowchart TD
   P3C --> P4A
   P4A --> P3B
   P4A --> P4B
-  P4B --> P4
+  P4B --> P4C
+  P4C --> P4
   P4 --> P5
 ```
 
@@ -206,6 +210,21 @@ S3 presigned upload and ECS scaffold are implemented ([WO-deploy-v1.md](work-ord
 
 Future topics: Cognito (optional), leagues, anonymous share links.
 
+---
+
+## Phase 4C — Unit test gate
+
+**Why:** Permission redirects, public session isolation, and split-detection eligibility are easy to break without automated coverage. This phase defines what must pass before promoting `dev` → `master`.
+
+**Scope:**
+
+- Document verification ladder in [TESTING_STRATEGY.md](TESTING_STRATEGY.md)
+- Expand server tests for `requireUserPermission` on tracks, sessions, stats routes
+- Add client tests for `hasPermission` / route guard helpers
+- Wire CI (`npm run check` + `npm test`) when GitHub remote is configured
+
+**Done when:** `npm test` fails on missing `tracks.manage` / `sessions.delete` / `stats.view`; roadmap and PROCESS_HYGIENE reference TESTING_STRATEGY as the promotion gate.
+
 ## Open choices
 
 Decide before implementation of each phase:
@@ -239,5 +258,8 @@ Decide before implementation of each phase:
 | [features/GOPRO_LAP_SPLIT_DETECTION.md](features/GOPRO_LAP_SPLIT_DETECTION.md) | Phase 3B — reference-lap progress (F8); spike WO |
 | [work-orders/WO-unified-upload.md](work-orders/WO-unified-upload.md) | Phase 3C + 4A — object storage intake |
 | [work-orders/WO-public-sessions.md](work-orders/WO-public-sessions.md) | Phase 4B — public sessions |
+| [TESTING_STRATEGY.md](TESTING_STRATEGY.md) | Phase 4C — verification ladder and test expansion |
+| [work-orders/WO-unit-test-gate.md](work-orders/WO-unit-test-gate.md) | Phase 4C — typed work items for parallel agents |
+| [agents/archive/MULTIAGENT_DISPATCH_4C.md](agents/archive/MULTIAGENT_DISPATCH_4C.md) | Coordinator prompts and wave schedule (archived — not default workflow) |
 | [DECISIONS.md](DECISIONS.md) | Accepted choices |
 | [CONTINUATION.md](CONTINUATION.md) | Current implementation status |

@@ -1,9 +1,15 @@
 # Work order: Users & dev account v1
 
 **Work order ID:** WO-users-v1  
-**Feature status:** In progress  
+**Feature status:** Done (reconciled 2026-07-08)  
 **Priority:** P0  
 **Git branch:** `feature/users-v1`
+
+> **Status reconciliation (2026-07-08):** User accounts, session/track ownership scoping,
+> auth middleware, and the client auth UX all shipped (commits `c93aa18` user accounts +
+> dev root login, `031436e` Google OAuth with dev password fallback, `ba6fc39` account
+> settings + permission admin). The per-item statuses below were left at `Ready`/`Draft`
+> during the build; feature status is set to **Done**. Items retained as historical record.
 
 ## Source of truth (read before implementing)
 
