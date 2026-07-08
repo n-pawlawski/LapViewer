@@ -8,6 +8,7 @@
     "test": "node --import tsx --test src/**/*.test.ts",
     "test:auth": "tsx scripts/auth-isolation-test.mjs",
     "test:public": "tsx scripts/public-sessions-test.mjs",
+    "test:permissions": "tsx scripts/permissions-test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

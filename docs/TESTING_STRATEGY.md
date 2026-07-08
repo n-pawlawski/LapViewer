@@ -1,7 +1,7 @@
 # Testing Strategy
 
 **Status:** Active  
-**Last updated:** 2026-07-07  
+**Last updated:** 2026-07-08  
 **Related:** [PROCESS_HYGIENE.md](PROCESS_HYGIENE.md), [ROADMAP.md](ROADMAP.md), [docs/agents/unit-test/BASE.md](agents/unit-test/BASE.md)
 
 ---
@@ -27,25 +27,40 @@ Every merge to `dev` and promotion to `master` should be backed by automated che
 
 ## What we test today
 
-| Area | Location | Notes |
-|------|----------|-------|
+| Area | Command / location | Notes |
+|------|-------------------|-------|
 | Permission parsing / admin | `server/src/auth/permissions.test.ts` | `canManagePermissions`, `userHasPermission`, key sanitization |
-| Auth flows | `server/scripts/auth-test.mjs` | Login, session cookie, dev user |
-| Public session isolation | `server/scripts/public-sessions-test.mjs` | Cross-account read, sanitized payloads |
-| Split detection math | `server/src/services/splitDetectionMath.test.ts` | Eligibility helpers |
+| Auth / Google user flows | `server/src/services/auth.google.test.ts` | Google account create, link, reject unverified |
+| Lap / split / track math | `server/src/services/*Math.test.ts`, `trackProgressMath.test.ts` | Pure detection helpers |
+| User stats catalog | `server/src/services/stats.test.ts` | Counters, computed stats, login recording |
+| Auth isolation (HTTP stack) | `npm run test:auth --prefix server` | Login, session cookie, dev user, cross-user session read |
+| Public session sharing | `npm run test:public --prefix server` | Cross-account read, sanitized payloads, `isPublic` |
+| Permission middleware (HTTP) | `npm run test:permissions --prefix server` | 403/2xx for `tracks.manage`, `sessions.delete`, `stats.view` |
+
+**Root gate:** `npm test` runs all server unit tests plus the three integration scripts above (fail fast).
 
 ---
 
-## Planned expansion (Roadmap Phase 4C)
+## CI
 
-1. **Permission middleware** — HTTP-level tests that `tracks.manage`, `sessions.delete`, and `stats.view` return 403 without the grant.
-2. **Client route guards** — Lightweight tests for `hasPermission` and `RequirePermission` redirect targets.
-3. **Split workflow** — Unit tests for `useSplitDetectionWorkflow` job queue / batch labeling (mock API).
-4. **CI wiring** — GitHub Actions job running `npm run check` + `npm test` on PRs to `dev` and `master`.
+| Platform | File | When |
+|----------|------|------|
+| GitLab | `.gitlab-ci.yml` | MRs and pushes to **`master`** (full gate: check + test + build); MRs/pushes to **`dev`** (check + test) |
+| GitHub | `.github/workflows/ci.yml` | Push/PR to `dev` or `master` (check + test + build) |
+
+Local parity before promoting `dev` → `master`: `npm run check && npm test && npm run build`.
+
+---
+
+## Planned expansion (Roadmap Phase 4C — remaining)
+
+1. **Client route guards** — Vitest tests for `hasPermission` and `RequirePermission` redirect targets.
+2. **Split workflow** — Unit tests for `useSplitDetectionWorkflow` job queue / batch labeling (mock API).
+3. **Browser QA** — Manual checklist for permission redirects (Tracks tab, stats route); not automated in CI yet.
 
 Add new `*.test.ts` files next to the module under test; keep long-running browser/E2E tests as optional scripts until Playwright (or similar) is adopted.
 
-**Work order:** Implementation tasks are broken down in [work-orders/WO-unit-test-gate.md](work-orders/WO-unit-test-gate.md). An archived parallel-agent dispatch guide is preserved at [agents/archive/MULTIAGENT_DISPATCH_4C.md](agents/archive/MULTIAGENT_DISPATCH_4C.md) (not the default workflow).
+**Work order:** Remaining items in [work-orders/WO-unit-test-gate.md](work-orders/WO-unit-test-gate.md) (client Vitest, browser QA). Server permission script and root test aggregation are **done**.
 
 ---
 

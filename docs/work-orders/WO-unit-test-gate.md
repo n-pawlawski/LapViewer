@@ -1,7 +1,7 @@
 # WO-unit-test-gate — Phase 4C automated test gate
 
 **Work order ID:** WO-unit-test-gate  
-**Feature status:** Ready for implementation  
+**Feature status:** In progress (Phase 1 server gate done 2026-07-08)  
 **Priority:** P1  
 **Git branch:** `feature/unit-test-gate`
 
@@ -22,12 +22,12 @@ Expand automated coverage so permission enforcement, route guards, and split-sug
 
 ## Acceptance criteria (feature level)
 
-- [ ] HTTP/script tests prove `tracks.manage`, `sessions.delete`, and `stats.view` return **403** without the grant (and **2xx** with grant)
+- [x] HTTP/script tests prove `tracks.manage`, `sessions.delete`, and `stats.view` return **403** without the grant (and **2xx** with grant)
 - [ ] Client unit tests cover `hasPermission`, `canViewStats`, and `RequirePermission` redirect behavior
 - [ ] Client unit tests cover `useSplitDetectionWorkflow` batch queue and proposal merge (mocked API)
-- [ ] Root `npm test` runs server unit tests **and** new integration scripts; CI unchanged or updated only if script paths change
+- [x] Root `npm test` runs server unit tests **and** new integration scripts; CI unchanged or updated only if script paths change
 - [ ] Browser QA checklist executed for permission redirects (Tracks tab, manage-users hash, stats route)
-- [ ] `docs/TESTING_STRATEGY.md` updated with new script names and ownership
+- [x] `docs/TESTING_STRATEGY.md` updated with new script names and ownership
 
 ## Parallelization summary
 
@@ -45,8 +45,8 @@ See `docs/agents/archive/MULTIAGENT_DISPATCH_4C.md` (archived) for copy-paste di
 
 | ID | Work type | Status | Title | Blocked by |
 |----|-----------|--------|-------|------------|
-| WO-unit-test-gate-01 | unit-test | **Ready** | API permission middleware script | — |
-| WO-unit-test-gate-05 | maintenance | **Ready** | Root test script aggregation | — |
+| WO-unit-test-gate-01 | unit-test | **Done** | API permission middleware script | — |
+| WO-unit-test-gate-05 | maintenance | **Done** | Root test script aggregation | — |
 | WO-unit-test-gate-00 | maintenance | Draft | Client Vitest runner | — |
 | WO-unit-test-gate-02 | unit-test | Draft | Client permission helpers + route guard tests | 00 |
 | WO-unit-test-gate-03 | unit-test | Draft | `useSplitDetectionWorkflow` hook tests | 00 |
@@ -61,7 +61,7 @@ See `docs/agents/archive/MULTIAGENT_DISPATCH_4C.md` (archived) for copy-paste di
 ## WO-unit-test-gate-01 — API permission middleware script
 
 **Work type:** `unit-test`  
-**Status:** Ready  
+**Status:** Done  
 **Priority:** P0  
 **Blocked by:** —  
 **Auxiliary context:** `docs/agents/unit-test/context/permission-api-middleware.md`
@@ -98,7 +98,7 @@ See `docs/agents/archive/MULTIAGENT_DISPATCH_4C.md` (archived) for copy-paste di
 ## WO-unit-test-gate-05 — Root test script aggregation
 
 **Work type:** `maintenance`  
-**Status:** Ready  
+**Status:** Done  
 **Priority:** P0  
 **Blocked by:** —  
 **Auxiliary context:** `docs/agents/maintenance/context/root-test-scripts.md`

@@ -1,0 +1,49 @@
+# LapViewer CI — gate merges and pushes to master (deploy branch, D-025).
+# GitHub Actions equivalent: .github/workflows/ci.yml (runs on dev + master).
+#
+# Required CI variables: none (uses public node:22 image).
+# Local parity: npm run install:all && npm run check && npm test && npm run build
+
+stages:
+  - verify
+
+variables:
+  NODE_VERSION: "22"
+
+.default_node:
+  image: node:${NODE_VERSION}-bookworm
+  cache:
+    key:
+      files:
+        - package-lock.json
+        - server/package-lock.json
+        - client/package-lock.json
+    paths:
+      - node_modules/
+      - server/node_modules/
+      - client/node_modules/
+  before_script:
+    - npm run install:all
+
+# Primary gate: promotion path to deployable master.
+master-gate:
+  extends: .default_node
+  stage: verify
+  script:
+    - npm run check
+    - npm test
+    - npm run build
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+
+# Optional: lighter check on dev integration branch (no build — faster feedback).
+dev-check:
+  extends: .default_node
+  stage: verify
+  script:
+    - npm run check
+    - npm test
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev"

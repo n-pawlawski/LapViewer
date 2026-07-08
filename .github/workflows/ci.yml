@@ -1,4 +1,4 @@
-# Runs when a GitHub remote is configured. Local development uses `npm run check`.
+# Runs when a GitHub remote is configured. GitLab: see .gitlab-ci.yml (master gate).
 name: CI
 
 on:
