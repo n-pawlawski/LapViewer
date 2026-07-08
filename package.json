@@ -9,6 +9,7 @@
     "typecheck": "npm run typecheck --prefix server && npm run typecheck --prefix client",
     "check": "npm run typecheck",
     "test": "npm run test --prefix server",
+    "project:state": "node .cursor/hooks/project-state.mjs",
     "docker:up": "docker compose up --build",
     "docker:hosts": "powershell -ExecutionPolicy Bypass -File scripts/setup-docker-hosts.ps1"
   },

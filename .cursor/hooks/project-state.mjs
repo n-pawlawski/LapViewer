@@ -25,14 +25,18 @@ function git(args) {
   }
 }
 
-function detectTestRunner() {
+function detectScripts() {
   try {
     const pkg = JSON.parse(readFileSync(resolve("package.json"), "utf8"));
-    const test = (pkg.scripts ?? {}).test;
-    if (test && !/no test specified/i.test(test)) return `\`npm test\` -> ${test}`;
-    return "no real `test` script detected";
+    const scripts = pkg.scripts ?? {};
+    const row = (name) => {
+      const cmd = scripts[name];
+      if (!cmd || /no test specified/i.test(cmd)) return `- \`npm run ${name}\`: not available`;
+      return `- \`npm run ${name}\`: ${cmd}`;
+    };
+    return ["check", "test", "build"].map(row).join("\n");
   } catch {
-    return "unknown (no package.json at repo root)";
+    return "- unknown (no package.json at repo root)";
   }
 }
 
@@ -40,7 +44,7 @@ const branch = git("branch --show-current");
 const statusSb = (git("status -sb").split("\n")[0] ?? "").trim();
 const remotes = git("remote -v");
 const recent = git("log --oneline -5");
-const runner = detectTestRunner();
+const verification = detectScripts();
 const generatedAt = new Date().toISOString();
 
 const remoteBlock = remotes || "none configured (work locally; ask before adding one)";
@@ -63,11 +67,11 @@ ${remoteBlock}
 ${recent || "(none)"}
 \`\`\`
 
-## Test runner
-- ${runner}
+## Verification commands (from root package.json)
+${verification}
 
 ---
-_Facts here are derived at runtime. If this looks stale, re-run \`node .cursor/hooks/project-state.mjs\`._
+_Facts here are derived at runtime. Re-run \`npm run project:state\` (or the hook) if this looks stale._
 `;
 
 try {
@@ -81,7 +85,7 @@ const additional_context = [
   `- branch: ${branch || "unknown"}`,
   `- status: ${statusSb || "unknown"}`,
   `- remotes: ${remotes ? remotes.replace(/\s*\n\s*/g, " | ") : "NONE configured"}`,
-  `- test runner: ${runner}`,
+  `- verification: check/test/build availability in docs/agents/PROJECT_STATE.generated.md`,
 ].join("\n");
 
 process.stdout.write(JSON.stringify({ additional_context }));

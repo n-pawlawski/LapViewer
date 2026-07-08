@@ -365,6 +365,15 @@ A doc is healthy when:
 - It links to related docs instead of duplicating large sections.
 - It names communication paths when frontend, backend, data, or agents interact.
 - It has enough context for a future agent to continue the work.
+- It does not hardcode volatile facts (see convention below).
+
+### Volatile facts convention
+
+Facts that change over time — remote/branch state, ahead/behind counts, "installed / not installed yet", current phase, tool availability — must **not** be asserted in prose, because they silently rot (e.g. the former "no remote configured" note).
+
+- **Prefer deriving:** tell the agent to run the command (e.g. "check `git remote -v`") rather than stating the answer.
+- **Prefer generating:** live status is machine-generated in `docs/agents/PROJECT_STATE.generated.md` (via `npm run project:state`), not hand-typed.
+- **If a fact must appear in prose, annotate how to re-derive it**, e.g. `Remote: none yet (verify: git remote -v)`.
 
 ---
 
