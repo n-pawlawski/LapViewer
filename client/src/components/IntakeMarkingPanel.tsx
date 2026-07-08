@@ -1,3 +1,7 @@
+/**
+ * Intake marking workstation: manual lap/split placement and timeline UX.
+ * Automated split suggestion is delegated to useSplitDetectionWorkflow (user clicks Suggest).
+ */
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createMarker, createSplit, deleteMarker, updateMarker } from "../api/markers";
 import { sessionVideoUrl, updateSession, type SessionDetail } from "../api/sessions";
@@ -7,14 +11,11 @@ import { IntakeShortcutsModal } from "./IntakeShortcutsModal";
 import { IntakeSidePanel, type IntakeSidePanelTab } from "./IntakeSidePanel";
 import { IntakeViewScopeBar } from "./IntakeViewScopeBar";
 import {
-  cancelSplitDetectionJob,
   fetchSplitBankSummary,
-  fetchSplitDetectionJob,
-  startSplitDetection,
   type SplitBankSummaryDto,
-  type SplitDetectionJobStatus,
 } from "../api/splitDetection";
-import { SplitDetectionPanel, type LocalSplitProposal } from "./SplitDetectionPanel";
+import { useSplitDetectionWorkflow } from "../hooks/useSplitDetectionWorkflow";
+import { SplitDetectionPanel } from "./SplitDetectionPanel";
 import { bestLapTimeMsFromMarkers, lapNumberLeftOfTime, lapTimeMsAtMarker } from "../utils/laps";
 import {
   findActionForEvent,
@@ -104,19 +105,26 @@ export function IntakeMarkingPanel({
   const [shortcuts, setShortcuts] = useState(loadIntakeShortcuts);
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
   const [sidePanelTab, setSidePanelTab] = useState<IntakeSidePanelTab>("laps");
+  const {
+    splitProposals,
+    splitReviewIndex,
+    splitDetectStatus,
+    splitDetectProgress,
+    splitDetectError,
+    splitDetecting,
+    splitDetectBatchLabel,
+    beginSplitDetection,
+    handleCancelSplitDetection,
+    selectSplitProposalIndex,
+    rejectCurrentSplitProposal,
+  } = useSplitDetectionWorkflow({
+    sessionId,
+    trackId,
+    onScanStarted: () => setSidePanelTab("suggest"),
+    onScanFinished: () => setSidePanelTab("suggest"),
+  });
   const [splitBankSummary, setSplitBankSummary] = useState<SplitBankSummaryDto | null>(null);
-  const [splitDetectStatus, setSplitDetectStatus] = useState<SplitDetectionJobStatus | "idle">("idle");
-  const [splitDetectProgress, setSplitDetectProgress] = useState(0);
-  const [splitDetectError, setSplitDetectError] = useState<string | null>(null);
-  const [splitJobId, setSplitJobId] = useState<string | null>(null);
-  const [splitProposals, setSplitProposals] = useState<LocalSplitProposal[]>([]);
-  const [splitReviewIndex, setSplitReviewIndex] = useState(0);
-  const [splitDetecting, setSplitDetecting] = useState(false);
-  const [splitDetectBatchLabel, setSplitDetectBatchLabel] = useState<string | null>(null);
   const [selectedSuggestLaps, setSelectedSuggestLaps] = useState<number[]>([]);
-  const splitDetectQueueRef = useRef<number[]>([]);
-  const splitBatchTotalRef = useRef(0);
-  const splitBatchCompletedRef = useRef(0);
   const [viewMode, setViewMode] = useState<IntakeViewMode>("full-race");
   const [lapScope, setLapScope] = useState<IntakeLapScope>("all");
   const durationPersisted = useRef(durationSeconds != null);
@@ -263,89 +271,6 @@ export function IntakeMarkingPanel({
     });
   }, [lapsWithMissing]);
 
-  const selectSplitProposalIndex = useCallback(
-    (index: number) => {
-      setSplitReviewIndex(Math.max(0, Math.min(splitProposals.length - 1, index)));
-    },
-    [splitProposals.length],
-  );
-
-  const rejectCurrentSplitProposal = useCallback(() => {
-    setSplitProposals((prev) => {
-      if (prev.length === 0) return prev;
-      const next = prev.filter((_, index) => index !== splitReviewIndex);
-      if (next.length === 0) {
-        setSplitDetectStatus("idle");
-      } else if (splitReviewIndex >= next.length) {
-        setSplitReviewIndex(next.length - 1);
-      }
-      return next;
-    });
-  }, [splitReviewIndex]);
-
-  const acceptCurrentSplitProposal = useCallback(async () => {
-    if (splitProposals.length === 0) return;
-    const proposal = splitProposals[Math.min(splitReviewIndex, splitProposals.length - 1)];
-    if (!proposal) return;
-
-    const time = currentTimeRef.current;
-    setSaveState("saving");
-    setSaveError(null);
-    try {
-      const result = await createSplit(sessionId, proposal.lapNumber, proposal.splitIndex, time);
-      onSessionUpdated(result.session);
-      rejectCurrentSplitProposal();
-      await refreshSplitBankSummary();
-      setSaveState("saved");
-    } catch (err) {
-      setSaveState("error");
-      setSaveError(err instanceof Error ? err.message : "Accept failed");
-    }
-  }, [
-    splitProposals,
-    splitReviewIndex,
-    sessionId,
-    onSessionUpdated,
-    rejectCurrentSplitProposal,
-    refreshSplitBankSummary,
-  ]);
-
-  const beginSplitDetection = useCallback(
-    async (lapNumbers: number[]) => {
-      if (lapNumbers.length === 0 || !trackId) return;
-
-      setSplitDetectError(null);
-      setSplitProposals([]);
-      setSplitDetectStatus("queued");
-      setSplitDetectProgress(0);
-      setSplitDetecting(true);
-      setSidePanelTab("suggest");
-
-      const [firstLap, ...rest] = lapNumbers;
-      splitDetectQueueRef.current = rest;
-      splitBatchTotalRef.current = lapNumbers.length;
-      splitBatchCompletedRef.current = 0;
-      setSplitDetectBatchLabel(
-        lapNumbers.length > 1 ? `Lap ${firstLap} (1 of ${lapNumbers.length})` : null,
-      );
-
-      try {
-        const { jobId } = await startSplitDetection(sessionId, firstLap!);
-        setSplitJobId(jobId);
-        setSplitDetectStatus("running");
-      } catch (err) {
-        splitDetectQueueRef.current = [];
-        splitBatchTotalRef.current = 0;
-        splitBatchCompletedRef.current = 0;
-        setSplitDetectBatchLabel(null);
-        setSplitDetecting(false);
-        setSplitDetectStatus("error");
-        setSplitDetectError(err instanceof Error ? err.message : "Could not start split detection");
-      }
-    },
-    [trackId, sessionId],
-  );
-
   const handleStartSplitDetection = useCallback(async () => {
     if (selectedLapNumber == null) return;
     await beginSplitDetection([selectedLapNumber]);
@@ -370,28 +295,6 @@ export function IntakeMarkingPanel({
   const clearSuggestLaps = useCallback(() => {
     setSelectedSuggestLaps([]);
   }, []);
-
-  const handleCancelSplitDetection = useCallback(async () => {
-    if (!splitJobId) return;
-    try {
-      await cancelSplitDetectionJob(splitJobId);
-    } catch {
-      // Job may already be finished.
-    }
-    splitDetectQueueRef.current = [];
-    splitBatchTotalRef.current = 0;
-    splitBatchCompletedRef.current = 0;
-    setSplitDetectBatchLabel(null);
-    setSplitJobId(null);
-    setSplitDetecting(false);
-    setSplitDetectStatus("cancelled");
-  }, [splitJobId]);
-
-  useEffect(() => {
-    if (splitProposals.length > 0) {
-      setSidePanelTab("suggest");
-    }
-  }, [splitProposals.length]);
 
   useEffect(() => {
     currentTimeRef.current = currentTime;
@@ -526,131 +429,32 @@ export function IntakeMarkingPanel({
     [markers, laps, seekAndSync],
   );
 
-  useEffect(() => {
-    if (!splitJobId) return;
-    let cancelled = false;
-
-    async function startNextLap(lapNumber: number) {
-      const { jobId } = await startSplitDetection(sessionId, lapNumber);
-      if (cancelled) return;
-      setSplitJobId(jobId);
-      setSplitDetectStatus("running");
-    }
-
-    async function poll() {
-      try {
-        const job = await fetchSplitDetectionJob(splitJobId!);
-        if (cancelled) return;
-
-        const batchTotal = splitBatchTotalRef.current;
-        const batchDone = splitBatchCompletedRef.current;
-        setSplitDetectStatus(job.status);
-        setSplitDetectProgress(
-          batchTotal > 1 ? (batchDone + job.progress) / batchTotal : job.progress,
-        );
-
-        const mapProposals = (lapNumber: number): LocalSplitProposal[] =>
-          (job.proposals ?? []).map((p) => ({
-            id: p.id,
-            lapNumber,
-            splitIndex: p.splitIndex,
-            label: p.label,
-            time: p.timeSeconds,
-            score: p.score,
-            confidence: p.confidence,
-          }));
-
-        if (job.status === "done") {
-          const mapped = mapProposals(job.lapNumber);
-          if (mapped.length > 0) {
-            setSplitProposals((prev) =>
-              batchTotal > 1 ? [...prev, ...mapped] : mapped,
-            );
-          }
-
-          splitBatchCompletedRef.current = batchDone + 1;
-          const queue = splitDetectQueueRef.current;
-
-          if (queue.length > 0) {
-            const nextLap = queue[0]!;
-            splitDetectQueueRef.current = queue.slice(1);
-            setSplitDetectBatchLabel(
-              `Lap ${nextLap} (${splitBatchCompletedRef.current + 1} of ${batchTotal})`,
-            );
-            setSplitDetectProgress(splitBatchCompletedRef.current / batchTotal);
-            try {
-              await startNextLap(nextLap);
-            } catch (err) {
-              if (cancelled) return;
-              splitDetectQueueRef.current = [];
-              splitBatchTotalRef.current = 0;
-              splitBatchCompletedRef.current = 0;
-              setSplitDetectBatchLabel(null);
-              setSplitDetecting(false);
-              setSplitJobId(null);
-              setSplitDetectStatus("error");
-              setSplitDetectError(
-                err instanceof Error ? err.message : "Could not start next lap scan",
-              );
-            }
-            return;
-          }
-
-          setSplitDetecting(false);
-          setSplitJobId(null);
-          setSplitDetectBatchLabel(null);
-          splitDetectQueueRef.current = [];
-          splitBatchTotalRef.current = 0;
-          splitBatchCompletedRef.current = 0;
-          setSidePanelTab("suggest");
-          setSplitReviewIndex(0);
-        }
-
-        if (job.status === "error") {
-          splitDetectQueueRef.current = [];
-          splitBatchTotalRef.current = 0;
-          splitBatchCompletedRef.current = 0;
-          setSplitDetectBatchLabel(null);
-          setSplitDetecting(false);
-          setSplitJobId(null);
-          setSplitDetectError(job.error ?? "Split detection failed");
-        }
-
-        if (job.status === "cancelled") {
-          splitDetectQueueRef.current = [];
-          splitBatchTotalRef.current = 0;
-          splitBatchCompletedRef.current = 0;
-          setSplitDetectBatchLabel(null);
-          setSplitDetecting(false);
-          setSplitJobId(null);
-        }
-      } catch (err) {
-        if (cancelled) return;
-        splitDetectQueueRef.current = [];
-        splitBatchTotalRef.current = 0;
-        splitBatchCompletedRef.current = 0;
-        setSplitDetectBatchLabel(null);
-        setSplitDetecting(false);
-        setSplitJobId(null);
-        setSplitDetectStatus("error");
-        setSplitDetectError(err instanceof Error ? err.message : "Split detection poll failed");
-      }
-    }
-
-    const intervalId = window.setInterval(() => void poll(), 500);
-    void poll();
-    return () => {
-      cancelled = true;
-      window.clearInterval(intervalId);
-    };
-  }, [splitJobId, seekAndSync, sessionId]);
-
-  useEffect(() => {
+  const acceptCurrentSplitProposal = useCallback(async () => {
     if (splitProposals.length === 0) return;
-    if (splitReviewIndex >= splitProposals.length) {
-      setSplitReviewIndex(Math.max(0, splitProposals.length - 1));
+    const proposal = splitProposals[Math.min(splitReviewIndex, splitProposals.length - 1)];
+    if (!proposal) return;
+
+    const time = currentTimeRef.current;
+    setSaveState("saving");
+    setSaveError(null);
+    try {
+      const result = await createSplit(sessionId, proposal.lapNumber, proposal.splitIndex, time);
+      onSessionUpdated(result.session);
+      rejectCurrentSplitProposal();
+      await refreshSplitBankSummary();
+      setSaveState("saved");
+    } catch (err) {
+      setSaveState("error");
+      setSaveError(err instanceof Error ? err.message : "Accept failed");
     }
-  }, [splitProposals.length, splitReviewIndex]);
+  }, [
+    splitProposals,
+    splitReviewIndex,
+    sessionId,
+    onSessionUpdated,
+    rejectCurrentSplitProposal,
+    refreshSplitBankSummary,
+  ]);
 
   useEffect(() => {
     if (!splitReviewActive) return;

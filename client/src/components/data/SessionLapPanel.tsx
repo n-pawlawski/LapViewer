@@ -10,6 +10,7 @@ interface SessionLapPanelProps {
   onEdit: () => void;
   onDelete: () => void;
   onVisibilityChange: () => void;
+  canDelete?: boolean;
 }
 
 export function SessionLapPanel({
@@ -19,6 +20,7 @@ export function SessionLapPanel({
   onEdit,
   onDelete,
   onVisibilityChange,
+  canDelete = false,
 }: SessionLapPanelProps) {
   const isOwner = detail.isOwner !== false;
 
@@ -31,6 +33,7 @@ export function SessionLapPanel({
         onEdit={onEdit}
         onDelete={onDelete}
         onVisibilityChange={onVisibilityChange}
+        canDelete={canDelete}
       />
       <LapTable
         session={session}

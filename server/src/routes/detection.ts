@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireUserPermission } from "../middleware/requirePermission.js";
 import {
   addDetectionBankEntry,
   getDetectionProfileByTrackId,
@@ -181,6 +182,8 @@ sessionDetectionRouter.get("/:id/frame", async (req, res) => {
 
 export const trackDetectionRouter = Router({ mergeParams: true });
 
+const requireTracksManage = requireUserPermission("tracks.manage");
+
 trackDetectionRouter.get("/:trackId/detection-profile", (req, res) => {
   const track = getTrackById(req.params.trackId, req.userId!);
   if (!track) {
@@ -195,7 +198,7 @@ trackDetectionRouter.get("/:trackId/detection-profile", (req, res) => {
   res.json(profile);
 });
 
-trackDetectionRouter.put("/:trackId/detection-profile", (req, res) => {
+trackDetectionRouter.put("/:trackId/detection-profile", requireTracksManage, (req, res) => {
   const track = getTrackById(req.params.trackId, req.userId!);
   if (!track) {
     res.status(404).json({ error: "Track not found" });
@@ -236,7 +239,7 @@ trackDetectionRouter.get("/:trackId/detection-profile/bank", (req, res) => {
   res.json(entries);
 });
 
-trackDetectionRouter.post("/:trackId/detection-profile/bank", async (req, res) => {
+trackDetectionRouter.post("/:trackId/detection-profile/bank", requireTracksManage, async (req, res) => {
   const track = getTrackById(req.params.trackId, req.userId!);
   if (!track) {
     res.status(404).json({ error: "Track not found" });

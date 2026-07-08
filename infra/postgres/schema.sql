@@ -165,3 +165,22 @@ CREATE TABLE IF NOT EXISTS track_split_bank (
 
 CREATE INDEX IF NOT EXISTS idx_track_split_bank_track
   ON track_split_bank(trackId, splitIndex);
+
+CREATE TABLE IF NOT EXISTS stat_definitions (
+  key TEXT PRIMARY KEY,
+  label TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  kind TEXT NOT NULL,
+  scope TEXT NOT NULL DEFAULT 'user',
+  createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS stat_counters (
+  userId TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  statKey TEXT NOT NULL REFERENCES stat_definitions(key) ON DELETE CASCADE,
+  value INTEGER NOT NULL DEFAULT 0,
+  updatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(userId, statKey)
+);
+
+CREATE INDEX IF NOT EXISTS idx_stat_counters_user ON stat_counters(userId);

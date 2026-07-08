@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireUserPermission } from "../middleware/requirePermission.js";
 import {
   getReferenceProfileByTrackId,
   saveReferenceProfile,
@@ -33,7 +34,9 @@ trackReferenceRouter.get("/:trackId/reference-profile", (req, res) => {
   res.json(profile);
 });
 
-trackReferenceRouter.put("/:trackId/reference-profile", (req, res) => {
+const requireTracksManage = requireUserPermission("tracks.manage");
+
+trackReferenceRouter.put("/:trackId/reference-profile", requireTracksManage, (req, res) => {
   const body = req.body as SaveReferenceProfileBody;
   if (!body?.referenceSessionId || body.referenceLapNumber == null) {
     res.status(400).json({
@@ -58,7 +61,7 @@ trackReferenceRouter.put("/:trackId/reference-profile", (req, res) => {
   }
 });
 
-trackReferenceRouter.post("/:trackId/reference-profile/build", (req, res) => {
+trackReferenceRouter.post("/:trackId/reference-profile/build", requireTracksManage, (req, res) => {
   const track = getTrackById(req.params.trackId, req.userId!);
   if (!track) {
     res.status(404).json({ error: "Track not found" });

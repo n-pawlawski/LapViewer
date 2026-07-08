@@ -67,6 +67,7 @@ trackSplitBankRouter.get("/:trackId/split-bank", (req, res) => {
   res.json(getSplitBankSummary(track.id, req.userId!));
 });
 
+/** User-initiated split suggestion (AD-5). Requires manual lap-start markers first. */
 sessionSplitDetectionRouter.post("/:id/detect-splits", (req, res) => {
   const session = getSessionById(req.params.id, req.userId!);
   if (!session) {

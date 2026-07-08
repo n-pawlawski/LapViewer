@@ -12,6 +12,7 @@ interface SessionEditModalProps {
   onClose: () => void;
   onSaved: () => void;
   onDeleted: () => void;
+  canDelete?: boolean;
 }
 
 export function SessionEditModal({
@@ -24,6 +25,7 @@ export function SessionEditModal({
   onClose,
   onSaved,
   onDeleted,
+  canDelete = false,
 }: SessionEditModalProps) {
   const [title, setTitle] = useState(initialTitle);
   const [track, setTrack] = useState(initialTrack);
@@ -100,14 +102,16 @@ export function SessionEditModal({
           <button type="button" className="btn btn-secondary" onClick={onClose}>
             Cancel
           </button>
-          <button
-            type="button"
-            className="btn btn-danger"
-            disabled={deleting}
-            onClick={() => void handleDelete()}
-          >
-            {deleting ? "Deleting…" : confirmDelete ? "Confirm delete" : "Delete session"}
-          </button>
+          {canDelete && (
+            <button
+              type="button"
+              className="btn btn-danger"
+              disabled={deleting}
+              onClick={() => void handleDelete()}
+            >
+              {deleting ? "Deleting…" : confirmDelete ? "Confirm delete" : "Delete session"}
+            </button>
+          )}
         </div>
       </form>
     </Modal>

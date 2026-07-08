@@ -8,9 +8,12 @@ export const PERMISSION_DEFINITIONS = [
   { key: "sessions.delete", label: "Delete sessions" },
   { key: "tracks.manage", label: "Manage tracks" },
   { key: "users.manage", label: "Manage users" },
+  { key: "stats.view", label: "View user stats" },
 ] as const;
 
 export type PermissionKey = (typeof PERMISSION_DEFINITIONS)[number]["key"];
+
+export const ALL_PERMISSION_KEYS: PermissionKey[] = PERMISSION_DEFINITIONS.map((item) => item.key);
 
 const VALID_PERMISSION_KEYS = new Set<string>(PERMISSION_DEFINITIONS.map((item) => item.key));
 

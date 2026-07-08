@@ -41,6 +41,8 @@ import {
   splitDetectionRouter,
   trackSplitBankRouter,
 } from "./routes/splitDetection.js";
+import { statsRouter } from "./routes/stats.js";
+import { initializeStatsCatalog } from "./services/stats.js";
 import { streamVideoFile } from "./video.js";
 import { GIT_SHA } from "./buildInfo.js";
 
@@ -48,6 +50,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(__dirname, "../../client/dist");
 
 await initDatabase();
+initializeStatsCatalog();
 const devUserId = seedDevUserIfNeeded();
 if (devUserId) {
   seedIfEmpty(devUserId);
@@ -73,6 +76,7 @@ app.get("/api/video/demo", (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/account", requireAuth, accountRouter);
 app.use("/api/users", requireAuth, usersRouter);
+app.use("/api/stats", requireAuth, statsRouter);
 
 app.use("/api/sessions", requireAuth, sessionsRouter);
 app.use("/api/sessions", requireAuth, uploadRouter);

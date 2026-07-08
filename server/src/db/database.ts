@@ -284,6 +284,29 @@ function migrateStorageColumns(database: Database.Database): void {
   }
 }
 
+function migrateStatsTables(database: Database.Database): void {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS stat_definitions (
+      key TEXT PRIMARY KEY,
+      label TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      kind TEXT NOT NULL,
+      scope TEXT NOT NULL DEFAULT 'user',
+      createdAt TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS stat_counters (
+      userId TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      statKey TEXT NOT NULL REFERENCES stat_definitions(key) ON DELETE CASCADE,
+      value INTEGER NOT NULL DEFAULT 0,
+      updatedAt TEXT NOT NULL,
+      UNIQUE(userId, statKey)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_stat_counters_user ON stat_counters(userId);
+  `);
+}
+
 function migrateSqlite(database: Database.Database): void {
   const columns = database
     .prepare(`PRAGMA table_info(markers)`)
@@ -342,6 +365,7 @@ function migrateSqlite(database: Database.Database): void {
   migrateUserOwnership(database);
   migrateGoogleAuth(database);
   migrateStorageColumns(database);
+  migrateStatsTables(database);
 
   const splitCols = tableColumns(database, "track_splits");
   if (splitCols.length > 0 && !splitCols.includes("progress")) {

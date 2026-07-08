@@ -14,7 +14,8 @@ type Props = {
   saving: boolean;
   error: string | null;
   onSubmit: (e: React.FormEvent) => void;
-  onManageTracks: () => void;
+  onManageTracks?: () => void;
+  showManageTracks?: boolean;
 };
 
 export function IntakeSessionMetadataPanel({
@@ -32,6 +33,7 @@ export function IntakeSessionMetadataPanel({
   error,
   onSubmit,
   onManageTracks,
+  showManageTracks = false,
 }: Props) {
   return (
     <form className="intake-form intake-form--side-panel" onSubmit={onSubmit}>
@@ -56,14 +58,16 @@ export function IntakeSessionMetadataPanel({
               </option>
             ))}
           </select>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            onClick={onManageTracks}
-            disabled={saving}
-          >
-            Manage tracks
-          </button>
+          {showManageTracks && onManageTracks && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={onManageTracks}
+              disabled={saving}
+            >
+              Manage tracks
+            </button>
+          )}
         </div>
       </div>
 

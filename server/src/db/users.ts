@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
-import { canManagePermissions, parsePermissionsJson, serializePermissions } from "../auth/permissions.js";
+import {
+  ALL_PERMISSION_KEYS,
+  canManagePermissions,
+  parsePermissionsJson,
+  serializePermissions,
+} from "../auth/permissions.js";
 import { isDevUserMode } from "../config.js";
 import { getDb } from "./database.js";
 import type { DbClient } from "./postgresClient.js";
@@ -79,19 +84,26 @@ export function ensureDevUser(db: DbClient = getDb()): string {
     .prepare(`SELECT * FROM users WHERE id = ?`)
     .get(DEV_USER_ID) as UserRow | undefined;
 
+  const devPermissions = serializePermissions([...ALL_PERMISSION_KEYS]);
+
   if (existing) {
     const passwordOk =
       !!existing.passwordHash &&
       bcrypt.compareSync(DEV_USER_PASSWORD, existing.passwordHash);
-    if (
-      isDevUserMode() &&
-      (existing.email !== DEV_USER_LOGIN ||
+    const existingPermissions = parsePermissionsJson(existing.permissions);
+    if (isDevUserMode()) {
+      if (
+        existing.email !== DEV_USER_LOGIN ||
         existing.displayName !== DEV_USER_DISPLAY_NAME ||
-        !passwordOk)
-    ) {
-      db.prepare(
-        `UPDATE users SET email = ?, displayName = ?, passwordHash = ? WHERE id = ?`,
-      ).run(DEV_USER_LOGIN, DEV_USER_DISPLAY_NAME, devPasswordHash(), DEV_USER_ID);
+        !passwordOk
+      ) {
+        db.prepare(
+          `UPDATE users SET email = ?, displayName = ?, passwordHash = ? WHERE id = ?`,
+        ).run(DEV_USER_LOGIN, DEV_USER_DISPLAY_NAME, devPasswordHash(), DEV_USER_ID);
+      }
+      if (existingPermissions.length === 0) {
+        db.prepare(`UPDATE users SET permissions = ? WHERE id = ?`).run(devPermissions, DEV_USER_ID);
+      }
     }
     return DEV_USER_ID;
   }
@@ -99,12 +111,13 @@ export function ensureDevUser(db: DbClient = getDb()): string {
   const ts = nowIso();
   db.prepare(
     `INSERT INTO users (id, email, displayName, passwordHash, role, permissions, createdAt)
-     VALUES (@id, @email, @displayName, @passwordHash, 'user', '[]', @createdAt)`,
+     VALUES (@id, @email, @displayName, @passwordHash, 'user', @permissions, @createdAt)`,
   ).run({
     id: DEV_USER_ID,
     email: DEV_USER_LOGIN,
     displayName: DEV_USER_DISPLAY_NAME,
     passwordHash: devPasswordHash(),
+    permissions: devPermissions,
     createdAt: ts,
   });
   return DEV_USER_ID;

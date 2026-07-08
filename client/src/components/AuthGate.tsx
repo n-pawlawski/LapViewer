@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { googleSignInUrl } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
 import { useSearchParams } from "../lib/router";
+import { AppLogo } from "./AppLogo";
 
 export function AuthGate() {
   const { login, devUserMode, googleAuthEnabled } = useAuth();
@@ -36,7 +37,10 @@ export function AuthGate() {
   return (
     <div className="auth-gate">
       <div className="auth-gate-card">
-        <h1 className="auth-gate-title">DeltaView</h1>
+        <div className="auth-gate-brand">
+          <AppLogo size={64} className="auth-gate-logo" />
+          <h1 className="auth-gate-title">DeltaView</h1>
+        </div>
         <p className="auth-gate-text">Sign in with Google to continue.</p>
 
         {googleAuthEnabled ? (
