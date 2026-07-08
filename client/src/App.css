@@ -3116,6 +3116,20 @@ body {
   font-size: 0.875rem;
 }
 
+.app-user-name--link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.app-user-name--link:hover {
+  color: #e7ecf1;
+}
+
 .app-user-badge {
   padding: 0.125rem 0.5rem;
   border-radius: 4px;
@@ -3124,4 +3138,111 @@ body {
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+/* Account settings */
+.account-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 2rem;
+}
+
+.account-page h1 {
+  margin: 0 0 1.25rem;
+  font-size: 1.5rem;
+}
+
+.account-section {
+  margin-bottom: 1.75rem;
+  padding: 1rem 1.1rem;
+  background: #141b24;
+  border: 1px solid #2a3544;
+  border-radius: 12px;
+}
+
+.account-section h2 {
+  margin: 0 0 0.85rem;
+  font-size: 1.05rem;
+}
+
+.account-lead {
+  margin: 0 0 1rem;
+  color: #9aa7b5;
+  line-height: 1.45;
+}
+
+.account-form {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 420px;
+}
+
+.account-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.account-field span {
+  font-size: 0.8rem;
+  color: #9aa7b5;
+}
+
+.account-field input {
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #2a3544;
+  background: #0f1419;
+  color: #e7ecf1;
+}
+
+.account-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.account-permissions-table-wrap {
+  overflow-x: auto;
+}
+
+.account-permissions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.account-permissions-table th,
+.account-permissions-table td {
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid #2a3544;
+  text-align: left;
+}
+
+.account-permissions-table th {
+  color: #9aa7b5;
+  font-weight: 600;
+}
+
+.account-permission-cell {
+  text-align: center;
+}
+
+.account-user-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.account-user-name {
+  font-weight: 600;
+  color: #e7ecf1;
+}
+
+.account-user-email {
+  font-size: 0.78rem;
+  color: #9aa7b5;
+}
+
+.data-status--ok {
+  color: #86efac;
 }

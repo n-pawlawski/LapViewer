@@ -79,7 +79,14 @@ export function AppShell({
         <div className="app-header-right">
           {user && (
             <div className="app-user">
-              <span className="app-user-name">{user.displayName}</span>
+              <button
+                type="button"
+                className="app-user-name app-user-name--link"
+                onClick={() => navigate("/account")}
+                title="Account settings"
+              >
+                {user.displayName}
+              </button>
               {user.isDevAccount && (
                 <span className="app-user-badge">DEV ACCOUNT</span>
               )}

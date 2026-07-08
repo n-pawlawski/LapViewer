@@ -21,6 +21,8 @@ import { seedIfEmpty } from "./db/seed.js";
 import { requireAuth } from "./middleware/auth.js";
 import { errorLoggingMiddleware, logger, requestLoggingMiddleware } from "./logger.js";
 import { authRouter } from "./routes/auth.js";
+import { accountRouter } from "./routes/account.js";
+import { usersRouter } from "./routes/users.js";
 import { markersRouter } from "./routes/markers.js";
 import { detectionRouter, sessionDetectionRouter, trackDetectionRouter } from "./routes/detection.js";
 import { healthRouter } from "./routes/ops.js";
@@ -69,6 +71,8 @@ app.get("/api/video/demo", (req, res) => {
 });
 
 app.use("/api/auth", authRouter);
+app.use("/api/account", requireAuth, accountRouter);
+app.use("/api/users", requireAuth, usersRouter);
 
 app.use("/api/sessions", requireAuth, sessionsRouter);
 app.use("/api/sessions", requireAuth, uploadRouter);

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
+import { canManagePermissions, parsePermissionsJson, serializePermissions } from "../auth/permissions.js";
 import { isDevUserMode } from "../config.js";
 import { getDb } from "./database.js";
 import type { DbClient } from "./postgresClient.js";
@@ -20,6 +21,7 @@ export interface UserRow {
   passwordHash: string | null;
   googleSub: string | null;
   role: string;
+  permissions: string | null;
   createdAt: string;
 }
 
@@ -28,6 +30,17 @@ export interface UserDto {
   email: string;
   displayName: string;
   isDevAccount: boolean;
+  canManagePermissions: boolean;
+  permissions: string[];
+}
+
+export interface UserAdminDto {
+  id: string;
+  email: string;
+  displayName: string;
+  isDevAccount: boolean;
+  permissions: string[];
+  createdAt: string;
 }
 
 function nowIso(): string {
@@ -39,11 +52,25 @@ function devPasswordHash(): string {
 }
 
 export function userToDto(row: UserRow): UserDto {
+  const permissions = parsePermissionsJson(row.permissions);
   return {
     id: row.id,
     email: row.email,
     displayName: row.displayName,
     isDevAccount: row.id === DEV_USER_ID,
+    canManagePermissions: canManagePermissions(row),
+    permissions,
+  };
+}
+
+export function userToAdminDto(row: UserRow): UserAdminDto {
+  return {
+    id: row.id,
+    email: row.email,
+    displayName: row.displayName,
+    isDevAccount: row.id === DEV_USER_ID,
+    permissions: parsePermissionsJson(row.permissions),
+    createdAt: row.createdAt,
   };
 }
 
@@ -71,8 +98,8 @@ export function ensureDevUser(db: DbClient = getDb()): string {
 
   const ts = nowIso();
   db.prepare(
-    `INSERT INTO users (id, email, displayName, passwordHash, role, createdAt)
-     VALUES (@id, @email, @displayName, @passwordHash, 'user', @createdAt)`,
+    `INSERT INTO users (id, email, displayName, passwordHash, role, permissions, createdAt)
+     VALUES (@id, @email, @displayName, @passwordHash, 'user', '[]', @createdAt)`,
   ).run({
     id: DEV_USER_ID,
     email: DEV_USER_LOGIN,
@@ -110,19 +137,40 @@ export function linkGoogleSub(userId: string, googleSub: string): void {
     .run(googleSub, userId);
 }
 
+export function listUsers(): UserRow[] {
+  return getDb()
+    .prepare(`SELECT * FROM users ORDER BY displayName COLLATE NOCASE, email`)
+    .all() as UserRow[];
+}
+
+export function updateUserDisplayName(userId: string, displayName: string): UserRow | null {
+  const trimmed = displayName.trim();
+  if (!trimmed) return null;
+  getDb().prepare(`UPDATE users SET displayName = ? WHERE id = ?`).run(trimmed, userId);
+  return getUserById(userId);
+}
+
+export function updateUserPermissions(userId: string, permissions: string[]): UserRow | null {
+  getDb()
+    .prepare(`UPDATE users SET permissions = ? WHERE id = ?`)
+    .run(serializePermissions(permissions), userId);
+  return getUserById(userId);
+}
+
 export function createUser(input: {
   email: string;
   displayName: string;
   passwordHash?: string | null;
   googleSub?: string | null;
   role?: string;
+  permissions?: string[];
 }): UserRow {
   const id = randomUUID();
   const ts = nowIso();
   getDb()
     .prepare(
-      `INSERT INTO users (id, email, displayName, passwordHash, googleSub, role, createdAt)
-       VALUES (@id, @email, @displayName, @passwordHash, @googleSub, @role, @createdAt)`,
+      `INSERT INTO users (id, email, displayName, passwordHash, googleSub, role, permissions, createdAt)
+       VALUES (@id, @email, @displayName, @passwordHash, @googleSub, @role, @permissions, @createdAt)`,
     )
     .run({
       id,
@@ -131,6 +179,7 @@ export function createUser(input: {
       passwordHash: input.passwordHash ?? null,
       googleSub: input.googleSub ?? null,
       role: input.role ?? "user",
+      permissions: serializePermissions(input.permissions ?? []),
       createdAt: ts,
     });
   return getUserById(id)!;

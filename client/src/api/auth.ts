@@ -5,6 +5,8 @@ export interface AuthUser {
   email: string;
   displayName: string;
   isDevAccount: boolean;
+  canManagePermissions: boolean;
+  permissions: string[];
 }
 
 export interface HealthResponse {

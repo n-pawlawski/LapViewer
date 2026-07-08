@@ -9,6 +9,8 @@ declare global {
         email: string;
         displayName: string;
         isDevAccount: boolean;
+        canManagePermissions: boolean;
+        permissions: string[];
       };
     }
   }

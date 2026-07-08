@@ -6,6 +6,7 @@ import { ComparePage } from "./pages/ComparePage";
 import { DataPage } from "./pages/DataPage";
 import { IntakePage } from "./pages/IntakePage";
 import { TracksPage } from "./pages/TracksPage";
+import { AccountSettingsPage } from "./pages/AccountSettingsPage";
 import "./App.css";
 
 function AppRoutes() {
@@ -18,6 +19,8 @@ function AppRoutes() {
       return <IntakePage />;
     case "/tracks":
       return <TracksPage />;
+    case "/account":
+      return <AccountSettingsPage />;
     case "/":
     default:
       return <DataPage />;
