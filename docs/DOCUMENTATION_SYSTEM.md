@@ -75,6 +75,7 @@ Each concern should have one primary home.
 | Process hygiene standard | `PROCESS_HYGIENE.md` | Owns branching, verification ladder, and done criteria |
 | Local dev commands | `DEVELOPMENT.md` | Owns install, dev, check, and git workflow summary |
 | Agent instructions | `docs/agents/*.md` | Role-specific behavior for specialized agents |
+| Invokable workflow skills | `.cursor/skills/lapviewer-*/SKILL.md` | On-demand pickup, feature design, promote procedures |
 | Agent doc map (paths for agents) | `docs/agents/BASE_AGENT.md` + `.agent-project.yaml` | Must stay in sync with this file's SOT table |
 | Feature implementation tasks | `docs/work-orders/WO-*.md` | Typed work items per feature; see `docs/agents/WORK_ORDERS.md` |
 | Global agent work items | `docs/agents/WORK_QUEUE.md` | Tooling and hygiene; not primary home for feature code |

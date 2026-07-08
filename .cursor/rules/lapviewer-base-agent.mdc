@@ -3,21 +3,19 @@ description: Base agent orientation for LapViewer
 alwaysApply: true
 ---
 
-# LapViewer Base Agent Context
+# LapViewer Base Agent
 
-Before meaningful project work, read `docs/agents/BASE_AGENT.md`.
+Read `docs/agents/BASE_AGENT.md` for the doc map, process tiers, and guardrails.
 
-Use that file to:
+**Derive live state — don't assume it.** Run `git remote -v` and `git status -sb`, or read `docs/agents/PROJECT_STATE.generated.md` (regenerated each session).
 
-- Understand the project, collaboration rules, and documentation sources.
-- Use `docs/DOCUMENTATION_SYSTEM.md` as the documentation source-of-truth map.
-- Choose the right specialized agent context from `docs/agents/`.
-- Check `docs/agents/WORK_ORDERS.md` and `docs/work-orders/` for typed feature work; `WORK_QUEUE.md` for global tasks.
-- Dispatch by **Work type** — read `docs/agents/<folder>/BASE.md` and complete its checklist unless a single ID is named.
-- Keep docs, implementation, and verification aligned.
+**Procedures — invoke skills:**
+| Skill | Use when |
+|-------|----------|
+| `lapviewer-feature` | New feature: idea → spec → ready work order |
+| `lapviewer-pickup` | Process Ready work items (typed agents) |
+| `lapviewer-promote` | Merge to `dev`, promote to `master`, push |
 
-Invokable skills encode the common procedures (they point back to the docs above): `lapviewer-feature` (idea → ready work order), `lapviewer-pickup` (process ready work), `lapviewer-promote` (merge/release).
+**Guardrails:** Do not implement `Draft` work without approval. Ask before dependencies, data deletion, deploy, or adding a git remote. Git per D-012; never change `git config`, force-push `dev`/`master`, or commit secrets.
 
-Do not implement `Draft` work queue items. Ask before adding dependencies, deleting data, adding a git remote, deploying, or making broad architecture changes. Agents manage git per `docs/DECISIONS.md` D-012 (branch, commit, merge); never change `git config`, force-push protected branches, or commit secrets.
-
-**Check current repo state, don't assume it** — run `git remote -v` and `git status -sb` for remote/branch facts, or read the generated `docs/agents/PROJECT_STATE.generated.md`. Merge verified work to `dev`; see `lapviewer-git-workflow.mdc`.
+Branch conventions: `.cursor/rules/lapviewer-git-workflow.mdc`.

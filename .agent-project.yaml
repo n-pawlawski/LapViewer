@@ -45,3 +45,4 @@ verify:
 
 cursor:
   rules_file: .cursor/rules/lapviewer-base-agent.mdc
+  skills_dir: .cursor/skills

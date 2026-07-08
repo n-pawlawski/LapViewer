@@ -76,12 +76,15 @@ When you add, rename, or split a doc, update all three in the same change.
 
 ## Agent framework (docs/agents/)
 
-| Doc | Purpose |
-|-----|---------|
-| [PICKUP.md](PICKUP.md) | Discover, filter, branch, close-out — **required for all agents** |
+| Doc / skill | Purpose |
+|-------------|---------|
+| `lapviewer-pickup` skill | Process Ready work (orchestrates PICKUP.md) |
+| `lapviewer-feature` skill | Idea → ready work order |
+| `lapviewer-promote` skill | Merge / release |
+| [PICKUP.md](PICKUP.md) | Discover, filter, branch, close-out — **authoritative loop** |
 | [WORK_ORDERS.md](WORK_ORDERS.md) | Work types, dispatch |
 | [WORK_QUEUE.md](WORK_QUEUE.md) | Global backlog |
-| [PROJECT_STATE.md](PROJECT_STATE.md) | Test runner status, decision quick refs |
+| [PROJECT_STATE.md](PROJECT_STATE.md) | Durable quick refs; live facts in `PROJECT_STATE.generated.md` |
 | [AGENT_LAYOUT.md](AGENT_LAYOUT.md) | Folder layout |
 | [README.md](README.md) | Agent index |
 
@@ -94,8 +97,8 @@ When you add, rename, or split a doc, update all three in the same change.
 3. `docs/DOCUMENTATION_SYSTEM.md`
 4. `docs/FEATURE_LIFECYCLE.md`
 5. `docs/DECISIONS.md` — at least D-004, D-005, D-012, D-013, D-015, D-032
-6. `docs/agents/PICKUP.md` + `docs/agents/WORK_ORDERS.md` when executing work items
-7. `docs/agents/PROJECT_STATE.md` when running tests or verification
+6. Invoke `lapviewer-pickup` (or read `PICKUP.md` + `WORK_ORDERS.md`) when executing work items
+7. `docs/agents/PROJECT_STATE.md` or generated snapshot when verifying or checking git state
 
 Then read rows from the **documentation map** for your work type.
 
@@ -141,6 +144,20 @@ Do **not** fake Tier 2 ceremony for small or single-layer changes. If a work ord
 per-item statuses drift from reality, reconcile the feature status and move on rather
 than back-filling every item. Multi-agent wave scheduling is preserved in
 `docs/agents/archive/` for reference but is **not** the default workflow.
+
+---
+
+## Invokable skills (`.cursor/skills/`)
+
+On-demand procedures — load when relevant; not always-on context. Each skill is a thin orchestrator pointing at the source-of-truth docs below.
+
+| Skill | Use when |
+|-------|----------|
+| `lapviewer-feature` | Idea → feature spec → readiness gate → work order |
+| `lapviewer-pickup` | Discover and process Ready work items by work type |
+| `lapviewer-promote` | Merge feature/chore branches to `dev`; promote `dev` → `master` |
+
+For new feature design, prefer `lapviewer-feature` over reading the full lifecycle docs cold. For implementation, prefer `lapviewer-pickup` over re-deriving the loop from `PICKUP.md` alone.
 
 ---
 

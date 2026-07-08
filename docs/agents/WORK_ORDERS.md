@@ -107,16 +107,20 @@ Rules:
 
 ## Starting an agent (dispatch by work type)
 
-Use this prompt pattern to run **all** Ready work of one type:
+**Preferred (solo maintainer + AI):** invoke the `lapviewer-pickup` skill and name the work type, e.g. *"Use lapviewer-pickup as the client agent."*
+
+**Explicit prompt pattern** (all Ready work of one type):
 
 ```text
-Act as the <ProjectName> <WorkType> Agent.
-Read docs/agents/BASE_AGENT.md first.
-Read docs/agents/<folder>/BASE.md (see [AGENT_LAYOUT.md](AGENT_LAYOUT.md)).
-Read docs/agents/WORK_ORDERS.md and docs/agents/PICKUP.md.
-Process every work item with Work type `<work-type>` and Status `Ready` per PICKUP.md.
-Report a session summary per PICKUP.md §4.
+Act as the LapViewer <WorkType> Agent.
+Use the lapviewer-pickup skill.
+Read docs/agents/<folder>/BASE.md for your checklist.
+Process every work item with Work type `<work-type>` and Status `Ready`.
 ```
+
+**New feature design:** use the `lapviewer-feature` skill before creating a work order.
+
+**Merge / release:** use the `lapviewer-promote` skill.
 
 ### Examples
 

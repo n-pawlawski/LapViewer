@@ -1,45 +1,19 @@
 ---
-description: Git workflow — dev integration, master deploy
+description: Git branches and remote checks for LapViewer
 alwaysApply: true
 ---
 
 # LapViewer Git Workflow
 
-## Branches
-
 | Branch | Purpose |
 |--------|---------|
-| `dev` | Integration — merge verified feature/fix/chore branches here ([D-004](docs/DECISIONS.md)) |
-| `master` | Deployable snapshots — promote when check + test + smoke pass ([D-025](docs/DECISIONS.md)) |
+| `dev` | Integration — merge verified branches here ([D-004](docs/DECISIONS.md)) |
+| `master` | Deploy snapshots — promote when check + test + smoke pass ([D-025](docs/DECISIONS.md)) |
 
-## Daily work
+**Daily work:** branch `feature/*`, `fix/*`, or `chore/*` from `dev`; run `npm run check` (and `npm test` when relevant); merge to `dev` when complete.
 
-1. Branch from `dev`: `feature/*`, `fix/*`, or `chore/*`
-2. Verify: `npm run check`, `npm test` when relevant
-3. Merge to `dev` locally when complete
+**Remote:** derive before any push — `git remote -v`, `git status -sb`. Never assume remote state. Push per [D-012](docs/DECISIONS.md) when a remote exists; ask before adding one.
 
-## Promote to deploy
+**Merge / promote / deploy:** use the `lapviewer-promote` skill. Deploy details: [DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-When deploy-ready:
-
-```bash
-git checkout master
-git merge dev
-# optional: git tag v0.x.x
-```
-
-Deploy workflow runs on push to `master` ([DEPLOYMENT.md](docs/DEPLOYMENT.md)).
-
-## Remote
-
-Do not assume remote state — derive it. Before any push or remote reasoning:
-
-```bash
-git remote -v            # is a remote configured?
-git status -sb           # current branch + ahead/behind upstream
-```
-
-- **Remote exists:** push per [D-012](docs/DECISIONS.md) (`git push origin <branch>`). Never force-push `dev`/`master`.
-- **No remote:** work locally; ask before adding one (`git remote add origin <url>`).
-
-Do not change `git config`, force-push protected branches, or commit secrets ([D-012](docs/DECISIONS.md)).
+Do not change `git config`, force-push protected branches, or commit secrets.

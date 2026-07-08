@@ -8,13 +8,16 @@ See [AGENT_LAYOUT.md](AGENT_LAYOUT.md) and [PICKUP.md](PICKUP.md).
 
 ## Start here
 
-| Step | File |
-|------|------|
-| 1 | [BASE_AGENT.md](BASE_AGENT.md) — project doc map + rules |
-| 2 | [PICKUP.md](PICKUP.md) — discover, filter, branch, close-out |
-| 3 | [WORK_ORDERS.md](WORK_ORDERS.md) — work types, dispatch |
-| 4 | `<agent>/BASE.md` — specialist checklist |
-| 5 | [PROJECT_STATE.md](PROJECT_STATE.md) — test runner, quick refs |
+| Step | File / skill |
+|------|----------------|
+| 1 | [BASE_AGENT.md](BASE_AGENT.md) — project doc map + process tiers |
+| 2 | **Skill:** `lapviewer-feature` (design) or `lapviewer-pickup` (implement) |
+| 3 | [PICKUP.md](PICKUP.md) — discover, filter, branch, close-out (authoritative) |
+| 4 | [WORK_ORDERS.md](WORK_ORDERS.md) — work types, dispatch |
+| 5 | `<agent>/BASE.md` — specialist checklist |
+| 6 | [PROJECT_STATE.md](PROJECT_STATE.md) + generated snapshot — live git/verify facts |
+
+**Skills** (`.cursor/skills/`): `lapviewer-feature`, `lapviewer-pickup`, `lapviewer-promote` — thin orchestrators; read the linked docs for full detail.
 
 ---
 
@@ -53,10 +56,8 @@ See [AGENT_LAYOUT.md](AGENT_LAYOUT.md) and [PICKUP.md](PICKUP.md).
 ## Dispatch example (client)
 
 ```text
-Act as the LapViewer Client Agent.
-Read docs/agents/BASE_AGENT.md, docs/agents/client/BASE.md,
-     docs/agents/PICKUP.md, docs/agents/WORK_ORDERS.md.
-Process every Ready item with Work type `client` per PICKUP.md.
+Use the lapviewer-pickup skill as the LapViewer Client Agent.
+Process every Ready item with Work type `client`.
 ```
 
 ---
