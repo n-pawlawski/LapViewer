@@ -32,12 +32,14 @@ Deploy workflow runs on push to `master` ([DEPLOYMENT.md](docs/DEPLOYMENT.md)).
 
 ## Remote
 
-No remote is configured until the user adds one. To enable GitHub CI:
+Do not assume remote state — derive it. Before any push or remote reasoning:
 
 ```bash
-git remote add origin https://github.com/<org>/LapViewer.git
-git push -u origin dev
-git push -u origin master
+git remote -v            # is a remote configured?
+git status -sb           # current branch + ahead/behind upstream
 ```
+
+- **Remote exists:** push per [D-012](docs/DECISIONS.md) (`git push origin <branch>`). Never force-push `dev`/`master`.
+- **No remote:** work locally; ask before adding one (`git remote add origin <url>`).
 
 Do not change `git config`, force-push protected branches, or commit secrets ([D-012](docs/DECISIONS.md)).
