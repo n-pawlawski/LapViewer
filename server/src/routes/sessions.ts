@@ -5,6 +5,8 @@ import {
   getSessionVideoTarget,
   insertMarker,
   listAllLaps,
+  listPublicLaps,
+  listPublicSessions,
   listSessions,
   updateSession,
 } from "../services/sessions.js";
@@ -17,6 +19,10 @@ export const sessionsRouter = Router();
 
 sessionsRouter.get("/", (req, res) => {
   res.json(listSessions(req.userId!));
+});
+
+sessionsRouter.get("/public", (req, res) => {
+  res.json(listPublicSessions(req.userId!));
 });
 
 sessionsRouter.get("/:id/markers", (req, res) => {
@@ -83,6 +89,10 @@ sessionsRouter.patch("/:id", (req, res) => {
       res.status(404).json({ error: error.message });
       return;
     }
+    if (error.code === "VALIDATION") {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     throw err;
   }
 });
@@ -100,6 +110,10 @@ export const lapsRouter = Router();
 
 lapsRouter.get("/", (req, res) => {
   res.json(listAllLaps(req.userId!));
+});
+
+lapsRouter.get("/public", (req, res) => {
+  res.json(listPublicLaps(req.userId!));
 });
 
 export const videoRouter = Router();

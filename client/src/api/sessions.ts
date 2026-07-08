@@ -11,6 +11,9 @@ export interface SessionSummary {
   date?: string;
   lapCount: number;
   bestLapTimeMs?: number;
+  isPublic?: boolean;
+  isOwner?: boolean;
+  ownerDisplayName?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -25,12 +28,17 @@ export interface FlatLapRow {
   lapTimeMs: number;
   isBestInSession: boolean;
   ignored: boolean;
+  ownerDisplayName?: string;
+  isPublicSession?: boolean;
 }
 
 export interface SessionDetail extends SessionSummary {
   notes?: string;
   fileName: string;
   durationSeconds: number | null;
+  storageKind?: "local_path" | "s3";
+  objectKey?: string | null;
+  uploadStatus?: "pending" | "complete" | "failed" | null;
   markers: Marker[];
   splits: Split[];
   laps: Lap[];
@@ -51,10 +59,15 @@ export interface UpdateSessionRequest {
   recordedAt?: string | null;
   notes?: string | null;
   durationSeconds?: number | null;
+  isPublic?: boolean;
 }
 
 export async function fetchSessions(): Promise<SessionSummary[]> {
   return apiFetch<SessionSummary[]>("/api/sessions");
+}
+
+export async function fetchPublicSessions(): Promise<SessionSummary[]> {
+  return apiFetch<SessionSummary[]>("/api/sessions/public");
 }
 
 export async function fetchSession(id: string): Promise<SessionDetail> {
@@ -88,6 +101,10 @@ export async function deleteSession(id: string): Promise<void> {
 
 export async function fetchAllLaps(): Promise<FlatLapRow[]> {
   return apiFetch<FlatLapRow[]>("/api/laps");
+}
+
+export async function fetchPublicLaps(): Promise<FlatLapRow[]> {
+  return apiFetch<FlatLapRow[]>("/api/laps/public");
 }
 
 export function sessionVideoUrl(sessionId: string): string {

@@ -9,6 +9,7 @@ interface SessionLapPanelProps {
   onOpenIntake: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onVisibilityChange: () => void;
 }
 
 export function SessionLapPanel({
@@ -17,7 +18,10 @@ export function SessionLapPanel({
   onOpenIntake,
   onEdit,
   onDelete,
+  onVisibilityChange,
 }: SessionLapPanelProps) {
+  const isOwner = detail.isOwner !== false;
+
   return (
     <div className="session-lap-panel">
       <SessionSummaryStrip
@@ -26,8 +30,14 @@ export function SessionLapPanel({
         onOpenIntake={onOpenIntake}
         onEdit={onEdit}
         onDelete={onDelete}
+        onVisibilityChange={onVisibilityChange}
       />
-      <LapTable session={session} laps={detail.laps} sessionDetail={detail} />
+      <LapTable
+        session={session}
+        laps={detail.laps}
+        sessionDetail={detail}
+        readOnly={!isOwner}
+      />
     </div>
   );
 }

@@ -118,6 +118,15 @@ function CompareView({
     return laps.filter((lap) => !lap.ignored);
   }
 
+  const paneIsReadOnly = useCallback(
+    (paneIndex: 0 | 1) => {
+      const sessionId = panes[paneIndex].session.id;
+      const detail = sessionDetails[sessionId];
+      return detail?.isOwner === false;
+    },
+    [panes, sessionDetails],
+  );
+
   const handleLapSelect = useCallback(
     async (paneIndex: 0 | 1, lapId: string) => {
       if (panes[paneIndex].lap.id === lapId) return;
@@ -188,7 +197,7 @@ function CompareView({
 
   const getAdjustable = useCallback(
     (paneIndex: 0 | 1) => {
-      if (playback.playing || adjusting) return null;
+      if (playback.playing || adjusting || paneIsReadOnly(paneIndex)) return null;
       const absoluteTime = absoluteTimeForPane(
         paneIndex,
         windows,
@@ -198,11 +207,12 @@ function CompareView({
       if (absoluteTime == null) return null;
       return findAdjustableMarkerAtTime(panes[paneIndex], absoluteTime, frameStep);
     },
-    [playback.playing, playback.comparisonTime, playback.frozen, adjusting, panes, windows, frameStep],
+    [playback.playing, playback.comparisonTime, playback.frozen, adjusting, panes, windows, frameStep, paneIsReadOnly],
   );
 
   const adjustFrame = useCallback(
     async (paneIndex: 0 | 1, direction: -1 | 1) => {
+      if (paneIsReadOnly(paneIndex)) return;
       const adjustable = getAdjustable(paneIndex);
       if (!adjustable) return;
 
@@ -238,7 +248,7 @@ function CompareView({
         setAdjusting(false);
       }
     },
-    [getAdjustable, frameStep, panes, syncPoint, onPanesChange],
+    [getAdjustable, frameStep, panes, syncPoint, onPanesChange, paneIsReadOnly],
   );
 
   const adjustable0 = getAdjustable(0);
@@ -247,9 +257,11 @@ function CompareView({
     frameError ??
     (playback.playing
       ? "Pause on a marker to nudge frames"
-      : adjustable0 || adjustable1
-        ? "Frame buttons nudge the aligned lap or split marker"
-        : "Scrub to a lap or split marker to enable frame adjust");
+      : paneIsReadOnly(0) && paneIsReadOnly(1)
+        ? "Marker adjustment is only available on your own sessions"
+        : adjustable0 || adjustable1
+          ? "Frame buttons nudge the aligned lap or split marker"
+          : "Scrub to a lap or split marker to enable frame adjust");
 
   return (
     <AppShell layout="compare">
@@ -294,13 +306,13 @@ function CompareView({
               onMetadataLoaded={() => playback.onVideoMetadataLoaded(0)}
               adjustableMarker={adjustable0}
               onAdjustFrame={(direction) => void adjustFrame(0, direction)}
-              frameAdjustDisabled={playback.playing}
+              frameAdjustDisabled={playback.playing || paneIsReadOnly(0)}
               adjusting={adjusting}
               lapColor={lapColors[0]}
               lapSlotLabel="L1"
               sessionLaps={sessionLapsForPane(0)}
               otherPaneLapId={panes[1].lap.id}
-            otherPaneLapTimeMs={panes[1].lap.lapTimeMs}
+              otherPaneLapTimeMs={panes[1].lap.lapTimeMs}
               onLapSelect={(lapId) => void handleLapSelect(0, lapId)}
               lapSelectDisabled={lapSelectBusy || playback.playing}
             />
@@ -312,13 +324,13 @@ function CompareView({
               onMetadataLoaded={() => playback.onVideoMetadataLoaded(1)}
               adjustableMarker={adjustable1}
               onAdjustFrame={(direction) => void adjustFrame(1, direction)}
-              frameAdjustDisabled={playback.playing}
+              frameAdjustDisabled={playback.playing || paneIsReadOnly(1)}
               adjusting={adjusting}
               lapColor={lapColors[1]}
               lapSlotLabel="L2"
               sessionLaps={sessionLapsForPane(1)}
               otherPaneLapId={panes[0].lap.id}
-            otherPaneLapTimeMs={panes[0].lap.lapTimeMs}
+              otherPaneLapTimeMs={panes[0].lap.lapTimeMs}
               onLapSelect={(lapId) => void handleLapSelect(1, lapId)}
               lapSelectDisabled={lapSelectBusy || playback.playing}
             />

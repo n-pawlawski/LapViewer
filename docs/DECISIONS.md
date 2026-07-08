@@ -900,6 +900,37 @@ Phase 4 needed real accounts before deploy. Email/password registration adds fri
 
 ---
 
+### D-030 - Session-level public sharing (S3 only)
+
+**Status:** Accepted  
+**Date:** 2026-07-07  
+**Owner:** Shared  
+**Related docs:** `docs/features/PUBLIC_SESSIONS_V1.md`, `docs/work-orders/WO-public-sessions.md`, `server/src/services/sessionAccess.ts`
+
+### Context
+
+Users v1 scopes all data by `userId`. The product roadmap needs cross-account lap viewing and compare without anonymous links or complex ACLs.
+
+### Decision
+
+1. Add `sessions.isPublic` (default false). Owners toggle via `PATCH /api/sessions/:id`.
+2. **Only** `storageKind=s3` sessions with `uploadStatus=complete` may be made public.
+3. Authenticated non-owners may list/read/stream public sessions; mutations stay owner-only.
+4. **Ignored laps** and private fields are stripped server-side for non-owner session payloads.
+
+### Consequences
+
+- Legacy `local_path` sessions remain private-only.
+- Compare works across owners once both sessions are readable.
+- No share URLs or unauthenticated access in v1.
+
+### Alternatives considered
+
+- Per-lap sharing — rejected (session-level matches UX: "make this session public").
+- Include ignored laps with a flag — rejected (intake ignore means "do not share").
+
+---
+
 ## Superseded decisions
 
 | ID | Superseded by | Note |

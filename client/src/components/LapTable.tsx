@@ -8,9 +8,10 @@ interface LapTableProps {
   session: Session;
   laps: Lap[];
   sessionDetail?: SessionDetail;
+  readOnly?: boolean;
 }
 
-export function LapTable({ session, laps, sessionDetail }: LapTableProps) {
+export function LapTable({ session, laps, sessionDetail, readOnly = false }: LapTableProps) {
   const { navigate } = useRouter();
   const { toggleLap, isSelected } = useCompare();
   const bestMs = session.bestLapTimeMs;
@@ -20,16 +21,18 @@ export function LapTable({ session, laps, sessionDetail }: LapTableProps) {
     return (
       <div className="empty-state">
         <p>No laps yet.</p>
-        <p className="empty-state-sub">
-          <button
-            type="button"
-            className="link-button"
-            onClick={() => navigate(`/intake?session=${session.id}`)}
-          >
-            Open Intake
-          </button>{" "}
-          to add lap markers.
-        </p>
+        {!readOnly && (
+          <p className="empty-state-sub">
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => navigate(`/intake?session=${session.id}`)}
+            >
+              Open Intake
+            </button>{" "}
+            to add lap markers.
+          </p>
+        )}
       </div>
     );
   }

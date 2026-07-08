@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  fetchPublicSessions,
   fetchSession,
   fetchSessions,
   type SessionDetail,
@@ -7,25 +8,31 @@ import {
 } from "../api/sessions";
 import { setSelectedSessionId } from "../lib/selectedSession";
 
+export type SessionListScope = "mine" | "public";
+
 export function useDataPageState(sessionFromUrl: string | null) {
+  const [scope, setScope] = useState<SessionListScope>("mine");
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<SessionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const reloadSessions = useCallback(async () => {
-    const list = await fetchSessions();
+  const reloadSessions = useCallback(async (activeScope: SessionListScope = scope) => {
+    const list =
+      activeScope === "public" ? await fetchPublicSessions() : await fetchSessions();
     setSessions(list);
     return list;
-  }, []);
+  }, [scope]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    fetchSessions()
+    const load = scope === "public" ? fetchPublicSessions() : fetchSessions();
+
+    load
       .then((list) => {
         if (cancelled) return;
         setSessions(list);
@@ -52,7 +59,7 @@ export function useDataPageState(sessionFromUrl: string | null) {
     return () => {
       cancelled = true;
     };
-  }, [sessionFromUrl]);
+  }, [sessionFromUrl, scope]);
 
   useEffect(() => {
     setSelectedSessionId(selectedId);
@@ -80,6 +87,12 @@ export function useDataPageState(sessionFromUrl: string | null) {
     };
   }, [selectedId]);
 
+  const changeScope = useCallback((next: SessionListScope) => {
+    setScope(next);
+    setSelectedId(null);
+    setDetail(null);
+  }, []);
+
   const refreshDetail = useCallback(async () => {
     if (!selectedId) return null;
     const data = await fetchSession(selectedId);
@@ -103,6 +116,8 @@ export function useDataPageState(sessionFromUrl: string | null) {
   );
 
   return {
+    scope,
+    setScope: changeScope,
     sessions,
     setSessions,
     selectedId,

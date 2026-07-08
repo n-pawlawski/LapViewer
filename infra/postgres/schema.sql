@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   passwordHash TEXT,
   googleSub TEXT,
   role TEXT NOT NULL DEFAULT 'user',
+  permissions TEXT NOT NULL DEFAULT '[]',
   createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   storageKind TEXT NOT NULL DEFAULT 'local_path',
   objectKey TEXT,
   uploadStatus TEXT,
+  isPublic INTEGER NOT NULL DEFAULT 0,
   createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(userId, sourcePath)

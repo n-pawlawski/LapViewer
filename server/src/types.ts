@@ -24,6 +24,7 @@ export interface SessionRow {
   storageKind?: StorageKind | string;
   objectKey?: string | null;
   uploadStatus?: UploadStatus | string | null;
+  isPublic?: number;
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -48,6 +49,9 @@ export interface SessionSummary {
   date?: string;
   lapCount: number;
   bestLapTimeMs?: number;
+  isPublic?: boolean;
+  isOwner?: boolean;
+  ownerDisplayName?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -62,6 +66,8 @@ export interface FlatLapRow {
   lapTimeMs: number;
   isBestInSession: boolean;
   ignored: boolean;
+  ownerDisplayName?: string;
+  isPublicSession?: boolean;
 }
 
 export interface LapDto {
@@ -127,6 +133,7 @@ export interface UpdateSessionBody {
   recordedAt?: string | null;
   notes?: string | null;
   durationSeconds?: number | null;
+  isPublic?: boolean;
 }
 
 export interface UpdateMarkerBody {

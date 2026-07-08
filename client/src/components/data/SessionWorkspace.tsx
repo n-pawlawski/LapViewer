@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { SessionDetail } from "../../api/sessions";
 import type { Session } from "../../types";
+import type { SessionListScope } from "../../hooks/useDataPageState";
 import { AllLapsPanel } from "./AllLapsPanel";
 import { SessionLapPanel } from "./SessionLapPanel";
 import type { SessionFilterState } from "../../hooks/useSessionFilters";
@@ -13,11 +14,13 @@ interface SessionWorkspaceProps {
   detail: SessionDetail | null;
   sessions: SessionSummary[];
   filters: SessionFilterState;
+  scope: SessionListScope;
   lapCount: number;
   totalLapCount: number;
   onOpenIntake: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onVisibilityChange: () => void;
 }
 
 export function SessionWorkspace({
@@ -25,11 +28,13 @@ export function SessionWorkspace({
   detail,
   sessions,
   filters,
+  scope,
   lapCount,
   totalLapCount,
   onOpenIntake,
   onEdit,
   onDelete,
+  onVisibilityChange,
 }: SessionWorkspaceProps) {
   const [tab, setTab] = useState<WorkspaceTab>("session");
 
@@ -45,15 +50,17 @@ export function SessionWorkspace({
         >
           This session{session ? ` (${lapCount})` : ""}
         </button>
-        <button
-          type="button"
-          role="tab"
-          className={`workspace-tab ${tab === "allLaps" ? "workspace-tab--active" : ""}`}
-          aria-selected={tab === "allLaps"}
-          onClick={() => setTab("allLaps")}
-        >
-          All laps ({totalLapCount})
-        </button>
+        {scope === "mine" && (
+          <button
+            type="button"
+            role="tab"
+            className={`workspace-tab ${tab === "allLaps" ? "workspace-tab--active" : ""}`}
+            aria-selected={tab === "allLaps"}
+            onClick={() => setTab("allLaps")}
+          >
+            All laps ({totalLapCount})
+          </button>
+        )}
       </div>
       <div className="session-workspace-content">
         {tab === "session" ? (
@@ -64,10 +71,15 @@ export function SessionWorkspace({
               onOpenIntake={onOpenIntake}
               onEdit={onEdit}
               onDelete={onDelete}
+              onVisibilityChange={onVisibilityChange}
             />
           ) : (
             <div className="empty-state empty-state--compact">
-              <p>Select a session to view laps.</p>
+              <p>
+                {scope === "public"
+                  ? "Select a public session to view laps."
+                  : "Select a session to view laps."}
+              </p>
             </div>
           )
         ) : (

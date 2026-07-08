@@ -62,6 +62,18 @@ The tracking model for added videos is documented in [Video Library](VIDEO_LIBRA
 - Editable title (default: filename).
 - Optional fields TBD: track name, date, notes, camera angle.
 
+### F1.4 Public sessions (v1)
+
+**Intent:** Let owners share uploaded sessions with other authenticated accounts.
+
+**Acceptance criteria:**
+- Data form has **My sessions \| Public sessions** tabs.
+- Owner can **Make public** / **Make private** on S3-uploaded sessions only.
+- Public list shows other users' sessions with owner display name.
+- Viewers see lap table and can add public laps to Compare; no Intake/Edit/Delete.
+- Ignored intake laps are not visible to other accounts.
+- Video playback works for public S3 sessions.
+
 ---
 
 ## F2 — Video playback & scrubbing (Intake form)

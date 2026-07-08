@@ -252,12 +252,19 @@ function migrateUserOwnership(database: Database.Database): void {
 }
 
 function migrateGoogleAuth(database: Database.Database): void {
-  const userCols = tableColumns(database, "users");
-  if (userCols.length > 0 && !userCols.includes("googleSub")) {
+  let userCols = tableColumns(database, "users");
+  if (userCols.length === 0) return;
+
+  if (!userCols.includes("googleSub")) {
     database.exec(`ALTER TABLE users ADD COLUMN googleSub TEXT`);
     database.exec(
       `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(googleSub) WHERE googleSub IS NOT NULL`,
     );
+  }
+
+  userCols = tableColumns(database, "users");
+  if (!userCols.includes("permissions")) {
+    database.exec(`ALTER TABLE users ADD COLUMN permissions TEXT NOT NULL DEFAULT '[]'`);
   }
 }
 
@@ -271,6 +278,9 @@ function migrateStorageColumns(database: Database.Database): void {
   }
   if (!sessionCols.includes("uploadStatus")) {
     database.exec(`ALTER TABLE sessions ADD COLUMN uploadStatus TEXT`);
+  }
+  if (!sessionCols.includes("isPublic")) {
+    database.exec(`ALTER TABLE sessions ADD COLUMN isPublic INTEGER NOT NULL DEFAULT 0`);
   }
 }
 

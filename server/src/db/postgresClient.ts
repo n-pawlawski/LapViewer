@@ -108,6 +108,8 @@ export async function createPostgresClient(connectionString: string): Promise<Po
   await pool.query(
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(googleSub) WHERE googleSub IS NOT NULL`,
   );
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT NOT NULL DEFAULT '[]'`);
+  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS isPublic INTEGER NOT NULL DEFAULT 0`);
   return new PostgresDbClient(pool);
 }
 

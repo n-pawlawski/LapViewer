@@ -13,7 +13,7 @@ Copy answers inline under each question, or tell me in chat and I'll update this
 - [x] Only you, on your own machines *(current build)*
 - [ ] You, but accessible from phone/tablet on home network
 - [ ] You, from anywhere (cloud)
-- [x] Eventually other drivers / shared access *(long-term goal)*
+- [x] Eventually other drivers / shared access — **v1:** session-level `isPublic` ([PUBLIC_SESSIONS_V1.md](features/PUBLIC_SESSIONS_V1.md), [D-030](DECISIONS.md))
 
 **Your answer:**
 

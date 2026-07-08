@@ -16,6 +16,10 @@ import {
 } from "../services/splits.js";
 import { getTrackByName } from "../services/tracks.js";
 import { getTrackSplitsByName } from "../services/trackSplits.js";
+import {
+  resolveSessionAccess,
+  rowIsPublic,
+} from "./sessionAccess.js";
 import type {
   CreateSessionBody,
   LapDto,
@@ -125,59 +129,123 @@ function lapsForSession(row: SessionRow): LapDto[] {
   return computeLaps(row.id, markers, row.durationSeconds);
 }
 
-function toSummary(row: SessionRow): SessionSummary {
+function toSummary(
+  row: SessionRow,
+  options?: { isOwner?: boolean; ownerDisplayName?: string; forPublicViewer?: boolean },
+): SessionSummary {
   const status = resolveStatus(row);
   const laps = lapsForSession(row);
   const countedLaps = laps.filter((lap) => !lap.ignored);
   const best = bestLapTimeMs(laps);
+  const isOwner = options?.isOwner ?? true;
 
   return {
     id: row.id,
     title: row.title,
-    sourcePath: row.sourcePath,
+    sourcePath: options?.forPublicViewer ? "" : row.sourcePath,
     status,
     track: row.trackName ?? undefined,
     date: row.recordedAt ?? undefined,
     lapCount: countedLaps.length,
     bestLapTimeMs: best,
+    isPublic: rowIsPublic(row),
+    isOwner,
+    ownerDisplayName: options?.ownerDisplayName,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
 }
 
-export function listSessions(userId: string): SessionSummary[] {
-  const rows = getDb()
-    .prepare(`SELECT * FROM sessions WHERE userId = ? ORDER BY createdAt DESC`)
-    .all(userId) as SessionRow[];
-  return rows.map(toSummary);
+function sanitizeForPublicViewer(detail: SessionDetail): SessionDetail {
+  const visibleLapNumbers = new Set(
+    detail.laps.filter((lap) => !lap.ignored).map((lap) => lap.lapNumber),
+  );
+
+  return {
+    ...detail,
+    sourcePath: "",
+    notes: undefined,
+    objectKey: null,
+    markers: detail.markers.filter((marker) => !marker.ignored),
+    laps: detail.laps.filter((lap) => !lap.ignored),
+    splits: detail.splits.filter((split) => visibleLapNumbers.has(split.lapNumber)),
+  };
 }
 
-export function getSessionById(id: string, userId: string): SessionDetail | null {
-  const row = getDb()
-    .prepare(`SELECT * FROM sessions WHERE id = ? AND userId = ?`)
-    .get(id, userId) as SessionRow | undefined;
-  if (!row) return null;
-
+function buildSessionDetail(
+  row: SessionRow,
+  options: { isOwner: boolean; ownerDisplayName?: string },
+): SessionDetail {
   const laps = lapsForSession(row);
   const trackSplits = trackSplitsForSession(row);
   rebalanceSessionSplitIndices(row.id, laps, trackSplits);
-  const summary = toSummary(row);
+  const summary = toSummary(row, {
+    isOwner: options.isOwner,
+    ownerDisplayName: options.ownerDisplayName,
+    forPublicViewer: !options.isOwner,
+  });
   const markers = lapStartMarkersToDto(getLapStartMarkersForSession(row.id));
   const splits = splitsForSession(row, laps);
 
-  return {
+  const detail: SessionDetail = {
     ...summary,
-    notes: row.notes ?? undefined,
+    notes: options.isOwner ? row.notes ?? undefined : undefined,
     fileName: row.fileName,
     durationSeconds: row.durationSeconds,
     storageKind: (row.storageKind as StorageKind | undefined) ?? "local_path",
-    objectKey: row.objectKey ?? null,
+    objectKey: options.isOwner ? row.objectKey ?? null : null,
     uploadStatus: (row.uploadStatus as UploadStatus | undefined) ?? null,
     markers,
     splits,
     laps,
     trackSplits,
   };
+
+  return options.isOwner ? detail : sanitizeForPublicViewer(detail);
+}
+
+export function listSessions(userId: string): SessionSummary[] {
+  const rows = getDb()
+    .prepare(`SELECT * FROM sessions WHERE userId = ? ORDER BY createdAt DESC`)
+    .all(userId) as SessionRow[];
+  return rows.map((row) => toSummary(row, { isOwner: true }));
+}
+
+export function listPublicSessions(viewerUserId: string): SessionSummary[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT s.*, u.displayName AS ownerDisplayName
+       FROM sessions s
+       JOIN users u ON u.id = s.userId
+       WHERE s.isPublic = 1
+         AND s.userId != ?
+         AND s.storageKind = 's3'
+         AND s.uploadStatus = 'complete'
+       ORDER BY s.updatedAt DESC`,
+    )
+    .all(viewerUserId) as Array<SessionRow & { ownerDisplayName: string }>;
+
+  return rows.map((row) =>
+    toSummary(row, {
+      isOwner: false,
+      ownerDisplayName: row.ownerDisplayName,
+      forPublicViewer: true,
+    }),
+  );
+}
+
+export function getSessionById(id: string, userId: string): SessionDetail | null {
+  const access = resolveSessionAccess(id, userId);
+  if (!access) return null;
+
+  if (access.mode === "owner") {
+    return buildSessionDetail(access.row, { isOwner: true });
+  }
+
+  return buildSessionDetail(access.row, {
+    isOwner: false,
+    ownerDisplayName: access.ownerDisplayName,
+  });
 }
 
 export function getSessionSourcePath(id: string, userId: string): string | null {
@@ -194,23 +262,18 @@ export function getSessionVideoTarget(
   id: string,
   userId: string,
 ): { kind: "local_path"; path: string } | { kind: "s3"; objectKey: string } | null {
-  const row = getDb()
-    .prepare(`SELECT sourcePath, relativePath, storageKind, objectKey, uploadStatus FROM sessions WHERE id = ? AND userId = ?`)
-    .get(id, userId) as
-    | {
-        sourcePath: string;
-        relativePath?: string | null;
-        storageKind?: string;
-        objectKey?: string | null;
-        uploadStatus?: string | null;
-      }
-    | undefined;
-  if (!row) return null;
+  const access = resolveSessionAccess(id, userId);
+  if (!access) return null;
+
+  const row = access.row;
   if (row.storageKind === "s3") {
     if (!row.objectKey || row.uploadStatus !== "complete") return null;
     return { kind: "s3", objectKey: row.objectKey };
   }
-  return { kind: "local_path", path: sessionVideoPath(row as SessionRow) };
+
+  if (access.mode === "public") return null;
+
+  return { kind: "local_path", path: sessionVideoPath(row) };
 }
 
 function normalizePathParts(sourcePath: string): {
@@ -341,14 +404,30 @@ export function updateSession(
     body.durationSeconds !== undefined
       ? body.durationSeconds
       : existing.durationSeconds;
+
+  let isPublic = rowIsPublic(existing);
+  if (body.isPublic !== undefined) {
+    if (body.isPublic) {
+      if (existing.storageKind !== "s3" || existing.uploadStatus !== "complete") {
+        throw Object.assign(
+          new Error("Only uploaded videos can be shared publicly"),
+          { code: "VALIDATION" },
+        );
+      }
+      isPublic = true;
+    } else {
+      isPublic = false;
+    }
+  }
+
   const ts = nowIso();
 
   getDb()
     .prepare(
-      `UPDATE sessions SET title = ?, trackName = ?, recordedAt = ?, notes = ?, durationSeconds = ?, updatedAt = ?
+      `UPDATE sessions SET title = ?, trackName = ?, recordedAt = ?, notes = ?, durationSeconds = ?, isPublic = ?, updatedAt = ?
        WHERE id = ? AND userId = ?`,
     )
-    .run(title, trackName, recordedAt, notes, durationSeconds, ts, id, userId);
+    .run(title, trackName, recordedAt, notes, durationSeconds, isPublic ? 1 : 0, ts, id, userId);
 
   return getSessionById(id, userId)!;
 }
@@ -651,6 +730,30 @@ export function listAllLaps(userId: string): FlatLapRow[] {
     .prepare(`SELECT * FROM sessions WHERE userId = ? ORDER BY createdAt DESC`)
     .all(userId) as SessionRow[];
 
+  return flattenSessionLaps(rows);
+}
+
+export function listPublicLaps(viewerUserId: string): FlatLapRow[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT s.*, u.displayName AS ownerDisplayName
+       FROM sessions s
+       JOIN users u ON u.id = s.userId
+       WHERE s.isPublic = 1
+         AND s.userId != ?
+         AND s.storageKind = 's3'
+         AND s.uploadStatus = 'complete'
+       ORDER BY s.createdAt DESC`,
+    )
+    .all(viewerUserId) as Array<SessionRow & { ownerDisplayName: string }>;
+
+  return flattenSessionLaps(rows, { isPublic: true });
+}
+
+function flattenSessionLaps(
+  rows: Array<SessionRow & { ownerDisplayName?: string }>,
+  options?: { isPublic?: boolean },
+): FlatLapRow[] {
   const flat: FlatLapRow[] = [];
   for (const row of rows) {
     const laps = lapsForSession(row);
@@ -667,6 +770,8 @@ export function listAllLaps(userId: string): FlatLapRow[] {
         lapTimeMs: lap.lapTimeMs,
         isBestInSession: best != null && lap.lapTimeMs === best,
         ignored: lap.ignored,
+        ownerDisplayName: row.ownerDisplayName,
+        isPublicSession: options?.isPublic ?? false,
       });
     }
   }
