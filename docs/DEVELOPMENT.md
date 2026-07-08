@@ -77,17 +77,45 @@ Health: [http://deltaview.docker:3090/api/ops/status](http://deltaview.docker:30
 
 | Variable | When | Purpose |
 |----------|------|---------|
+| `GOOGLE_CLIENT_ID` | Production / optional local | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Production / optional local | Google OAuth client secret |
+| `GOOGLE_REDIRECT_URI` | Optional | OAuth callback URL (default: `CLIENT_ORIGIN/api/auth/google/callback`) |
 | `LAPVIEWER_DEV_USER=1` | Set automatically by `npm run dev` (server) | Seeds dev user **`root` / `root`** |
 | `NODE_ENV=development` | Alternative to above | Same dev-user behavior |
 | `SESSION_SECRET` | Optional | HMAC secret for session cookies (set before any hosted deploy) |
 | `CLIENT_ORIGIN` | Optional | CORS origin (default `http://localhost:5173`) |
+
+Production sign-in uses **Google OAuth only**. Password registration is disabled. In dev mode you can still sign in as **`root` / `root`** from the gate’s **Dev login** section.
+
+#### Google Cloud OAuth setup (one-time)
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/) and create or select a project.
+2. **APIs & Services → OAuth consent screen**
+   - User type: **External**
+   - App name: **DeltaView**
+   - While the app is in **Testing**, add your Google account under **Test users**.
+3. **Credentials → Create credentials → OAuth client ID → Web application**
+4. Add **Authorized redirect URIs** (must match exactly):
+   - Docker (Google OAuth): `http://deltaview.docker.com:3090/api/auth/google/callback`
+   - Native dev (Vite): `http://localhost:5173/api/auth/google/callback`
+   - Production: `https://deltaview.info/api/auth/google/callback` (or your live domain)
+
+   Google rejects `deltaview.docker` and `*.localhost` — use `deltaview.docker.com` with a hosts entry (`npm run docker:hosts`).
+5. Copy **Client ID** and **Client secret** into repo-root `.env` (never commit):
+
+```env
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+```
+
+For Docker, the same values are read from `.env` via `docker-compose.yml`.
 
 | Command | Dev user | API without login |
 |---------|----------|-------------------|
 | `npm run dev` | Seeded if missing | 401 on data routes |
 | `npm start` | **Not** seeded | 401 on data routes |
 
-After `npm run dev`, sign in with your account or the dev credentials **`root` / `root`** (dev mode only). The dev account shows a **DEV ACCOUNT** badge in the header.
+After `npm run dev`, sign in with **Continue with Google** (when configured) or **Dev login** with **`root` / `root`**. The dev account shows a **DEV ACCOUNT** badge in the header.
 
 Verify auth isolation: `npm run test:auth --prefix server`
 

@@ -8,9 +8,12 @@
 | POST | `/api/sessions/upload-url` | Presigned S3 PUT + session row | cookie | Production S3 only |
 | POST | `/api/sessions/:id/complete-upload` | Finalize S3 upload | cookie | ffprobe after HEAD |
 | GET | `/api/video/demo` | Demo clip stream | — | Hardcoded path |
+| GET | `/api/auth/config` | Auth options | — | `googleAuthEnabled`, `devUserMode` |
 | GET | `/api/auth/me` | Current user | cookie optional | 401 if not logged in |
-| POST | `/api/auth/register` | Create account | — | Sets session cookie |
-| POST | `/api/auth/login` | Username/email + password login | — | Sets session cookie |
+| GET | `/api/auth/google` | Start Google OAuth | — | Redirects to Google |
+| GET | `/api/auth/google/callback` | Google OAuth callback | — | Sets session cookie |
+| POST | `/api/auth/register` | — | — | **410** — use Google sign-in |
+| POST | `/api/auth/login` | Dev password login | — | **403** in production; `root`/`root` in dev |
 | POST | `/api/auth/logout` | Clear session | — | |
 | GET | `/api/sessions` | List sessions | cookie | Scoped to `userId` |
 | POST | `/api/sessions` | Create session | cookie | |

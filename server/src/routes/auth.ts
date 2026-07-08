@@ -1,9 +1,14 @@
 import { Router, type Response } from "express";
+import {
+  buildGoogleAuthRedirect,
+  finishGoogleAuth,
+  OAUTH_STATE_COOKIE_NAME,
+  readOAuthStateCookie,
+} from "../auth/googleOAuth.js";
 import { AUTH_COOKIE_NAME, signUserId } from "../auth/session.js";
+import { CLIENT_ORIGIN, isDevUserMode, isGoogleAuthEnabled, isProductionDeploy } from "../config.js";
 import { optionalAuth } from "../middleware/auth.js";
-import { authenticateUser, registerUser, userRowToDto } from "../services/auth.js";
-
-import { isProductionDeploy } from "../config.js";
+import { authenticateUser, userRowToDto } from "../services/auth.js";
 
 export const authRouter = Router();
 
@@ -15,9 +20,30 @@ const cookieOptions = {
   path: "/",
 };
 
+const oauthCookieOptions = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: isProductionDeploy(),
+  maxAge: 10 * 60 * 1000,
+  path: "/api/auth",
+};
+
 function setAuthCookie(res: Response, userId: string): void {
   res.cookie(AUTH_COOKIE_NAME, signUserId(userId), cookieOptions);
 }
+
+function redirectWithAuthError(res: Response, message: string): void {
+  const url = new URL(CLIENT_ORIGIN);
+  url.searchParams.set("auth_error", message);
+  res.redirect(url.toString());
+}
+
+authRouter.get("/config", (_req, res) => {
+  res.json({
+    googleAuthEnabled: isGoogleAuthEnabled(),
+    devUserMode: isDevUserMode(),
+  });
+});
 
 authRouter.get("/me", optionalAuth, (req, res) => {
   if (!req.user) {
@@ -27,36 +53,18 @@ authRouter.get("/me", optionalAuth, (req, res) => {
   res.json(req.user);
 });
 
-authRouter.post("/register", async (req, res) => {
-  const body = req.body as { email?: string; password?: string; displayName?: string };
-  if (!body?.email || !body?.password || !body?.displayName) {
-    res.status(400).json({ error: "email, password, and displayName are required" });
-    return;
-  }
-
-  try {
-    const user = await registerUser({
-      email: body.email,
-      password: body.password,
-      displayName: body.displayName,
-    });
-    setAuthCookie(res, user.id);
-    res.status(201).json(userRowToDto(user));
-  } catch (err) {
-    const error = err as Error & { code?: string };
-    if (error.code === "VALIDATION") {
-      res.status(400).json({ error: error.message });
-      return;
-    }
-    if (error.code === "DUPLICATE_EMAIL") {
-      res.status(409).json({ error: error.message });
-      return;
-    }
-    throw err;
-  }
+authRouter.post("/register", (_req, res) => {
+  res.status(410).json({
+    error: "Password registration is disabled. Sign in with Google instead.",
+  });
 });
 
 authRouter.post("/login", async (req, res) => {
+  if (!isDevUserMode()) {
+    res.status(403).json({ error: "Password login is only available in dev mode. Use Google sign-in." });
+    return;
+  }
+
   const body = req.body as { email?: string; password?: string };
   if (!body?.email || !body?.password) {
     res.status(400).json({ error: "email and password are required" });
@@ -71,6 +79,35 @@ authRouter.post("/login", async (req, res) => {
 
   setAuthCookie(res, user.id);
   res.json(userRowToDto(user));
+});
+
+authRouter.get("/google", async (_req, res) => {
+  try {
+    const redirectTo = await buildGoogleAuthRedirect((value) => {
+      res.cookie(OAUTH_STATE_COOKIE_NAME, value, oauthCookieOptions);
+    });
+    res.redirect(redirectTo);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Google sign-in is unavailable";
+    res.status(503).json({ error: message });
+  }
+});
+
+authRouter.get("/google/callback", async (req, res) => {
+  const stored = readOAuthStateCookie(req.cookies?.[OAUTH_STATE_COOKIE_NAME]);
+  const result = await finishGoogleAuth(req, stored);
+
+  if (result.ok) {
+    res.clearCookie(OAUTH_STATE_COOKIE_NAME, { path: "/api/auth" });
+    setAuthCookie(res, result.user.id);
+    res.redirect(CLIENT_ORIGIN);
+    return;
+  }
+
+  if (result.clearOAuthCookie) {
+    res.clearCookie(OAUTH_STATE_COOKIE_NAME, { path: "/api/auth" });
+  }
+  redirectWithAuthError(res, result.error);
 });
 
 authRouter.post("/logout", (_req, res) => {

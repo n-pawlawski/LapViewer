@@ -18,6 +18,7 @@ export interface UserRow {
   email: string;
   displayName: string;
   passwordHash: string | null;
+  googleSub: string | null;
   role: string;
   createdAt: string;
 }
@@ -96,24 +97,39 @@ export function getUserByEmail(email: string): UserRow | null {
   return row ?? null;
 }
 
+export function getUserByGoogleSub(googleSub: string): UserRow | null {
+  const row = getDb()
+    .prepare(`SELECT * FROM users WHERE googleSub = ?`)
+    .get(googleSub) as UserRow | undefined;
+  return row ?? null;
+}
+
+export function linkGoogleSub(userId: string, googleSub: string): void {
+  getDb()
+    .prepare(`UPDATE users SET googleSub = ? WHERE id = ?`)
+    .run(googleSub, userId);
+}
+
 export function createUser(input: {
   email: string;
   displayName: string;
   passwordHash?: string | null;
+  googleSub?: string | null;
   role?: string;
 }): UserRow {
   const id = randomUUID();
   const ts = nowIso();
   getDb()
     .prepare(
-      `INSERT INTO users (id, email, displayName, passwordHash, role, createdAt)
-       VALUES (@id, @email, @displayName, @passwordHash, @role, @createdAt)`,
+      `INSERT INTO users (id, email, displayName, passwordHash, googleSub, role, createdAt)
+       VALUES (@id, @email, @displayName, @passwordHash, @googleSub, @role, @createdAt)`,
     )
     .run({
       id,
       email: input.email,
       displayName: input.displayName,
       passwordHash: input.passwordHash ?? null,
+      googleSub: input.googleSub ?? null,
       role: input.role ?? "user",
       createdAt: ts,
     });

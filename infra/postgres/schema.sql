@@ -6,9 +6,12 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT NOT NULL UNIQUE,
   displayName TEXT NOT NULL,
   passwordHash TEXT,
+  googleSub TEXT,
   role TEXT NOT NULL DEFAULT 'user',
   createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(googleSub) WHERE googleSub IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,

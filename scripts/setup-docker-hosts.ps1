@@ -1,11 +1,10 @@
-# Adds deltaview.docker to the Windows hosts file (run as Administrator).
+# Adds deltaview.docker.com to the Windows hosts file (run as Administrator).
 # Usage: powershell -ExecutionPolicy Bypass -File scripts/setup-docker-hosts.ps1
 
 $ErrorActionPreference = "Stop"
 
-$hostName = "deltaview.docker"
+$hostNames = @("deltaview.docker.com", "deltaview.docker")
 $hostsPath = Join-Path $env:SystemRoot "System32\drivers\etc\hosts"
-$entry = "127.0.0.1`t$hostName"
 
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator)) {
@@ -14,12 +13,23 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 }
 
 $content = Get-Content $hostsPath -Raw
-if ($content -match [regex]::Escape($hostName)) {
-  Write-Host "$hostName already present in hosts file."
+$added = @()
+
+foreach ($hostName in $hostNames) {
+  if ($content -match [regex]::Escape($hostName)) {
+    Write-Host "$hostName already present in hosts file."
+    continue
+  }
+  $entry = "127.0.0.1`t$hostName"
+  Add-Content -Path $hostsPath -Value $entry
+  $added += $entry
+}
+
+if ($added.Count -eq 0) {
   exit 0
 }
 
-Add-Content -Path $hostsPath -Value "`n# DeltaView Docker (side-by-side with npm run dev)`n$entry"
-Write-Host "Added: $entry"
-Write-Host "Docker app: http://${hostName}:3090"
-Write-Host "Dev app:    http://localhost:5173"
+Write-Host "Added hosts entries:"
+$added | ForEach-Object { Write-Host "  $_" }
+Write-Host "Docker app (OAuth): http://deltaview.docker.com:3090"
+Write-Host "Dev app:            http://localhost:5173"

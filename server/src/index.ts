@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  CLIENT_ORIGIN,
   DATA_DIR,
   DEMO_VIDEO_PATH,
   PORT,
@@ -54,7 +55,7 @@ const app = express();
 app.use(requestLoggingMiddleware);
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
+    origin: CLIENT_ORIGIN,
     credentials: true,
   }),
 );

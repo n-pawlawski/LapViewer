@@ -1,7 +1,7 @@
 # Local Docker parity with production code paths (Mode C in docs/ARCHITECTURE.md)
 #
 # Runs alongside npm run dev (localhost:5173 + localhost:3000).
-# Open http://deltaview.docker:3090 — add hosts entry via config/docker-hosts.snippet
+# Open http://deltaview.docker.com:3090 — add hosts entry via config/docker-hosts.snippet
 #
 # Object storage: MinIO (S3-compatible) with browser upload via presigned PUT.
 services:
@@ -56,7 +56,10 @@ services:
       S3_PUBLIC_ENDPOINT: http://127.0.0.1:9000
       S3_FORCE_PATH_STYLE: "true"
       SESSION_SECRET: local-docker-change-me
-      CLIENT_ORIGIN: http://deltaview.docker:3090
+      CLIENT_ORIGIN: http://deltaview.docker.com:3090
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://deltaview.docker.com:3090/api/auth/google/callback}
       LAPVIEWER_DEV_USER: "1"
       GIT_SHA: local-docker
     volumes:

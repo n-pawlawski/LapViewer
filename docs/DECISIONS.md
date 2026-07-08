@@ -873,6 +873,33 @@ Path-based intake ([D-002](DECISIONS.md)) breaks in containers: Docker cannot us
 
 ---
 
+### D-029 - Google OAuth as sole production sign-in
+
+**Status:** Accepted  
+**Date:** 2026-07-07  
+**Owner:** User  
+**Related docs:** `docs/DEVELOPMENT.md`, `docs/DEPLOYMENT.md`, `docs/features/USERS_V1.md`, `server/src/routes/auth.ts`
+
+### Context
+
+Phase 4 needed real accounts before deploy. Email/password registration adds friction and secret-handling overhead. The user requested Google sign-in as the primary registration path.
+
+### Decision
+
+1. **Production:** users sign in only via **Google OAuth** (`GET /api/auth/google` → callback → existing `lapviewer_uid` cookie).
+2. **Password registration** (`POST /api/auth/register`) is disabled (410).
+3. **Password login** (`POST /api/auth/login`) remains **dev-only** for the seeded `root` / `root` account.
+4. Users are keyed by Google `sub` (`users.googleSub`); verified Google email links to legacy rows when present.
+5. Configure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and redirect URI per environment.
+
+### Consequences
+
+- Google Cloud OAuth client required for hosted deploy and optional for local Google testing.
+- Dev Docker without Google env still works via **Dev login**.
+- Session middleware and per-user data scoping unchanged.
+
+---
+
 ## Superseded decisions
 
 | ID | Superseded by | Note |

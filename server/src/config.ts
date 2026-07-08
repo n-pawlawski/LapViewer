@@ -63,6 +63,19 @@ export function isDevUserMode(): boolean {
 export const SESSION_SECRET =
   process.env.SESSION_SECRET ?? "lapviewer-dev-session-secret-change-me";
 
+export const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN ?? "http://localhost:5173";
+
+export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? "";
+export const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
+
+export function googleRedirectUri(): string {
+  return process.env.GOOGLE_REDIRECT_URI ?? `${CLIENT_ORIGIN}/api/auth/google/callback`;
+}
+
+export function isGoogleAuthEnabled(): boolean {
+  return Boolean(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
+}
+
 export { FFMPEG_PATH, ffmpegAvailable };
 
 /** Downscaled frame size for lap detection scans. */

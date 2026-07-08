@@ -21,6 +21,7 @@
     "express": "^4.21.2",
     "lapviewer": "file:..",
     "multer": "^2.2.0",
+    "openid-client": "^6.8.4",
     "pg": "^8.14.1",
     "sharp": "^0.35.3"
   },

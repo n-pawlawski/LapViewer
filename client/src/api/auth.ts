@@ -12,10 +12,9 @@ export interface HealthResponse {
   devUserMode: boolean;
 }
 
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  displayName: string;
+export interface AuthConfigResponse {
+  googleAuthEnabled: boolean;
+  devUserMode: boolean;
 }
 
 export interface LoginRequest {
@@ -27,11 +26,8 @@ export async function fetchMe(): Promise<AuthUser | null> {
   return apiFetchOptional<AuthUser>("/api/auth/me");
 }
 
-export async function register(body: RegisterRequest): Promise<AuthUser> {
-  return apiFetch<AuthUser>("/api/auth/register", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+export async function fetchAuthConfig(): Promise<AuthConfigResponse> {
+  return apiFetch<AuthConfigResponse>("/api/auth/config");
 }
 
 export async function login(body: LoginRequest): Promise<AuthUser> {
@@ -47,4 +43,8 @@ export async function logout(): Promise<void> {
 
 export async function fetchHealth(): Promise<HealthResponse> {
   return apiFetch<HealthResponse>("/api/health");
+}
+
+export function googleSignInUrl(): string {
+  return "/api/auth/google";
 }

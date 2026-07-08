@@ -8,14 +8,13 @@ import {
   type ReactNode,
 } from "react";
 import {
+  fetchAuthConfig,
   fetchHealth,
   fetchMe,
   login as apiLogin,
   logout as apiLogout,
-  register as apiRegister,
   type AuthUser,
   type LoginRequest,
-  type RegisterRequest,
 } from "../api/auth";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
@@ -24,8 +23,8 @@ interface AuthContextValue {
   status: AuthStatus;
   user: AuthUser | null;
   devUserMode: boolean;
+  googleAuthEnabled: boolean;
   login: (body: LoginRequest) => Promise<void>;
-  register: (body: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -36,11 +35,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [user, setUser] = useState<AuthUser | null>(null);
   const [devUserMode, setDevUserMode] = useState(false);
+  const [googleAuthEnabled, setGoogleAuthEnabled] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
-      const [health, me] = await Promise.all([fetchHealth(), fetchMe()]);
+      const [health, config, me] = await Promise.all([
+        fetchHealth(),
+        fetchAuthConfig(),
+        fetchMe(),
+      ]);
       setDevUserMode(health.devUserMode);
+      setGoogleAuthEnabled(config.googleAuthEnabled);
       if (me) {
         setUser(me);
         setStatus("authenticated");
@@ -64,12 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("authenticated");
   }, []);
 
-  const register = useCallback(async (body: RegisterRequest) => {
-    const loggedIn = await apiRegister(body);
-    setUser(loggedIn);
-    setStatus("authenticated");
-  }, []);
-
   const logout = useCallback(async () => {
     await apiLogout();
     setUser(null);
@@ -77,8 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ status, user, devUserMode, login, register, logout, refresh }),
-    [status, user, devUserMode, login, register, logout, refresh],
+    () => ({ status, user, devUserMode, googleAuthEnabled, login, logout, refresh }),
+    [status, user, devUserMode, googleAuthEnabled, login, logout, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

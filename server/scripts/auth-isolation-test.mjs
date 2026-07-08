@@ -19,7 +19,7 @@ const { DEV_USER_ID } = await import("../src/db/users.js");
 const { createSession, getSessionById, listSessions } = await import(
   "../src/services/sessions.js"
 );
-const { authenticateUser, registerUser } = await import("../src/services/auth.js");
+const { authenticateUser, findOrCreateGoogleUser } = await import("../src/services/auth.js");
 const { signUserId } = await import("../src/auth/session.js");
 
 function assert(condition, message) {
@@ -43,10 +43,11 @@ try {
   assert(listSessions(devUserId).length === 1, "dev user should see one session");
   assert(getSessionById(session.id, devUserId) !== null, "dev user can read own session");
 
-  const other = await registerUser({
+  const other = findOrCreateGoogleUser({
+    sub: "google-sub-other",
     email: "other@lapviewer.local",
-    password: "password123",
     displayName: "Other Driver",
+    emailVerified: true,
   });
   assert(listSessions(other.id).length === 0, "other user should see no sessions");
   assert(
@@ -54,10 +55,13 @@ try {
     "other user cannot read dev user's session",
   );
 
-  const authed = await authenticateUser("other@lapviewer.local", "password123");
-  assert(authed?.id === other.id, "registered user can log in with password");
-  const badLogin = await authenticateUser("other@lapviewer.local", "wrong-password");
-  assert(badLogin === null, "wrong password should fail login");
+  const authedAgain = findOrCreateGoogleUser({
+    sub: "google-sub-other",
+    email: "other@lapviewer.local",
+    displayName: "Other Driver",
+    emailVerified: true,
+  });
+  assert(authedAgain.id === other.id, "Google user can sign in again by subject id");
 
   const token = signUserId(devUserId);
   assert(typeof token === "string" && token.includes("."), "session token should be signed");

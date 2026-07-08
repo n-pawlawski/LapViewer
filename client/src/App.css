@@ -2978,6 +2978,58 @@ body {
   text-align: center;
 }
 
+.auth-gate-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  text-decoration: none;
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.auth-gate-google:hover {
+  background: #f9fafb;
+  color: #111827;
+}
+
+.auth-gate-google-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #4285f4, #34a853 50%, #fbbc05 80%, #ea4335);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.auth-gate-setup-hint {
+  margin: 0 0 1rem;
+  padding: 0.75rem;
+  background: #1a222c;
+  border: 1px solid #2a3544;
+  border-radius: 8px;
+  color: #9aa7b5;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.auth-gate-dev-toggle {
+  width: 100%;
+}
+
+.auth-gate-form--dev {
+  margin-top: 0.5rem;
+}
+
 .auth-gate-button {
   width: 100%;
 }

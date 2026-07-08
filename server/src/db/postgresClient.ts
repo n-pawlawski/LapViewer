@@ -104,6 +104,10 @@ export async function createPostgresClient(connectionString: string): Promise<Po
   const pool = new pg.Pool(poolConfigFor(connectionString));
   const schema = fs.readFileSync(schemaPath, "utf8");
   await pool.query(schema);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS googleSub TEXT`);
+  await pool.query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(googleSub) WHERE googleSub IS NOT NULL`,
+  );
   return new PostgresDbClient(pool);
 }
 

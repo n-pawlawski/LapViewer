@@ -58,6 +58,9 @@ Copy [`config/.env.example`](../config/.env.example) to `.env` at repo root.
 | `S3_BUCKET` | `lapviewer-videos` | from Terraform output |
 | `SESSION_SECRET` | dev default | Secrets Manager |
 | `CLIENT_ORIGIN` | `http://localhost:5173` | public app URL |
+| `GOOGLE_CLIENT_ID` | from `.env` | Secrets Manager |
+| `GOOGLE_CLIENT_SECRET` | from `.env` | Secrets Manager |
+| `GOOGLE_REDIRECT_URI` | optional | `https://<domain>/api/auth/google/callback` |
 | `GIT_SHA` | `local` | CI injects commit SHA |
 
 ---
@@ -109,6 +112,8 @@ See [agents/operations/RUNBOOK.md](agents/operations/RUNBOOK.md) for troubleshoo
 
 - [ ] `DEPLOY_ENV=production` — no dev seed
 - [ ] Strong `SESSION_SECRET` in Secrets Manager
+- [ ] `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in Secrets Manager
+- [ ] Google OAuth redirect URI matches `https://<domain>/api/auth/google/callback`
 - [ ] `DATABASE_URL` → Postgres ([D-027](DECISIONS.md))
 - [ ] `STORAGE_BACKEND=s3` + bucket IAM on ECS task role
 - [ ] HTTPS on ALB (ACM certificate + listener)

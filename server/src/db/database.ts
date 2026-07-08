@@ -251,6 +251,16 @@ function migrateUserOwnership(database: Database.Database): void {
   rebuildSessionsWithUserScope(database);
 }
 
+function migrateGoogleAuth(database: Database.Database): void {
+  const userCols = tableColumns(database, "users");
+  if (userCols.length > 0 && !userCols.includes("googleSub")) {
+    database.exec(`ALTER TABLE users ADD COLUMN googleSub TEXT`);
+    database.exec(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(googleSub) WHERE googleSub IS NOT NULL`,
+    );
+  }
+}
+
 function migrateStorageColumns(database: Database.Database): void {
   const sessionCols = tableColumns(database, "sessions");
   if (!sessionCols.includes("storageKind")) {
@@ -320,6 +330,7 @@ function migrateSqlite(database: Database.Database): void {
   `);
 
   migrateUserOwnership(database);
+  migrateGoogleAuth(database);
   migrateStorageColumns(database);
 
   const splitCols = tableColumns(database, "track_splits");
