@@ -31,6 +31,17 @@ body {
   gap: 1.5rem;
 }
 
+.app-brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-brand-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
 .app-brand {
   font-size: 1.125rem;
   font-weight: 700;
@@ -3005,6 +3016,18 @@ body {
   text-transform: lowercase;
 }
 
+.auth-gate-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.auth-gate-logo {
+  display: block;
+}
+
 .auth-gate-title {
   margin: 0 0 0.5rem;
   font-size: 1.5rem;
@@ -3196,6 +3219,15 @@ body {
   color: #e7ecf1;
 }
 
+.account-field-value {
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #1f2933;
+  background: #0a0e12;
+  color: #9aa7b5;
+  user-select: text;
+}
+
 .account-actions {
   display: flex;
   gap: 0.5rem;
@@ -3241,6 +3273,80 @@ body {
 .account-user-email {
   font-size: 0.78rem;
   color: #9aa7b5;
+}
+
+.account-hub-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #2a3544;
+}
+
+.account-hub-link {
+  font-size: 0.9rem;
+  color: #9aa7b5;
+  background: #0f1419;
+  border: 1px solid #2a3544;
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.account-hub-link:hover {
+  color: #e7ecf1;
+  border-color: #3d4d61;
+  background: #141b24;
+}
+
+.account-hub-link--active {
+  color: #e7ecf1;
+  font-weight: 600;
+  cursor: default;
+  border-color: #3b82f6;
+  background: #172033;
+}
+
+.account-inline-link {
+  color: #93c5fd;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.account-inline-link:hover {
+  color: #e7ecf1;
+}
+
+.account-stats-table-wrap {
+  overflow-x: auto;
+}
+
+.account-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.account-stats-table th,
+.account-stats-table td {
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid #2a3544;
+  text-align: left;
+}
+
+.account-stats-table th {
+  color: #9aa7b5;
+  font-weight: 600;
+}
+
+.account-stat-value {
+  font-variant-numeric: tabular-nums;
 }
 
 .data-status--ok {

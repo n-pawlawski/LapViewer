@@ -16,6 +16,8 @@ import { AppShell } from "../components/AppShell";
 import { IntakeMarkingPanel } from "../components/IntakeMarkingPanel";
 import { IntakeSessionMetadataPanel } from "../components/IntakeSessionMetadataPanel";
 import { IntakeUploadZone } from "../components/IntakeUploadZone";
+import { useAuth } from "../context/AuthContext";
+import { hasPermission } from "../lib/permissions";
 import { isValidMp4File } from "../utils/videoFileValidation";
 import { useRouter, useSearchParams } from "../lib/router";
 import { setSelectedSessionId } from "../lib/selectedSession";
@@ -23,6 +25,7 @@ import { setSelectedSessionId } from "../lib/selectedSession";
 const TRACK_PLACEHOLDER = "";
 
 export function IntakePage() {
+  const { user } = useAuth();
   const { navigate } = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session");
@@ -239,6 +242,7 @@ export function IntakePage() {
                 saving={saving}
                 error={error}
                 onSubmit={handleMetadataSubmit}
+                showManageTracks={hasPermission(user, "tracks.manage")}
                 onManageTracks={() => navigate("/tracks")}
               />
             }

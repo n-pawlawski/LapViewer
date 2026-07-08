@@ -1,8 +1,10 @@
 import { useCompare } from "../context/CompareContext";
 import { useAuth } from "../context/AuthContext";
+import { hasPermission } from "../lib/permissions";
 import { getSelectedSessionId } from "../lib/selectedSession";
 import { useRouter } from "../lib/router";
 import { formatLapTime } from "../utils/time";
+import { AppLogo } from "./AppLogo";
 
 export function AppShell({
   children,
@@ -36,11 +38,15 @@ export function AppShell({
   }
 
   const compareTabDisabled = !canCompare;
+  const canManageTracks = hasPermission(user, "tracks.manage");
 
   return (
     <div className={`app ${layout !== "default" ? `app--${layout}` : ""}`}>      <header className="app-header">
         <div className="app-header-left">
-          <span className="app-brand">DeltaView</span>
+          <div className="app-brand-lockup">
+            <AppLogo className="app-brand-icon" />
+            <span className="app-brand">DeltaView</span>
+          </div>
           <nav className="app-nav">
             <button
               type="button"
@@ -53,6 +59,7 @@ export function AppShell({
               type="button"
               className={`nav-tab ${pathname === "/tracks" ? "nav-tab--active" : ""}`}
               onClick={() => navigate("/tracks")}
+              hidden={!canManageTracks}
             >
               Tracks
             </button>

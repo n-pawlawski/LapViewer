@@ -6,12 +6,15 @@ import { DataToolbar } from "../components/data/DataToolbar";
 import { SessionEditModal } from "../components/data/SessionEditModal";
 import { SessionListPanel } from "../components/data/SessionListPanel";
 import { SessionWorkspace } from "../components/data/SessionWorkspace";
+import { useAuth } from "../context/AuthContext";
 import { useDataPageState } from "../hooks/useDataPageState";
 import { useSessionFilters } from "../hooks/useSessionFilters";
+import { hasPermission } from "../lib/permissions";
 import { useRouter, useSearchParams } from "../lib/router";
 import { summaryToSession } from "../utils/sessionUtils";
 
 export function DataPage() {
+  const { user } = useAuth();
   const { navigate } = useRouter();
   const searchParams = useSearchParams();
   const sessionFromUrl = searchParams.get("session");
@@ -69,13 +72,15 @@ export function DataPage() {
         ? "No sessions match filters."
         : "No sessions yet.";
 
+  const canDeleteSessions = hasPermission(user, "sessions.delete");
+
   function handleOpenIntake() {
     if (!session || detail?.isOwner === false) return;
     navigate(`/intake?session=${session.id}`);
   }
 
   function handleDeleteFromStrip() {
-    if (!detail || detail.isOwner === false) return;
+    if (!detail || detail.isOwner === false || !canDeleteSessions) return;
     if (!window.confirm(`Remove "${detail.title}" from DeltaView? Lap markers will be deleted.`)) {
       return;
     }
@@ -148,6 +153,7 @@ export function DataPage() {
                   onEdit={() => setEditOpen(true)}
                   onDelete={handleDeleteFromStrip}
                   onVisibilityChange={() => void refreshDetail()}
+                  canDelete={canDeleteSessions}
                 />
               </section>
             </div>
@@ -167,6 +173,7 @@ export function DataPage() {
             onClose={() => setEditOpen(false)}
             onSaved={() => void refreshDetail()}
             onDeleted={() => removeSessionFromList(detail.id)}
+            canDelete={canDeleteSessions}
           />
         )}
       </div>

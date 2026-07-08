@@ -10,6 +10,7 @@ interface SessionSummaryStripProps {
   onEdit: () => void;
   onDelete: () => void;
   onVisibilityChange: () => void;
+  canDelete?: boolean;
 }
 
 function canMakePublic(detail: SessionDetail): boolean {
@@ -23,6 +24,7 @@ export function SessionSummaryStrip({
   onEdit,
   onDelete,
   onVisibilityChange,
+  canDelete = false,
 }: SessionSummaryStripProps) {
   const [visibilityBusy, setVisibilityBusy] = useState(false);
   const isOwner = detail.isOwner !== false;
@@ -90,9 +92,11 @@ export function SessionSummaryStrip({
             >
               Relink
             </button>
-            <button type="button" className="btn btn-danger btn-sm" onClick={onDelete}>
-              Delete
-            </button>
+            {canDelete && (
+              <button type="button" className="btn btn-danger btn-sm" onClick={onDelete}>
+                Delete
+              </button>
+            )}
           </>
         ) : (
           <span className="session-summary-strip-readonly">Shared by {detail.ownerDisplayName}</span>

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireUserPermission } from "../middleware/requirePermission.js";
 import {
   deleteSession,
   getSessionById,
@@ -97,7 +98,7 @@ sessionsRouter.patch("/:id", (req, res) => {
   }
 });
 
-sessionsRouter.delete("/:id", (req, res) => {
+sessionsRouter.delete("/:id", requireUserPermission("sessions.delete"), (req, res) => {
   const deleted = deleteSession(req.params.id, req.userId!);
   if (!deleted) {
     res.status(404).json({ error: "Session not found" });

@@ -21,6 +21,7 @@ interface SessionWorkspaceProps {
   onEdit: () => void;
   onDelete: () => void;
   onVisibilityChange: () => void;
+  canDelete?: boolean;
 }
 
 export function SessionWorkspace({
@@ -35,6 +36,7 @@ export function SessionWorkspace({
   onEdit,
   onDelete,
   onVisibilityChange,
+  canDelete = false,
 }: SessionWorkspaceProps) {
   const [tab, setTab] = useState<WorkspaceTab>("session");
 
@@ -72,6 +74,7 @@ export function SessionWorkspace({
               onEdit={onEdit}
               onDelete={onDelete}
               onVisibilityChange={onVisibilityChange}
+              canDelete={canDelete}
             />
           ) : (
             <div className="empty-state empty-state--compact">

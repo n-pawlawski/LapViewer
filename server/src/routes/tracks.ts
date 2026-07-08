@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireUserPermission } from "../middleware/requirePermission.js";
 import {
   createTrack,
   deleteTrack,
@@ -10,6 +11,8 @@ import { replaceTrackSplits } from "../services/trackSplits.js";
 import type { CreateTrackBody, ReplaceTrackSplitsBody, UpdateTrackBody } from "../types.js";
 
 export const tracksRouter = Router();
+
+const requireTracksManage = requireUserPermission("tracks.manage");
 
 tracksRouter.get("/", (req, res) => {
   res.json(listTracks(req.userId!));
@@ -24,7 +27,7 @@ tracksRouter.get("/:id", (req, res) => {
   res.json(track);
 });
 
-tracksRouter.post("/", (req, res) => {
+tracksRouter.post("/", requireTracksManage, (req, res) => {
   const body = req.body as CreateTrackBody;
   try {
     const track = createTrack(body, req.userId!);
@@ -43,7 +46,7 @@ tracksRouter.post("/", (req, res) => {
   }
 });
 
-tracksRouter.patch("/:id", (req, res) => {
+tracksRouter.patch("/:id", requireTracksManage, (req, res) => {
   const body = req.body as UpdateTrackBody;
   try {
     const track = updateTrack(req.params.id, body, req.userId!);
@@ -66,7 +69,7 @@ tracksRouter.patch("/:id", (req, res) => {
   }
 });
 
-tracksRouter.delete("/:id", (req, res) => {
+tracksRouter.delete("/:id", requireTracksManage, (req, res) => {
   try {
     deleteTrack(req.params.id, req.userId!);
     res.status(204).send();
@@ -80,7 +83,7 @@ tracksRouter.delete("/:id", (req, res) => {
   }
 });
 
-tracksRouter.put("/:id/splits", (req, res) => {
+tracksRouter.put("/:id/splits", requireTracksManage, (req, res) => {
   const body = req.body as ReplaceTrackSplitsBody;
   if (!Array.isArray(body?.splits)) {
     res.status(400).json({ error: "splits array is required" });

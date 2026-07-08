@@ -9,6 +9,7 @@ import { AUTH_COOKIE_NAME, signUserId } from "../auth/session.js";
 import { CLIENT_ORIGIN, isDevUserMode, isGoogleAuthEnabled, isProductionDeploy } from "../config.js";
 import { optionalAuth } from "../middleware/auth.js";
 import { authenticateUser, userRowToDto } from "../services/auth.js";
+import { recordUserLogin } from "../services/stats.js";
 
 export const authRouter = Router();
 
@@ -78,6 +79,7 @@ authRouter.post("/login", async (req, res) => {
   }
 
   setAuthCookie(res, user.id);
+  recordUserLogin(user.id);
   res.json(userRowToDto(user));
 });
 
@@ -100,6 +102,7 @@ authRouter.get("/google/callback", async (req, res) => {
   if (result.ok) {
     res.clearCookie(OAUTH_STATE_COOKIE_NAME, { path: "/api/auth" });
     setAuthCookie(res, result.user.id);
+    recordUserLogin(result.user.id);
     res.redirect(CLIENT_ORIGIN);
     return;
   }
