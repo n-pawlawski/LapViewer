@@ -7,3 +7,13 @@ dist/
 *.log
 .DS_Store
 coverage/
+
+# Terraform state, vars, plans, and downloaded providers (may contain secrets / large binaries)
+infra/terraform/.terraform/
+infra/terraform/terraform.tfstate
+infra/terraform/terraform.tfstate.backup
+infra/terraform/*.tfvars
+infra/terraform/tfplan
+
+# Local verification artifacts
+stats-verify-screenshots/
