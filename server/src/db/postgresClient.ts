@@ -102,14 +102,18 @@ function poolConfigFor(connectionString: string): pg.PoolConfig {
 
 export async function createPostgresClient(connectionString: string): Promise<PostgresDbClient> {
   const pool = new pg.Pool(poolConfigFor(connectionString));
+  // Migrate existing databases before schema.sql (indexes reference new columns).
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS googleSub TEXT`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT NOT NULL DEFAULT '[]'`);
+  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS storageKind TEXT NOT NULL DEFAULT 'local_path'`);
+  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS objectKey TEXT`);
+  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS uploadStatus TEXT`);
+  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS isPublic INTEGER NOT NULL DEFAULT 0`);
   const schema = fs.readFileSync(schemaPath, "utf8");
   await pool.query(schema);
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS googleSub TEXT`);
   await pool.query(
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(googleSub) WHERE googleSub IS NOT NULL`,
   );
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT NOT NULL DEFAULT '[]'`);
-  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS isPublic INTEGER NOT NULL DEFAULT 0`);
   return new PostgresDbClient(pool);
 }
 
