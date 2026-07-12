@@ -80,6 +80,7 @@ When you add, rename, or split a doc, update all three in the same change.
 |-------------|---------|
 | `lapviewer-pickup` skill | Process Ready work (orchestrates PICKUP.md) |
 | `lapviewer-feature` skill | Idea → ready work order |
+| `lapviewer-commit` skill | Scoped commit from `dev` (multi-agent WIP) |
 | `lapviewer-promote` skill | Merge / release |
 | [PICKUP.md](PICKUP.md) | Discover, filter, branch, close-out — **authoritative loop** |
 | [WORK_ORDERS.md](WORK_ORDERS.md) | Work types, dispatch |
@@ -155,6 +156,7 @@ On-demand procedures — load when relevant; not always-on context. Each skill i
 |-------|----------|
 | `lapviewer-feature` | Idea → feature spec → readiness gate → work order |
 | `lapviewer-pickup` | Discover and process Ready work items by work type |
+| `lapviewer-commit` | User requests commit / push — scoped commit on `feature/*`, return to `dev` |
 | `lapviewer-promote` | Merge feature/chore branches to `dev`; promote `dev` → `master` |
 
 For new feature design, prefer `lapviewer-feature` over reading the full lifecycle docs cold. For implementation, prefer `lapviewer-pickup` over re-deriving the loop from `PICKUP.md` alone.

@@ -20,7 +20,7 @@ Thin orchestrator. The authoritative procedure lives in the docs below; read the
 3. **Start** — set item `In Progress`; checkout/create the WO's `feature/<name>` branch from `dev`.
 4. **Do the role checklist** in `docs/agents/<work-type>/BASE.md`.
 5. **Verify** — `npm run check` always; `npm test` when a runner exists; `npm run build` if the bundler/config changed.
-6. **Close** — update the item's **Docs to update**; set `Done` (or `Blocked` + follow-up); commit on the WO branch per D-012.
+6. **Close** — update the item's **Docs to update**; set `Done` (or `Blocked` + follow-up); commit on the WO branch per D-012. If the user explicitly asks to commit from a mixed `dev` tree, use `lapviewer-commit` instead.
 7. **Report** — session summary table per PICKUP.md §4.
 
 ## Process tier reminder

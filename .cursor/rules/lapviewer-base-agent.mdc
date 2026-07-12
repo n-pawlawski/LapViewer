@@ -14,6 +14,7 @@ Read `docs/agents/BASE_AGENT.md` for the doc map, process tiers, and guardrails.
 |-------|----------|
 | `lapviewer-feature` | New feature: idea → spec → ready work order |
 | `lapviewer-pickup` | Process Ready work items (typed agents) |
+| `lapviewer-commit` | User asks to commit / commit and push — scoped branch commit, stay on `dev` |
 | `lapviewer-promote` | Merge to `dev`, promote to `master`, push |
 
 **Guardrails:** Do not implement `Draft` work without approval. Ask before dependencies, data deletion, deploy, or adding a git remote. Git per D-012; never change `git config`, force-push `dev`/`master`, or commit secrets.
