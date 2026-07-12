@@ -100,20 +100,51 @@ function poolConfigFor(connectionString: string): pg.PoolConfig {
   };
 }
 
-export async function createPostgresClient(connectionString: string): Promise<PostgresDbClient> {
-  const pool = new pg.Pool(poolConfigFor(connectionString));
-  // Migrate existing databases before schema.sql (indexes reference new columns).
+const INCREMENTAL_MIGRATIONS = `
+CREATE TABLE IF NOT EXISTS stat_definitions (
+  key TEXT PRIMARY KEY,
+  label TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  kind TEXT NOT NULL,
+  scope TEXT NOT NULL DEFAULT 'user',
+  createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS stat_counters (
+  userId TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  statKey TEXT NOT NULL REFERENCES stat_definitions(key) ON DELETE CASCADE,
+  value INTEGER NOT NULL DEFAULT 0,
+  updatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(userId, statKey)
+);
+
+CREATE INDEX IF NOT EXISTS idx_stat_counters_user ON stat_counters(userId);
+`;
+
+async function applyIncrementalPostgresMigrations(pool: pg.Pool): Promise<void> {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS googleSub TEXT`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT NOT NULL DEFAULT '[]'`);
   await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS storageKind TEXT NOT NULL DEFAULT 'local_path'`);
   await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS objectKey TEXT`);
   await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS uploadStatus TEXT`);
   await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS isPublic INTEGER NOT NULL DEFAULT 0`);
-  const schema = fs.readFileSync(schemaPath, "utf8");
-  await pool.query(schema);
+  await pool.query(INCREMENTAL_MIGRATIONS);
   await pool.query(
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(googleSub) WHERE googleSub IS NOT NULL`,
   );
+}
+
+export async function createPostgresClient(connectionString: string): Promise<PostgresDbClient> {
+  const pool = new pg.Pool(poolConfigFor(connectionString));
+  const initialized = await pool.query(
+    `SELECT to_regclass('public.users') IS NOT NULL AS initialized`,
+  );
+  if (initialized.rows[0]?.initialized) {
+    await applyIncrementalPostgresMigrations(pool);
+  } else {
+    const schema = fs.readFileSync(schemaPath, "utf8");
+    await pool.query(schema);
+  }
   return new PostgresDbClient(pool);
 }
 
