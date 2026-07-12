@@ -1,6 +1,7 @@
 import { getDb } from "../db/database.js";
 import {
   ensureStatDefinitions,
+  ensureStatDefinitionsAsync,
   getStatDefinition,
   getCounterValuesForUser,
   incrementStatCounter,
@@ -68,6 +69,10 @@ function buildStatsForUser(
 
 export function initializeStatsCatalog(): void {
   ensureStatDefinitions();
+}
+
+export async function initializeStatsCatalogAsync(): Promise<void> {
+  await ensureStatDefinitionsAsync();
 }
 
 export function incrementUserStat(userId: string, statKey: string): void {

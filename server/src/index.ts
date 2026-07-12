@@ -42,7 +42,7 @@ import {
   trackSplitBankRouter,
 } from "./routes/splitDetection.js";
 import { statsRouter } from "./routes/stats.js";
-import { initializeStatsCatalog } from "./services/stats.js";
+import { initializeStatsCatalogAsync } from "./services/stats.js";
 import { streamVideoFile } from "./video.js";
 import { GIT_SHA } from "./buildInfo.js";
 
@@ -50,7 +50,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.resolve(__dirname, "../../client/dist");
 
 await initDatabase();
-initializeStatsCatalog();
+await initializeStatsCatalogAsync();
 const devUserId = seedDevUserIfNeeded();
 if (devUserId) {
   seedIfEmpty(devUserId);

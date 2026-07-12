@@ -433,6 +433,10 @@ export function getDbKind(): "sqlite" | "postgres" {
   return dbKind;
 }
 
+export function getPgPool(): pg.Pool | null {
+  return pgPool;
+}
+
 export function getDb(): DbClient {
   if (!db) {
     throw new Error("Database not initialized. Call initDatabase() first.");

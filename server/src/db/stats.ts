@@ -1,4 +1,4 @@
-import { getDb, getDbKind } from "./database.js";
+import { getDb, getDbKind, getPgPool } from "./database.js";
 
 export type StatKind = "counter" | "computed";
 export type StatScope = "user";
@@ -50,20 +50,39 @@ function nowIso(): string {
 }
 
 export function ensureStatDefinitions(): void {
+  if (getDbKind() === "postgres") {
+    throw new Error("Use ensureStatDefinitionsAsync() for Postgres (deasync deadlocks after top-level await).");
+  }
   const db = getDb();
   const ts = nowIso();
-  const insertSql =
-    getDbKind() === "postgres"
-      ? `INSERT INTO stat_definitions (key, label, description, kind, scope, createdAt)
-         VALUES (?, ?, ?, ?, 'user', ?)
-         ON CONFLICT (key) DO NOTHING`
-      : `INSERT OR IGNORE INTO stat_definitions (key, label, description, kind, scope, createdAt)
-         VALUES (?, ?, ?, ?, 'user', ?)`;
-  const insert = db.prepare(insertSql);
+  const insert = db.prepare(
+    `INSERT OR IGNORE INTO stat_definitions (key, label, description, kind, scope, createdAt)
+     VALUES (?, ?, ?, ?, 'user', ?)`,
+  );
 
   for (const def of DEFAULT_STAT_DEFINITIONS) {
     insert.run(def.key, def.label, def.description, def.kind, ts);
   }
+}
+
+export async function ensureStatDefinitionsAsync(): Promise<void> {
+  if (getDbKind() === "postgres") {
+    const pool = getPgPool();
+    if (!pool) {
+      throw new Error("Postgres pool not initialized. Call initDatabase() first.");
+    }
+    const ts = nowIso();
+    for (const def of DEFAULT_STAT_DEFINITIONS) {
+      await pool.query(
+        `INSERT INTO stat_definitions (key, label, description, kind, scope, createdat)
+         VALUES ($1, $2, $3, $4, 'user', $5)
+         ON CONFLICT (key) DO NOTHING`,
+        [def.key, def.label, def.description, def.kind, ts],
+      );
+    }
+    return;
+  }
+  ensureStatDefinitions();
 }
 
 export function listStatDefinitions(): StatDefinitionRow[] {
