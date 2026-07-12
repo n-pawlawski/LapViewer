@@ -9,16 +9,19 @@ import {
   listPublicLaps,
   listPublicSessions,
   listSessions,
+  maybeFinalizePendingUpload,
+  maybeFinalizePendingUploadsForUser,
   updateSession,
 } from "../services/sessions.js";
 import type { CreateMarkerBody, UpdateSessionBody } from "../types.js";
-import { streamStoredObject } from "../services/objectStorage.js";
+import { streamStoredObject, createPlaybackPresignedUrl } from "../services/objectStorage.js";
 import { streamVideoFile } from "../video.js";
 import { scheduleSplitBankUpsert } from "../services/splitBankSync.js";
 
 export const sessionsRouter = Router();
 
-sessionsRouter.get("/", (req, res) => {
+sessionsRouter.get("/", async (req, res) => {
+  await maybeFinalizePendingUploadsForUser(req.userId!);
   res.json(listSessions(req.userId!));
 });
 
@@ -64,7 +67,8 @@ sessionsRouter.post("/:id/markers", (req, res) => {
   }
 });
 
-sessionsRouter.get("/:id", (req, res) => {
+sessionsRouter.get("/:id", async (req, res) => {
+  await maybeFinalizePendingUpload(req.params.id, req.userId!);
   const session = getSessionById(req.params.id, req.userId!);
   if (!session) {
     res.status(404).json({ error: "Session not found" });
@@ -118,6 +122,27 @@ lapsRouter.get("/public", (req, res) => {
 });
 
 export const videoRouter = Router();
+
+videoRouter.get("/:sessionId/playback-url", async (req, res) => {
+  const target = getSessionVideoTarget(req.params.sessionId, req.userId!);
+  if (!target) {
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+  if (target.kind === "s3") {
+    try {
+      const url = await createPlaybackPresignedUrl({ objectKey: target.objectKey });
+      res.json({ url, mode: "presigned" as const });
+      return;
+    } catch (err) {
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Could not create playback URL",
+      });
+      return;
+    }
+  }
+  res.json({ url: `/api/video/${req.params.sessionId}`, mode: "proxy" as const });
+});
 
 videoRouter.get("/:sessionId", (req, res) => {
   const target = getSessionVideoTarget(req.params.sessionId, req.userId!);

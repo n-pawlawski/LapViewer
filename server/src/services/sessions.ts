@@ -839,6 +839,51 @@ export function createS3UploadSession(
   return getSessionById(body.sessionId, userId)!;
 }
 
+function markUploadComplete(
+  id: string,
+  userId: string,
+  fileSizeBytes: number,
+): void {
+  const ts = nowIso();
+  getDb()
+    .prepare(
+      `UPDATE sessions SET fileSizeBytes = ?, uploadStatus = ?, status = ?, updatedAt = ?
+       WHERE id = ? AND userId = ?`,
+    )
+    .run(fileSizeBytes, "complete", "ready", ts, id, userId);
+}
+
+/** Recover sessions stuck in processing when the object already exists in storage. */
+export async function maybeFinalizePendingUpload(
+  id: string,
+  userId: string,
+): Promise<boolean> {
+  const row = getDb()
+    .prepare(`SELECT * FROM sessions WHERE id = ? AND userId = ?`)
+    .get(id, userId) as SessionRow | undefined;
+  if (!row) return false;
+  if (row.storageKind !== "s3" || !row.objectKey) return false;
+  if (row.uploadStatus === "complete") return false;
+
+  const head = await headObject(row.objectKey);
+  if (!head.exists) return false;
+
+  markUploadComplete(id, userId, head.size);
+  return true;
+}
+
+export async function maybeFinalizePendingUploadsForUser(userId: string): Promise<void> {
+  const rows = getDb()
+    .prepare(
+      `SELECT id FROM sessions
+       WHERE userId = ? AND storageKind = 's3' AND (uploadStatus IS NULL OR uploadStatus != 'complete')`,
+    )
+    .all(userId) as Array<{ id: string }>;
+  for (const row of rows) {
+    await maybeFinalizePendingUpload(row.id, userId);
+  }
+}
+
 export async function completeS3UploadSession(
   id: string,
   userId: string,
@@ -858,13 +903,7 @@ export async function completeS3UploadSession(
     throw Object.assign(new Error("Upload not found in object storage"), { code: "UPLOAD_MISSING" });
   }
 
-  const ts = nowIso();
-  getDb()
-    .prepare(
-      `UPDATE sessions SET fileSizeBytes = ?, uploadStatus = ?, status = ?, updatedAt = ?
-       WHERE id = ? AND userId = ?`,
-    )
-    .run(head.size, "complete", "ready", ts, id, userId);
+  markUploadComplete(id, userId, head.size);
 
   return getSessionById(id, userId)!;
 }

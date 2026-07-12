@@ -111,6 +111,17 @@ export function sessionVideoUrl(sessionId: string): string {
   return `/api/video/${sessionId}`;
 }
 
+export type VideoPlaybackMode = "presigned" | "proxy";
+
+export interface VideoPlaybackUrl {
+  url: string;
+  mode: VideoPlaybackMode;
+}
+
+export async function fetchVideoPlaybackUrl(sessionId: string): Promise<VideoPlaybackUrl> {
+  return apiFetch<VideoPlaybackUrl>(`/api/video/${sessionId}/playback-url`);
+}
+
 export function sessionIsPlayable(status: Session["status"]): boolean {
   return status === "ready";
 }

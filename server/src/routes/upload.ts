@@ -85,15 +85,20 @@ uploadRouter.post("/upload", (req, res, next) => {
       });
 
       const completed = await completeS3UploadSession(sessionId, req.userId!);
-      res.status(201).json(completed);
+
+      if (!res.headersSent) {
+        res.status(201).json(completed);
+      }
     } catch (err) {
-      res.status(500).json({
-        error: err instanceof Error ? err.message : "Upload failed",
-      });
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: err instanceof Error ? err.message : "Upload failed",
+        });
+      }
     } finally {
       fs.unlink(file.path, () => {});
     }
-});
+  });
 
 uploadRouter.post("/upload-url", async (req, res) => {
   if (!isS3StorageEnabled()) {

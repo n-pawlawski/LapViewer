@@ -3,6 +3,38 @@ import type { Request, Response } from "express";
 
 const VIDEO_CONTENT_TYPE = "video/mp4";
 
+/** Pipe a readable stream to an HTTP response and tear down cleanly on client abort. */
+export function pipeStreamToResponse(
+  stream: NodeJS.ReadableStream,
+  req: Request,
+  res: Response,
+): void {
+  let aborted = false;
+  const destroyStream = () => {
+    const readable = stream as NodeJS.ReadableStream & { destroy?: () => void };
+    readable.destroy?.();
+  };
+  const cleanup = () => {
+    if (aborted) return;
+    aborted = true;
+    destroyStream();
+  };
+
+  stream.on("error", () => {
+    cleanup();
+    if (!res.headersSent) {
+      res.status(500).end();
+    } else if (!res.writableEnded) {
+      res.destroy();
+    }
+  });
+  res.on("close", () => {
+    if (!res.writableEnded) cleanup();
+  });
+  req.on("aborted", cleanup);
+  stream.pipe(res);
+}
+
 export function streamVideoFile(filePath: string, req: Request, res: Response): void {
   if (!fs.existsSync(filePath)) {
     res.status(404).json({ error: "Video file not found", path: filePath });
@@ -35,7 +67,7 @@ export function streamVideoFile(filePath: string, req: Request, res: Response): 
       "Content-Length": chunkSize,
       "Content-Type": VIDEO_CONTENT_TYPE,
     });
-    fs.createReadStream(filePath, { start, end }).pipe(res);
+    pipeStreamToResponse(fs.createReadStream(filePath, { start, end }), req, res);
     return;
   }
 
@@ -44,5 +76,5 @@ export function streamVideoFile(filePath: string, req: Request, res: Response): 
     "Content-Type": VIDEO_CONTENT_TYPE,
     "Accept-Ranges": "bytes",
   });
-  fs.createReadStream(filePath).pipe(res);
+  pipeStreamToResponse(fs.createReadStream(filePath), req, res);
 }

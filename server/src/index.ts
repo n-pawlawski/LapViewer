@@ -78,8 +78,8 @@ app.use("/api/account", requireAuth, accountRouter);
 app.use("/api/users", requireAuth, usersRouter);
 app.use("/api/stats", requireAuth, statsRouter);
 
-app.use("/api/sessions", requireAuth, sessionsRouter);
 app.use("/api/sessions", requireAuth, uploadRouter);
+app.use("/api/sessions", requireAuth, sessionsRouter);
 app.use("/api/laps", requireAuth, lapsRouter);
 app.use("/api/sessions", requireAuth, sessionDetectionRouter);
 app.use("/api/markers", requireAuth, markersRouter);

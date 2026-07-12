@@ -1,5 +1,6 @@
 import { useEffect, useRef, type CSSProperties, RefObject } from "react";
-import { sessionIsPlayable, sessionVideoUrl } from "../api/sessions";
+import { sessionIsPlayable } from "../api/sessions";
+import { useSessionVideoSrc } from "../hooks/useSessionVideoSrc";
 import type { SelectedLap } from "../context/CompareContext";
 import type { Lap } from "../types";
 import type { AdjustableMarker, ComparePaneWindow } from "../utils/compare";
@@ -113,7 +114,8 @@ export function ComparePane({
 }) {
   const { session, lap } = pane;
   const playable = sessionIsPlayable(session.status) && window != null;
-  const videoUrl = playable ? sessionVideoUrl(session.id) : "";
+  const { videoSrc } = useSessionVideoSrc(session.id, playable);
+  const videoUrl = videoSrc ?? "";
   const canAdjust = playable && adjustableMarker != null && !frameAdjustDisabled;
 
   const onMetadataLoadedRef = useRef(onMetadataLoaded);

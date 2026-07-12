@@ -4,7 +4,7 @@
  */
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createMarker, createSplit, deleteMarker, updateMarker } from "../api/markers";
-import { sessionVideoUrl, updateSession, type SessionDetail } from "../api/sessions";
+import { updateSession, type SessionDetail } from "../api/sessions";
 import type { Lap, Marker, SessionStatus, Split } from "../types";
 import type { TrackSplit } from "../api/tracks";
 import { IntakeShortcutsModal } from "./IntakeShortcutsModal";
@@ -15,6 +15,7 @@ import {
   type SplitBankSummaryDto,
 } from "../api/splitDetection";
 import { useSplitDetectionWorkflow } from "../hooks/useSplitDetectionWorkflow";
+import { useSessionVideoSrc } from "../hooks/useSessionVideoSrc";
 import { SplitDetectionPanel } from "./SplitDetectionPanel";
 import { bestLapTimeMsFromMarkers, lapNumberLeftOfTime, lapTimeMsAtMarker } from "../utils/laps";
 import {
@@ -131,6 +132,7 @@ export function IntakeMarkingPanel({
   const lastSyncedLapRef = useRef<number | null>(null);
 
   const playable = status === "ready";
+  const { videoSrc } = useSessionVideoSrc(sessionId, playable);
   const frameStep = frameStepSeconds(DEFAULT_VIDEO_FPS);
   const splitMap = useMemo(() => splitsByLapNumber(splits), [splits]);
   const splitReviewActive = splitProposals.length > 0;
@@ -979,7 +981,7 @@ export function IntakeMarkingPanel({
             <video
               ref={videoRef}
               className="intake-player"
-              src={sessionVideoUrl(sessionId)}
+              src={videoSrc ?? undefined}
               preload="metadata"
               onTimeUpdate={handleTimeUpdate}
               onLoadedMetadata={handleLoadedMetadata}

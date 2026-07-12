@@ -21,7 +21,7 @@ import {
   storageBackend,
 } from "../config.js";
 import { logger } from "../logger.js";
-import { streamVideoFile } from "../video.js";
+import { pipeStreamToResponse, streamVideoFile } from "../video.js";
 
 let s3Client: S3Client | null = null;
 let s3PublicClient: S3Client | null = null;
@@ -107,6 +107,27 @@ export async function createUploadPresignedUrl(input: {
     expiresIn: input.expiresInSeconds ?? 3600,
   });
   return { uploadUrl, objectKey: input.objectKey };
+}
+
+/** Presigned GET URL so the browser streams large objects directly from S3/MinIO. */
+export async function createPlaybackPresignedUrl(input: {
+  objectKey: string;
+  expiresInSeconds?: number;
+}): Promise<string> {
+  if (!isS3StorageEnabled()) {
+    throw new Error("S3 storage is not configured");
+  }
+  const command = new GetObjectCommand({
+    Bucket: S3_BUCKET,
+    Key: input.objectKey,
+  });
+  const signingClient =
+    S3_PUBLIC_ENDPOINT && S3_PUBLIC_ENDPOINT !== AWS_ENDPOINT_URL
+      ? getS3PublicClient()
+      : getS3Client();
+  return getSignedUrl(signingClient, command, {
+    expiresIn: input.expiresInSeconds ?? 3600,
+  });
 }
 
 export async function putObjectFromFile(input: {
@@ -268,7 +289,7 @@ export async function streamS3Object(
       "Content-Length": end - start + 1,
       "Content-Type": contentType,
     });
-    (body as NodeJS.ReadableStream).pipe(res);
+    pipeStreamToResponse(body as NodeJS.ReadableStream, req, res);
     return;
   }
 
@@ -285,5 +306,5 @@ export async function streamS3Object(
     "Content-Type": contentType,
     "Accept-Ranges": "bytes",
   });
-  (body as NodeJS.ReadableStream).pipe(res);
+  pipeStreamToResponse(body as NodeJS.ReadableStream, req, res);
 }
