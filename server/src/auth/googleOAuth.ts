@@ -6,7 +6,7 @@ import {
   googleRedirectUri,
   isGoogleAuthEnabled,
 } from "../config.js";
-import { findOrCreateGoogleUser, type GoogleProfile } from "../services/auth.js";
+import { findOrCreateGoogleUserAsync, type GoogleProfile } from "../services/auth.js";
 import {
   createOAuthState,
   decodeOAuthStateCookie,
@@ -113,7 +113,7 @@ export async function finishGoogleAuth(
       return { ok: false, error: "Google did not return a user profile.", clearOAuthCookie: true };
     }
 
-    const user = findOrCreateGoogleUser(profileFromClaims(claims));
+    const user = await findOrCreateGoogleUserAsync(profileFromClaims(claims));
     return { ok: true, user };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Google sign-in failed";

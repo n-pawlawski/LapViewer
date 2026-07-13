@@ -1,10 +1,12 @@
 import { getDb } from "../db/database.js";
+import { getDbKind } from "../db/database.js";
 import {
   ensureStatDefinitions,
   ensureStatDefinitionsAsync,
   getStatDefinition,
   getCounterValuesForUser,
   incrementStatCounter,
+  incrementStatCounterAsync,
   listStatDefinitions,
   type StatDefinitionRow,
 } from "../db/stats.js";
@@ -110,4 +112,12 @@ export function getAllUsersStats(): UserStatsBundle[] {
 
 export function recordUserLogin(userId: string): void {
   incrementUserStat(userId, "auth.login_count");
+}
+
+export async function recordUserLoginAsync(userId: string): Promise<void> {
+  if (getDbKind() === "postgres") {
+    await incrementStatCounterAsync(userId, "auth.login_count");
+    return;
+  }
+  recordUserLogin(userId);
 }

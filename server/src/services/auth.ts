@@ -1,4 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { hashPassword, verifyPassword } from "../auth/password.js";
+import { serializePermissions } from "../auth/permissions.js";
+import { getDbKind, getPgPool } from "../db/database.js";
 import {
   createUser,
   DEV_USER_LOGIN,
@@ -28,7 +31,20 @@ export interface GoogleProfile {
   emailVerified: boolean;
 }
 
-export function findOrCreateGoogleUser(profile: GoogleProfile): UserRow {
+function userRowFromPg(row: Record<string, unknown>): UserRow {
+  return {
+    id: row.id as string,
+    email: row.email as string,
+    displayName: (row.displayname ?? row.displayName) as string,
+    passwordHash: (row.passwordhash ?? row.passwordHash ?? null) as string | null,
+    googleSub: (row.googlesub ?? row.googleSub ?? null) as string | null,
+    role: row.role as string,
+    permissions: (row.permissions ?? null) as string | null,
+    createdAt: String(row.createdat ?? row.createdAt),
+  };
+}
+
+function validateGoogleProfile(profile: GoogleProfile): { email: string; displayName: string } {
   if (!profile.sub) {
     throw Object.assign(new Error("Google account is missing a subject id"), { code: "VALIDATION" });
   }
@@ -42,6 +58,13 @@ export function findOrCreateGoogleUser(profile: GoogleProfile): UserRow {
   if (!email || !isValidEmail(email)) {
     throw Object.assign(new Error("Google account email is invalid"), { code: "VALIDATION" });
   }
+
+  const displayName = profile.displayName.trim() || email.split("@")[0] || "User";
+  return { email, displayName };
+}
+
+export function findOrCreateGoogleUser(profile: GoogleProfile): UserRow {
+  const { email, displayName } = validateGoogleProfile(profile);
 
   const bySub = getUserByGoogleSub(profile.sub);
   if (bySub) return bySub;
@@ -60,13 +83,68 @@ export function findOrCreateGoogleUser(profile: GoogleProfile): UserRow {
     return existing;
   }
 
-  const displayName = profile.displayName.trim() || email.split("@")[0] || "User";
   return createUser({
     email,
     displayName,
     passwordHash: null,
     googleSub: profile.sub,
   });
+}
+
+export async function findOrCreateGoogleUserAsync(profile: GoogleProfile): Promise<UserRow> {
+  if (getDbKind() !== "postgres") {
+    return findOrCreateGoogleUser(profile);
+  }
+
+  const pool = getPgPool();
+  if (!pool) {
+    throw new Error("Postgres pool not initialized. Call initDatabase() first.");
+  }
+
+  const { email, displayName } = validateGoogleProfile(profile);
+
+  const bySubResult = await pool.query(`SELECT * FROM users WHERE googlesub = $1`, [profile.sub]);
+  if (bySubResult.rows[0]) {
+    return userRowFromPg(bySubResult.rows[0] as Record<string, unknown>);
+  }
+
+  const byEmailResult = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
+  const existing = byEmailResult.rows[0]
+    ? userRowFromPg(byEmailResult.rows[0] as Record<string, unknown>)
+    : null;
+
+  if (existing) {
+    if (existing.googleSub && existing.googleSub !== profile.sub) {
+      throw Object.assign(new Error("An account already exists for this email"), {
+        code: "ACCOUNT_CONFLICT",
+      });
+    }
+    if (!existing.googleSub) {
+      await pool.query(`UPDATE users SET googlesub = $1 WHERE id = $2`, [profile.sub, existing.id]);
+      const linked = await pool.query(`SELECT * FROM users WHERE id = $1`, [existing.id]);
+      return userRowFromPg(linked.rows[0] as Record<string, unknown>);
+    }
+    return existing;
+  }
+
+  const id = randomUUID();
+  const ts = new Date().toISOString();
+  await pool.query(
+    `INSERT INTO users (id, email, displayname, passwordhash, googlesub, role, permissions, createdat)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [
+      id,
+      email,
+      displayName,
+      null,
+      profile.sub,
+      "user",
+      serializePermissions([]),
+      ts,
+    ],
+  );
+  const created = await pool.query(`SELECT * FROM users WHERE id = $1`, [id]);
+  return userRowFromPg(created.rows[0] as Record<string, unknown>);
 }
 
 export function validateRegistration(input: {

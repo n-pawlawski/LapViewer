@@ -106,6 +106,9 @@ export function getStatCounter(userId: string, statKey: string): StatCounterRow 
 }
 
 export function incrementStatCounter(userId: string, statKey: string): void {
+  if (getDbKind() === "postgres") {
+    throw new Error("Use incrementStatCounterAsync() for Postgres (deasync deadlocks after top-level await).");
+  }
   const ts = nowIso();
   getDb()
     .prepare(
@@ -116,6 +119,26 @@ export function incrementStatCounter(userId: string, statKey: string): void {
          updatedAt = excluded.updatedAt`,
     )
     .run(userId, statKey, ts);
+}
+
+export async function incrementStatCounterAsync(userId: string, statKey: string): Promise<void> {
+  if (getDbKind() === "postgres") {
+    const pool = getPgPool();
+    if (!pool) {
+      throw new Error("Postgres pool not initialized. Call initDatabase() first.");
+    }
+    const ts = nowIso();
+    await pool.query(
+      `INSERT INTO stat_counters (userid, statkey, value, updatedat)
+       VALUES ($1, $2, 1, $3)
+       ON CONFLICT (userid, statkey) DO UPDATE SET
+         value = stat_counters.value + 1,
+         updatedat = EXCLUDED.updatedat`,
+      [userId, statKey, ts],
+    );
+    return;
+  }
+  incrementStatCounter(userId, statKey);
 }
 
 export function getCounterValuesForUser(userId: string): Map<string, number> {
