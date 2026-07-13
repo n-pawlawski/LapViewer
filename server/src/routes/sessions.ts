@@ -9,6 +9,7 @@ import {
   listPublicLaps,
   listPublicSessions,
   listSessions,
+  listSessionsAsync,
   maybeFinalizePendingUpload,
   maybeFinalizePendingUploadsForUser,
   updateSession,
@@ -22,7 +23,7 @@ export const sessionsRouter = Router();
 
 sessionsRouter.get("/", async (req, res) => {
   await maybeFinalizePendingUploadsForUser(req.userId!);
-  res.json(listSessions(req.userId!));
+  res.json(await listSessionsAsync(req.userId!));
 });
 
 sessionsRouter.get("/public", (req, res) => {

@@ -3,7 +3,8 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { VIDEO_LIBRARY_ROOT } from "../config.js";
 import { resolveLocalVideoPath } from "../paths.js";
-import { getDb } from "../db/database.js";
+import { getDb, getDbKind, getPgPool } from "../db/database.js";
+import type { MarkerInput } from "./laps.js";
 import { headObject, sessionObjectKey } from "./objectStorage.js";
 import { bestLapTimeMs, computeLaps } from "../services/laps.js";
 import {
@@ -37,6 +38,37 @@ import type { FlatLapRow } from "../types.js";
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+function sessionRowFromPg(row: Record<string, unknown>): SessionRow {
+  const isPublic = row.ispublic ?? row.isPublic;
+  return {
+    id: row.id as string,
+    title: row.title as string,
+    sourcePath: (row.sourcepath ?? row.sourcePath) as string,
+    sourceRoot: (row.sourceroot ?? row.sourceRoot) as string,
+    relativePath: (row.relativepath ?? row.relativePath) as string,
+    fileName: (row.filename ?? row.fileName) as string,
+    fileSizeBytes: (row.filesizebytes ?? row.fileSizeBytes ?? null) as number | null,
+    fileModifiedAt: (row.filemodifiedat ?? row.fileModifiedAt ?? null) as string | null,
+    recordedAt: (row.recordedat ?? row.recordedAt ?? null) as string | null,
+    trackName: (row.trackname ?? row.trackName ?? null) as string | null,
+    notes: (row.notes ?? null) as string | null,
+    camera: (row.camera ?? "") as string,
+    durationSeconds: (row.durationseconds ?? row.durationSeconds ?? null) as number | null,
+    videoCodec: (row.videocodec ?? row.videoCodec ?? null) as string | null,
+    width: (row.width ?? null) as number | null,
+    height: (row.height ?? null) as number | null,
+    frameRate: (row.framerate ?? row.frameRate ?? null) as number | null,
+    status: row.status as SessionRow["status"],
+    storageKind: (row.storagekind ?? row.storageKind ?? "local_path") as string,
+    objectKey: (row.objectkey ?? row.objectKey ?? null) as string | null,
+    uploadStatus: (row.uploadstatus ?? row.uploadStatus ?? null) as string | null,
+    isPublic: isPublic === true || isPublic === 1 ? 1 : 0,
+    userId: (row.userid ?? row.userId) as string,
+    createdAt: String(row.createdat ?? row.createdAt),
+    updatedAt: String(row.updatedat ?? row.updatedAt),
+  };
 }
 
 function rowToSession(row: SessionRow): SessionRow {
@@ -133,8 +165,16 @@ function toSummary(
   row: SessionRow,
   options?: { isOwner?: boolean; ownerDisplayName?: string; forPublicViewer?: boolean },
 ): SessionSummary {
+  return toSummaryWithMarkerInputs(row, getMarkerInputs(row.id), options);
+}
+
+function toSummaryWithMarkerInputs(
+  row: SessionRow,
+  markerInputs: MarkerInput[],
+  options?: { isOwner?: boolean; ownerDisplayName?: string; forPublicViewer?: boolean },
+): SessionSummary {
   const status = resolveStatus(row);
-  const laps = lapsForSession(row);
+  const laps = computeLaps(row.id, markerInputs, row.durationSeconds);
   const countedLaps = laps.filter((lap) => !lap.ignored);
   const best = bestLapTimeMs(laps);
   const isOwner = options?.isOwner ?? true;
@@ -205,10 +245,58 @@ function buildSessionDetail(
 }
 
 export function listSessions(userId: string): SessionSummary[] {
+  if (getDbKind() === "postgres") {
+    throw new Error("Use listSessionsAsync() for Postgres (deasync deadlocks after top-level await).");
+  }
   const rows = getDb()
     .prepare(`SELECT * FROM sessions WHERE userId = ? ORDER BY createdAt DESC`)
     .all(userId) as SessionRow[];
   return rows.map((row) => toSummary(row, { isOwner: true }));
+}
+
+export async function listSessionsAsync(userId: string): Promise<SessionSummary[]> {
+  if (getDbKind() !== "postgres") {
+    return listSessions(userId);
+  }
+
+  const pool = getPgPool();
+  if (!pool) {
+    throw new Error("Postgres pool not initialized. Call initDatabase() first.");
+  }
+
+  const sessionsResult = await pool.query(
+    `SELECT * FROM sessions WHERE userid = $1 ORDER BY createdat DESC`,
+    [userId],
+  );
+  const rows = sessionsResult.rows.map((row) =>
+    sessionRowFromPg(row as Record<string, unknown>),
+  );
+  if (rows.length === 0) return [];
+
+  const sessionIds = rows.map((row) => row.id);
+  const markersResult = await pool.query(
+    `SELECT id, sessionid, timeseconds, label, ignored
+     FROM markers
+     WHERE sessionid = ANY($1::text[]) AND kind = 'lapStart'
+     ORDER BY timeseconds`,
+    [sessionIds],
+  );
+
+  const markersBySession = new Map<string, MarkerInput[]>();
+  for (const marker of markersResult.rows) {
+    const sessionId = (marker.sessionid ?? marker.sessionId) as string;
+    const list = markersBySession.get(sessionId) ?? [];
+    list.push({
+      id: marker.id as string,
+      timeSeconds: Number(marker.timeseconds ?? marker.timeSeconds),
+      ignored: marker.ignored === true || marker.ignored === 1,
+    });
+    markersBySession.set(sessionId, list);
+  }
+
+  return rows.map((row) =>
+    toSummaryWithMarkerInputs(row, markersBySession.get(row.id) ?? [], { isOwner: true }),
+  );
 }
 
 export function listPublicSessions(viewerUserId: string): SessionSummary[] {
@@ -844,6 +932,9 @@ function markUploadComplete(
   userId: string,
   fileSizeBytes: number,
 ): void {
+  if (getDbKind() === "postgres") {
+    throw new Error("Use markUploadCompleteAsync() for Postgres (deasync deadlocks after top-level await).");
+  }
   const ts = nowIso();
   getDb()
     .prepare(
@@ -853,14 +944,53 @@ function markUploadComplete(
     .run(fileSizeBytes, "complete", "ready", ts, id, userId);
 }
 
+async function markUploadCompleteAsync(
+  id: string,
+  userId: string,
+  fileSizeBytes: number,
+): Promise<void> {
+  if (getDbKind() !== "postgres") {
+    markUploadComplete(id, userId, fileSizeBytes);
+    return;
+  }
+  const pool = getPgPool();
+  if (!pool) {
+    throw new Error("Postgres pool not initialized. Call initDatabase() first.");
+  }
+  const ts = nowIso();
+  await pool.query(
+    `UPDATE sessions
+     SET filesizebytes = $1, uploadstatus = $2, status = $3, updatedat = $4
+     WHERE id = $5 AND userid = $6`,
+    [fileSizeBytes, "complete", "ready", ts, id, userId],
+  );
+}
+
 /** Recover sessions stuck in processing when the object already exists in storage. */
 export async function maybeFinalizePendingUpload(
   id: string,
   userId: string,
 ): Promise<boolean> {
-  const row = getDb()
-    .prepare(`SELECT * FROM sessions WHERE id = ? AND userId = ?`)
-    .get(id, userId) as SessionRow | undefined;
+  let row: SessionRow | null = null;
+  if (getDbKind() === "postgres") {
+    const pool = getPgPool();
+    if (!pool) {
+      throw new Error("Postgres pool not initialized. Call initDatabase() first.");
+    }
+    const result = await pool.query(`SELECT * FROM sessions WHERE id = $1 AND userid = $2`, [
+      id,
+      userId,
+    ]);
+    row = result.rows[0]
+      ? sessionRowFromPg(result.rows[0] as Record<string, unknown>)
+      : null;
+  } else {
+    row =
+      (getDb()
+        .prepare(`SELECT * FROM sessions WHERE id = ? AND userId = ?`)
+        .get(id, userId) as SessionRow | undefined) ?? null;
+  }
+
   if (!row) return false;
   if (row.storageKind !== "s3" || !row.objectKey) return false;
   if (row.uploadStatus === "complete") return false;
@@ -868,17 +998,33 @@ export async function maybeFinalizePendingUpload(
   const head = await headObject(row.objectKey);
   if (!head.exists) return false;
 
-  markUploadComplete(id, userId, head.size);
+  await markUploadCompleteAsync(id, userId, head.size);
   return true;
 }
 
 export async function maybeFinalizePendingUploadsForUser(userId: string): Promise<void> {
-  const rows = getDb()
-    .prepare(
+  let rows: Array<{ id: string }>;
+  if (getDbKind() === "postgres") {
+    const pool = getPgPool();
+    if (!pool) {
+      throw new Error("Postgres pool not initialized. Call initDatabase() first.");
+    }
+    const result = await pool.query(
       `SELECT id FROM sessions
-       WHERE userId = ? AND storageKind = 's3' AND (uploadStatus IS NULL OR uploadStatus != 'complete')`,
-    )
-    .all(userId) as Array<{ id: string }>;
+       WHERE userid = $1 AND storagekind = 's3'
+         AND (uploadstatus IS NULL OR uploadstatus != 'complete')`,
+      [userId],
+    );
+    rows = result.rows as Array<{ id: string }>;
+  } else {
+    rows = getDb()
+      .prepare(
+        `SELECT id FROM sessions
+         WHERE userId = ? AND storageKind = 's3' AND (uploadStatus IS NULL OR uploadStatus != 'complete')`,
+      )
+      .all(userId) as Array<{ id: string }>;
+  }
+
   for (const row of rows) {
     await maybeFinalizePendingUpload(row.id, userId);
   }
